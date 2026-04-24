@@ -1,325 +1,288 @@
-You are WORKER Claude on PC2. Tasks 1 (scaffold) and 2 (DB schema) are done.
+You are WORKER Claude on PC2. Task 3 (core middleware) is done. Now build the full REST API.
 
-## Your Task: Backend core — middleware, auth, services, SSE bus
+## Your Task: Build all backend routes — auth, leads, admin, SaaS, SDUI, DPDP
 
 Project root: `C:\Users\Indigen-Server-2\Desktop\Indi-gen\server`
 
-### File: `src/config.ts`
+## Required files
+
+Create each router as its own file, mount in `src/index.ts`.
+
+### 1. `src/routes/auth.ts`
 ```typescript
-import * as dotenv from 'dotenv';
-dotenv.config();
-
-export const config = {
-  port: parseInt(process.env.PORT || '3001'),
-  nodeEnv: process.env.NODE_ENV || 'development',
-  databaseUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/indigen',
-  redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
-  jwtSecret: process.env.JWT_SECRET || 'indigen-lead-hunter-secret-2026',
-  jwtExpiry: process.env.JWT_EXPIRY || '30d',
-  scraperServiceUrl: process.env.SCRAPER_SERVICE_URL || 'http://localhost:8000',
-  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:19006').split(','),
-  cashfree: {
-    appId: process.env.CASHFREE_APP_ID || '',
-    secret: process.env.CASHFREE_SECRET_KEY || '',
-    env: (process.env.CASHFREE_ENV || 'TEST') as 'TEST' | 'PRODUCTION',
-    webhookSecret: process.env.CASHFREE_WEBHOOK_SECRET || '',
-  },
-  anthropic: { apiKey: process.env.CLAUDE_API_KEY || '' },
-  signalhire: { apiKey: process.env.SIGNALHIRE_API_KEY || '' },
-};
-```
-
-### File: `src/logger.ts`
-```typescript
-import pino from 'pino';
-import { config } from './config';
-
-export const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: config.nodeEnv === 'development'
-    ? { target: 'pino-pretty', options: { colorize: true } }
-    : undefined,
-});
-```
-
-### File: `src/redis.ts`
-```typescript
-import Redis from 'ioredis';
-import { config } from './config';
-
-export const redis = new Redis(config.redisUrl, { lazyConnect: true, maxRetriesPerRequest: null });
-redis.connect().catch(() => { /* retry in background */ });
-
-export const pub = redis.duplicate();
-export const sub = redis.duplicate();
-```
-
-### File: `src/middleware/auth.ts`
-```typescript
-import { Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
+import { z } from 'zod';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
+import { query, queryOne } from '../db/client';
 import { config } from '../config';
-import { query } from '../db/client';
+import { validateBody } from '../middleware/validate';
+import { authLimit } from '../middleware/rateLimit';
+import { audit } from '../services/audit';
+import { grantTokens } from '../services/tokens';
 
-export interface AuthPayload { id: string; email: string; role: string; jti?: string; }
-export interface AuthedReq extends Request { user?: AuthPayload; }
+const router = Router();
 
-export async function requireAuth(req: AuthedReq, res: Response, next: NextFunction) {
+const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
+const signupSchema = z.object({
+  email: z.string().email(), password: z.string().min(8),
+  name: z.string().optional(), phone: z.string().optional(),
+  referralCode: z.string().optional(),
+});
+
+async function createSession(userId: string, ip?: string, ua?: string) {
+  const jti = uuidv4();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+  await query(
+    `INSERT INTO active_sessions (jti, user_id, ip_address, user_agent, expires_at) VALUES ($1,$2,$3,$4,$5)`,
+    [jti, userId, ip || null, ua || null, expiresAt]
+  );
+  return jti;
+}
+
+router.post('/login', authLimit, validateBody(loginSchema), async (req, res) => {
+  const { email, password } = req.body;
+  const user = await queryOne<any>(`SELECT * FROM users WHERE email=$1 AND deleted_at IS NULL`, [email]);
+  const ok = user && await bcrypt.compare(password, user.password_hash);
+  await query(
+    `INSERT INTO login_attempts (email, ip_address, success, reason, user_agent) VALUES ($1,$2,$3,$4,$5)`,
+    [email, req.ip || null, !!ok, ok ? null : 'bad_password', req.get('user-agent') || null]
+  );
+  if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+  const jti = await createSession(user.id, req.ip, req.get('user-agent') || undefined);
+  await query('UPDATE users SET last_login_at=NOW() WHERE id=$1', [user.id]);
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, jti }, config.jwtSecret, { expiresIn: '30d' });
+  res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
+});
+
+router.post('/signup', authLimit, validateBody(signupSchema), async (req, res) => {
+  const { email, password, name, phone, referralCode } = req.body;
+  const existing = await queryOne(`SELECT id FROM users WHERE email=$1`, [email]);
+  if (existing) return res.status(409).json({ error: 'Email already registered' });
+  const hash = await bcrypt.hash(password, 10);
+  const user = await queryOne<any>(
+    `INSERT INTO users (email, password_hash, name, phone) VALUES ($1,$2,$3,$4) RETURNING id, email, name, role`,
+    [email, hash, name || null, phone || null]
+  );
+  // Seed free-tier tokens (10 as welcome credit)
+  await grantTokens({
+    userId: user.id, amount: 10, source: 'promo',
+    idempotencyKey: `signup-welcome:${user.id}`
+  });
+  // Referral reward
+  if (referralCode) {
+    const ref = await queryOne<any>(`SELECT user_id FROM users u JOIN referrals r ON r.referrer_id=u.id WHERE r.code=$1`, [referralCode]);
+    if (ref) {
+      await query(`INSERT INTO referrals (referrer_id, referred_id, code, reward_tokens, reward_granted_at) VALUES ($1,$2,$3,$4,NOW())`,
+        [ref.user_id, user.id, referralCode, 25]);
+      await grantTokens({ userId: ref.user_id, amount: 25, source: 'promo', idempotencyKey: `referral:${user.id}` });
+    }
+  }
+  const jti = await createSession(user.id, req.ip, req.get('user-agent') || undefined);
+  const token = jwt.sign({ id: user.id, email: user.email, role: user.role, jti }, config.jwtSecret, { expiresIn: '30d' });
+  await audit({ actorId: user.id, action: 'user.signup', targetType: 'user', targetId: user.id, ip: req.ip });
+  res.status(201).json({ token, user });
+});
+
+router.post('/logout', async (req: any, res) => {
+  // req.user is set by requireAuth in real mount; best-effort revoke
+  try {
+    const header = req.headers.authorization || '';
+    if (header.startsWith('Bearer ')) {
+      const payload = jwt.verify(header.slice(7), config.jwtSecret) as any;
+      if (payload.jti) await query(`UPDATE active_sessions SET revoked_at=NOW() WHERE jti=$1`, [payload.jti]);
+    }
+  } catch {}
+  res.json({ ok: true });
+});
+
+router.get('/me', async (req: any, res) => {
+  // light version without middleware enforcement (caller should prefer requireAuth)
   const header = req.headers.authorization || '';
   if (!header.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const payload = jwt.verify(header.slice(7), config.jwtSecret) as AuthPayload;
-    // Optional: check session not revoked
-    if (payload.jti) {
-      const rev = await query('SELECT revoked_at FROM active_sessions WHERE jti=$1', [payload.jti]);
-      if (rev.length && rev[0].revoked_at) return res.status(401).json({ error: 'Session revoked' });
-    }
-    req.user = payload;
-    next();
+    const payload = jwt.verify(header.slice(7), config.jwtSecret) as any;
+    const user = await queryOne<any>(`SELECT id, email, name, role, avatar_url, company_name FROM users WHERE id=$1 AND deleted_at IS NULL`, [payload.id]);
+    if (!user) return res.status(401).json({ error: 'User not found' });
+    res.json(user);
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }
-}
-
-export function requireRole(...roles: string[]) {
-  return (req: AuthedReq, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
-    next();
-  };
-}
-
-export const requireAdmin = requireRole('admin', 'super_admin');
-export const requireSuperAdmin = requireRole('super_admin');
-```
-
-### File: `src/middleware/rateLimit.ts`
-Simple sliding-window Redis-backed rate limit.
-```typescript
-import { Request, Response, NextFunction } from 'express';
-import { redis } from '../redis';
-
-export function rateLimit(opts: { key: (req: Request) => string; limit: number; windowSec: number }) {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const k = `rl:${opts.key(req)}`;
-    const count = await redis.incr(k);
-    if (count === 1) await redis.expire(k, opts.windowSec);
-    if (count > opts.limit) return res.status(429).json({ error: 'Rate limit exceeded' });
-    res.setHeader('X-RateLimit-Remaining', Math.max(0, opts.limit - count));
-    next();
-  };
-}
-
-export const ipLimit = rateLimit({ key: (r) => r.ip || 'unknown', limit: 300, windowSec: 60 });
-export const authLimit = rateLimit({
-  key: (r) => `${r.ip}:${r.body?.email || ''}`,
-  limit: 5, windowSec: 60,
 });
+
+export default router;
 ```
 
-### File: `src/middleware/validate.ts`
-```typescript
-import { Request, Response, NextFunction } from 'express';
-import { ZodSchema } from 'zod';
+### 2. `src/routes/leads.ts`
+Port the PDF leads routes + enhance with:
+- GET `/` with filter query (`status`, `icp`, `score_min`, `q` fuzzy, `limit`, `offset`)
+- GET `/:id` with contacts joined
+- PATCH `/:id/status`, PATCH `/:id/notes`
+- POST `/:id/enrich` (queues SignalHire)
+- POST `/:id/outreach` (logs + updates status)
+- GET `/:id/outreach` (history)
+- POST `/manual` (manual add from mobile)
+- POST `/:id/drafts` (AI drafts, cache 24h) — port from PDF
+- POST `/:id/feedback` (filter rejection learning)
 
-export const validateBody = <T>(schema: ZodSchema<T>) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.body);
-    if (!result.success) return res.status(400).json({ error: 'ValidationError', issues: result.error.errors });
-    req.body = result.data;
-    next();
-  };
-```
+Use `requireAuth` for all. Scope by `owner_id` unless role is admin.
 
-### File: `src/middleware/error.ts`
+### 3. `src/routes/scrape.ts`
+- POST `/` — trigger scrape job: calls Python `scraper-service` `POST /scrape/search`, stores `job_id`, deducts 1 token per requested lead as reserve
+- GET `/jobs/:id` — proxy to Python `GET /scrape/jobs/:id`, on completion commit token reserve to consume, insert new leads to DB, trigger enrichment
+- GET `/jobs` — list recent scrape runs for the user
+
+### 4. `src/routes/billing.ts`
+- GET `/plans` — public: list subscription_plans
+- GET `/tokens/balance` — current balance + recent transactions
+- GET `/tokens/transactions?limit=50`
+- POST `/checkout/topup` — Cashfree PG order creation for one-time token bundle
+- POST `/checkout/subscribe` — Cashfree Subscription create w/ authorization link
+- POST `/subscriptions/:id/cancel` — mark cancel_at_period_end = true (don't cut immediately)
+- GET `/invoices` — user's invoices with download URL
+- GET `/invoices/:id` — single invoice detail (admin or owner)
+
+### 5. `src/routes/webhooks.ts`
+Webhook receivers. MOUNT BEFORE express.json parser for signature verification on raw body.
+
 ```typescript
-import { ErrorRequestHandler } from 'express';
+import express, { Router } from 'express';
+import crypto from 'crypto';
+import { query, transaction } from '../db/client';
+import { grantTokens } from '../services/tokens';
+import { getSetting } from '../db/settings';
 import { logger } from '../logger';
 
-export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
-  const status = err.status || err.statusCode || 500;
-  logger.error({ err, path: req.path, method: req.method }, 'request error');
-  res.status(status).json({
-    error: err.code || err.name || 'InternalError',
-    message: err.message || 'Something went wrong',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
-};
-```
+const router = Router();
 
-### File: `src/sse/bus.ts`
-SSE broadcasting via Redis pub/sub.
-```typescript
-import { Response } from 'express';
-import { pub, sub } from '../redis';
+// Cashfree webhook
+router.post('/cashfree', express.raw({ type: '*/*' }), async (req, res) => {
+  const startedAt = Date.now();
+  const secret = await getSetting('cashfree_webhook_secret') || '';
+  const rawBody = (req.body as Buffer).toString('utf8');
+  const ts = req.get('x-webhook-timestamp') || '';
+  const sig = req.get('x-webhook-signature') || '';
+  const expected = crypto.createHmac('sha256', secret).update(ts + rawBody).digest('base64');
+  const valid = expected === sig;
 
-const clients = new Map<string, Response[]>();
+  let payload: any = {};
+  try { payload = JSON.parse(rawBody); } catch {}
 
-sub.psubscribe('sse:*');
-sub.on('pmessage', (_pattern, channel, message) => {
-  const topic = channel.replace('sse:', '');
-  (clients.get(topic) || []).forEach(res => {
-    res.write(`event: ${topic}\ndata: ${message}\n\n`);
-  });
-  (clients.get('*') || []).forEach(res => {
-    res.write(`event: ${topic}\ndata: ${message}\n\n`);
-  });
+  await query(
+    `INSERT INTO webhooks_log (direction, provider, event_type, endpoint, status_code, payload, signature_valid, duration_ms) VALUES ('inbound','cashfree',$1,'/webhook/cashfree',200,$2,$3,$4)`,
+    [payload?.type || null, payload, valid, Date.now() - startedAt]
+  );
+
+  if (!valid) {
+    logger.warn({ sig, expected: expected.slice(0, 20) }, 'cashfree webhook bad signature');
+    return res.status(401).json({ error: 'bad signature' });
+  }
+
+  const eventType = payload?.type;
+  const data = payload?.data || {};
+  try {
+    if (eventType === 'SUBSCRIPTION_PAYMENT_SUCCESS') {
+      // ... credit invoice, add tokens bundled with plan
+      const subId = data?.subscription_details?.subscription_id;
+      const sub = await query(`SELECT user_id, plan_id FROM subscriptions WHERE cashfree_subscription_id=$1`, [subId]);
+      if (sub.length) {
+        const plan = await query(`SELECT tokens_included FROM subscription_plans WHERE id=$1`, [sub[0].plan_id]);
+        if (plan.length && plan[0].tokens_included > 0) {
+          const expiresAt = new Date(Date.now() + 32 * 24 * 3600 * 1000);
+          await grantTokens({
+            userId: sub[0].user_id,
+            amount: plan[0].tokens_included,
+            source: 'subscription',
+            sourceRef: subId,
+            expiresAt,
+            idempotencyKey: `cf:sub_pay:${data?.payment?.payment_id}`,
+          });
+        }
+      }
+    } else if (eventType === 'ORDER_PAID') {
+      // one-time top-up
+      const orderId = data?.order?.order_id;
+      const tokens = data?.order?.order_tags?.tokens;
+      const userId = data?.order?.customer_details?.customer_id;
+      if (orderId && tokens && userId) {
+        await grantTokens({
+          userId, amount: parseInt(tokens), source: 'topup', sourceRef: orderId,
+          idempotencyKey: `cf:order:${orderId}`,
+        });
+      }
+    }
+    // other events: SUBSCRIPTION_ACTIVATED, SUBSCRIPTION_CANCELLED, SUBSCRIPTION_PAYMENT_FAILED, etc.
+  } catch (e: any) {
+    logger.error({ err: e, eventType }, 'cashfree webhook handler failed');
+  }
+
+  res.json({ ok: true });
 });
 
-export function attachSSE(res: Response, topics: string[]) {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache, no-transform');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-  res.write(`event: connected\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`);
+// SignalHire callback
+router.post('/signalhire', express.json({ limit: '2mb' }), async (req, res) => {
+  const results = Array.isArray(req.body) ? req.body : [req.body];
+  const { handleCallback } = await import('../enrichment/signalhire');
+  await handleCallback(results);
+  res.json({ ok: true });
+});
 
-  topics.forEach(t => {
-    const arr = clients.get(t) || [];
-    arr.push(res);
-    clients.set(t, arr);
-  });
-
-  const hb = setInterval(() => res.write(`: heartbeat\n\n`), 20000);
-  res.on('close', () => {
-    clearInterval(hb);
-    topics.forEach(t => {
-      const arr = (clients.get(t) || []).filter(r => r !== res);
-      clients.set(t, arr);
-    });
-  });
-}
-
-export async function emit(topic: string, payload: any) {
-  await pub.publish(`sse:${topic}`, JSON.stringify({ ts: Date.now(), ...payload }));
-}
+export default router;
 ```
 
-### File: `src/db/settings.ts`
-(Port from original PDF, unchanged shape)
-```typescript
-import { query } from './client';
+### 6. `src/routes/admin.ts`
+Admin APIs. All under `requireAdmin`.
+- GET `/stats` — aggregated KPIs (MRR, DAU, leads today, scrape runs today, cost today, top 5 users)
+- GET `/users` (paginated, filterable)
+- GET `/users/:id` (with joins to subscriptions, tokens, outreach)
+- POST `/users/:id/impersonate` — returns impersonation JWT (30min) + audit log
+- POST `/users/:id/grant-tokens` — admin grant (audited)
+- DELETE `/users/:id` — soft delete (DPDP-compliant, queues erasure)
+- GET `/audit` (filterable)
+- GET `/webhooks` (filterable list from webhooks_log)
+- POST `/webhooks/:id/replay`
+- GET `/alerts` (unacked first)
+- POST `/alerts/:id/ack`
+- GET `/errors/groups` (error aggregation)
+- POST `/errors/groups/:id/resolve`
+- CRUD phrases, saved queries, settings (non-secret + secret)
+- GET `/settings/secret/:key` — unmask (audited)
+- CRUD `feature_flags`
+- POST `/feature_flags/:id/toggle`
+- CRUD `kill_switches` (to be added as table if not yet)
+- GET `/approvals` — pending approval queue
+- POST `/approvals/:id/approve`
+- POST `/approvals/:id/reject`
+- GET `/sql/preview` — read-only SQL playground (dedicated READ_ONLY_PG user); 30s timeout, 10k row cap
 
-export async function getSetting(key: string): Promise<string | null> {
-  const rows = await query('SELECT value FROM app_settings WHERE key=$1', [key]);
-  return rows.length ? rows[0].value : null;
-}
+### 7. `src/routes/sdui.ts`
+Server-Driven UI manifest routes.
+- GET `/api/public/ui-manifest?platform=mobile&user_id=...` — resolves active manifest (default + experiment assignments), returns JSON
+- GET `/api/admin/manifests` — list all
+- POST `/api/admin/manifests` — create new version
+- PATCH `/api/admin/manifests/:id` — update
+- POST `/api/admin/manifests/:id/publish` — set `enabled=true`, mark `published_at`
+- POST `/api/admin/manifests/:id/rollback` — switch `enabled` back to prior
+- CRUD `/api/admin/experiments`
+- GET `/api/public/brand` — convenience alias for just the `brand` subtree
 
-export async function getSettings(keys: string[]): Promise<Record<string, string>> {
-  if (!keys.length) return {};
-  const rows = await query(`SELECT key, value FROM app_settings WHERE key = ANY($1::text[])`, [keys]);
-  return Object.fromEntries(rows.map(r => [r.key, r.value]));
-}
+### 8. `src/routes/dpdp.ts`
+DPDP compliance routes.
+- POST `/api/me/consent` — record grant/withdraw for purpose
+- POST `/api/me/erasure-request` — user-initiated
+- GET `/api/admin/erasure-requests` (list)
+- POST `/api/admin/erasure-requests/:id/verify`
+- POST `/api/admin/erasure-requests/:id/preview` — dry run, returns `{table: rowcount}` map
+- POST `/api/admin/erasure-requests/:id/approve` — enters approval queue
+- GET `/api/admin/breach` (list)
+- POST `/api/admin/breach` — new incident
+- PATCH `/api/admin/breach/:id`
+- POST `/api/admin/breach/:id/report-pdf` — generate DPB PDF (stub — real impl in later task)
+- GET `/api/me/data-export` — user data JSON export
 
-export async function getAllPublicSettings(): Promise<Record<string, string>> {
-  const rows = await query(`SELECT key, value FROM app_settings WHERE is_secret = FALSE`);
-  return Object.fromEntries(rows.map(r => [r.key, r.value]));
-}
+### 9. Update `src/index.ts` to mount everything
 
-export async function setSetting(key: string, value: string, updatedBy?: string): Promise<void> {
-  await query(
-    `INSERT INTO app_settings (key, value, updated_by, updated_at) VALUES ($1,$2,$3,NOW())
-     ON CONFLICT (key) DO UPDATE SET value=$2, updated_by=$3, updated_at=NOW()`,
-    [key, value, updatedBy || null]
-  );
-}
-
-export async function incrSetting(key: string, delta: number): Promise<void> {
-  await query(
-    `INSERT INTO app_settings (key, value, updated_at) VALUES ($1,$2::text,NOW())
-     ON CONFLICT (key) DO UPDATE
-     SET value=(COALESCE(NULLIF(app_settings.value,'')::bigint,0)+$2)::text, updated_at=NOW()`,
-    [key, delta]
-  );
-}
-```
-
-### File: `src/services/audit.ts`
-```typescript
-import { query } from '../db/client';
-
-export async function audit(params: {
-  actorId?: string; actorType?: string; action: string;
-  targetType?: string; targetId?: string;
-  before?: any; after?: any; ip?: string; userAgent?: string;
-}) {
-  await query(
-    `INSERT INTO audit_log (actor_id, actor_type, action, target_type, target_id, before_state, after_state, ip_address, user_agent)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-    [params.actorId || null, params.actorType || 'user', params.action,
-     params.targetType || null, params.targetId || null,
-     params.before ? JSON.stringify(params.before) : null,
-     params.after ? JSON.stringify(params.after) : null,
-     params.ip || null, params.userAgent || null]
-  );
-}
-```
-
-### File: `src/services/tokens.ts`
-Complete ledger implementation per research: grant, consume (with reservation pattern), refund, expire.
-```typescript
-import { query, transaction } from '../db/client';
-
-export async function getBalance(userId: string): Promise<number> {
-  const rows = await query(`SELECT COALESCE(SUM(delta),0)::bigint AS balance FROM token_transactions WHERE user_id=$1`, [userId]);
-  return parseInt(rows[0]?.balance || '0');
-}
-
-export async function grantTokens(params: {
-  userId: string; amount: number; source: string; sourceRef?: string;
-  expiresAt?: Date; idempotencyKey?: string;
-}): Promise<string> {
-  return transaction(async (c) => {
-    const key = params.idempotencyKey;
-    if (key) {
-      const dup = await c.query('SELECT id FROM token_grants WHERE idempotency_key=$1', [key]);
-      if (dup.rows.length) return dup.rows[0].id;
-    }
-    const g = await c.query(
-      `INSERT INTO token_grants (user_id, amount, source, source_ref, expires_at, idempotency_key)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [params.userId, params.amount, params.source, params.sourceRef || null, params.expiresAt || null, key || null]
-    );
-    const grantId = g.rows[0].id;
-    await c.query(
-      `INSERT INTO token_transactions (user_id, delta, kind, grant_id, idempotency_key)
-       VALUES ($1,$2,'grant',$3,$4)`,
-      [params.userId, params.amount, grantId, key ? `${key}:grant` : null]
-    );
-    return grantId;
-  });
-}
-
-export async function consumeTokens(params: {
-  userId: string; amount: number; reason: string; jobId?: string; idempotencyKey?: string;
-}): Promise<boolean> {
-  return transaction(async (c) => {
-    await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`tokens:${params.userId}`]);
-    const bal = await c.query(`SELECT COALESCE(SUM(delta),0)::bigint AS b FROM token_transactions WHERE user_id=$1`, [params.userId]);
-    if (parseInt(bal.rows[0].b) < params.amount) return false;
-    await c.query(
-      `INSERT INTO token_transactions (user_id, delta, kind, job_id, reason, idempotency_key)
-       VALUES ($1, -$2, 'consume', $3, $4, $5)`,
-      [params.userId, params.amount, params.jobId || null, params.reason, params.idempotencyKey || null]
-    );
-    return true;
-  });
-}
-
-export async function refundTokens(params: {
-  userId: string; amount: number; reason: string; idempotencyKey?: string;
-}): Promise<void> {
-  await query(
-    `INSERT INTO token_transactions (user_id, delta, kind, reason, idempotency_key)
-     VALUES ($1, $2, 'refund', $3, $4)`,
-    [params.userId, params.amount, params.reason, params.idempotencyKey || null]
-  );
-}
-```
-
-### File: `src/scoring/scoreLead.ts`
-Port exactly from PDF (pg 6-8). Export `scoreLead`, `detectICP`, constants.
-
-### File: `src/index.ts` — rewrite the scaffold index.ts
 ```typescript
 import express from 'express';
 import cors from 'cors';
@@ -329,24 +292,51 @@ import { config } from './config';
 import { logger } from './logger';
 import { errorHandler } from './middleware/error';
 import { ipLimit } from './middleware/rateLimit';
+import { requireAuth, requireAdmin } from './middleware/auth';
+
+import authRouter from './routes/auth';
+import leadsRouter from './routes/leads';
+import scrapeRouter from './routes/scrape';
+import billingRouter from './routes/billing';
+import webhooksRouter from './routes/webhooks';
+import adminRouter from './routes/admin';
+import sduiRouter from './routes/sdui';
+import dpdpRouter from './routes/dpdp';
+import { attachSSE } from './sse/bus';
 
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: config.corsOrigins, credentials: true }));
+
+// Webhooks BEFORE json parser (need raw body for signature verification)
+app.use('/webhook', webhooksRouter);
+
+// Rest of middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(pinoHttp({ logger }));
 app.use(ipLimit);
 
-app.get('/health', (_req, res) => res.json({
-  status: 'ok', time: new Date().toISOString(), uptime: process.uptime(), version: '0.1.0',
-}));
+// Public
+app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime(), version: '0.1.0' }));
+app.use('/api/auth', authRouter);
+app.use('/api/public', sduiRouter);
 
-// Routes mounted in next task
-// app.use('/api/auth', authRouter);
-// app.use('/api/leads', leadsRouter);
-// ... etc
+// Auth required
+app.use('/api/me', requireAuth, dpdpRouter);
+app.use('/api/leads', requireAuth, leadsRouter);
+app.use('/api/scrape', requireAuth, scrapeRouter);
+app.use('/api/billing', requireAuth, billingRouter);
+
+// Admin
+app.use('/api/admin', requireAdmin, adminRouter);
+app.use('/api/admin', requireAdmin, sduiRouter); // admin manifest routes
+app.use('/api/admin', requireAdmin, dpdpRouter); // admin DPDP routes
+
+// SSE
+app.get('/api/admin/live', requireAdmin, (req, res) => attachSSE(res, ['*']));
+app.get('/api/me/live', requireAuth, (req: any, res) => attachSSE(res, [`user:${req.user.id}`]));
 
 app.use(errorHandler);
 
@@ -354,32 +344,37 @@ const server = app.listen(config.port, () => {
   logger.info(`Indi-gen API on :${config.port} (env: ${config.nodeEnv})`);
 });
 
-// graceful shutdown
 process.on('SIGTERM', () => { logger.info('SIGTERM, closing'); server.close(() => process.exit(0)); });
 ```
 
-### Dependencies to add
-Run: `npm install bcrypt @types/bcrypt pino-http pino-pretty helmet --save`
-
-### Server health check
-Start the server: `npm run dev` in a terminal. It should log "Indi-gen API on :3001" with the pretty formatter. `curl http://localhost:3001/health` should return OK. Kill the server after confirming.
-
-### Tests (basic)
-Create `server/src/__tests__/health.test.ts`:
+### 10. Add `src/services/cashfree.ts`
 ```typescript
-import { describe, test, expect } from 'vitest';
-// placeholder — real tests in later task
-describe('smoke', () => { test('true', () => { expect(true).toBe(true); }); });
-```
-Add `vitest` to devDependencies + `test: "vitest run"` to scripts.
+import { Cashfree, CFEnvironment } from 'cashfree-pg';
+import { config } from '../config';
 
-### Commit
+const env = config.cashfree.env === 'PRODUCTION' ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
+export const cashfree = new Cashfree(env, config.cashfree.appId, config.cashfree.secret);
+```
+
+### 11. Port `src/scraper/claudeFilter.ts` from the PDF (exactly, with rejection learning + batch of 8)
+
+### 12. Port `src/enrichment/signalhire.ts` from the PDF (exactly)
+
+### 13. Add `src/cron/scrapeJob.ts` — port from PDF + replace `scrapeLinkedIn` call with call to Python scraper service HTTP POST `/scrape/search`, poll job
+
+## Additional
+- Add `uuid` + `@types/uuid` to server dependencies: `npm install uuid; npm install -D @types/uuid`
+- Zod: `npm install zod`
+- Any other missing deps, install them
+
+## Testing (keep it brief — do NOT run npm run dev / do NOT start servers)
+- `npx tsc --noEmit` in server/ — must pass with zero errors. That's the ONLY verification. Do NOT start the dev server (causes hangs). Do NOT run long validation commands.
+
+## Commit
 ```
 git add -A
-git commit -m "feat(server): core middleware, auth/jwt, tokens ledger, SSE bus, scoring"
+git commit -m "feat(server): auth, leads, scrape proxy, billing, webhooks, admin, SDUI, DPDP routes"
 git push origin master
 ```
 
-Report back: files touched, dev server boot log snippet, final SHA.
-
-Work fully autonomously.
+Report: files touched, `tsc` output (should be clean), SHA. Fully autonomous.
