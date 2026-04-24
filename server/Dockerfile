@@ -1,16 +1,18 @@
 FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
+WORKDIR /app/server
+COPY server/package*.json ./
 RUN npm ci
-COPY . .
-RUN npm run build
+COPY server/tsconfig.json ./
+COPY server/src ./src
+COPY db /app/db
 
-FROM node:20-alpine AS runtime
-WORKDIR /app
-ENV NODE_ENV=production
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
+FROM node:20-alpine
+WORKDIR /app/server
+RUN apk add --no-cache wget tini
+COPY --from=builder /app/server/node_modules ./node_modules
+COPY --from=builder /app/server/src ./src
+COPY --from=builder /app/db /app/db
+COPY server/package*.json server/tsconfig.json ./
 EXPOSE 3001
-USER node
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["npx", "tsx", "src/index.ts"]

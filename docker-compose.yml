@@ -1,90 +1,141 @@
-version: '3.9'
-
 services:
   postgres:
-    image: postgres:16
-    container_name: leadhangover-postgres
+    image: postgres:16-alpine
+    container_name: indigen-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: indigen
+      POSTGRES_USER: ${POSTGRES_USER:-indigen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-indigen}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
-    networks:
-      - leadhangover
+    networks: [indigen-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: leadhangover-redis
+    container_name: indigen-redis
     restart: unless-stopped
-    ports:
-      - '6379:6379'
-    networks:
-      - leadhangover
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    networks: [indigen-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   server:
     build:
-      context: ./server
-    container_name: leadhangover-server
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: indigen-server
     restart: unless-stopped
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/indigen
-      REDIS_URL: redis://redis:6379
     depends_on:
-      - postgres
-      - redis
-    networks:
-      - leadhangover
-    expose:
-      - '3001'
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-indigen}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-indigen}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      SCRAPER_SERVICE_URL: http://scraper:8000
+      CASHFREE_APP_ID: ${CASHFREE_APP_ID}
+      CASHFREE_SECRET_KEY: ${CASHFREE_SECRET_KEY}
+      CASHFREE_ENV: ${CASHFREE_ENV:-TEST}
+      CASHFREE_WEBHOOK_SECRET: ${CASHFREE_WEBHOOK_SECRET}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      SIGNALHIRE_API_KEY: ${SIGNALHIRE_API_KEY}
+      CORS_ORIGINS: https://leadgen.indigenservices.com,https://${DOMAIN:-leadgen.indigenservices.com}
+    ports:
+      - "127.0.0.1:3001:3001"
+    networks: [indigen-net]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   scraper:
     build:
       context: ./scraper-service
-    container_name: leadhangover-scraper
+      dockerfile: Dockerfile
+    container_name: indigen-scraper
     restart: unless-stopped
-    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       REDIS_URL: redis://redis:6379
+      COOKIE_DIR: /app/data/cookies
+      LOG_LEVEL: INFO
+      PORT: 8000
+      PROXY_URL: ${PROXY_URL:-}
+      RATE_LIMIT_PER_HOUR: ${SCRAPER_RATE_LIMIT:-600}
+    volumes:
+      - scraper_cookies:/app/data/cookies
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks: [indigen-net]
+
+  scraper_worker:
+    build:
+      context: ./scraper-service
+      dockerfile: Dockerfile
+    container_name: indigen-scraper-worker
+    restart: unless-stopped
     depends_on:
-      - redis
-    networks:
-      - leadhangover
-    expose:
-      - '8000'
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis://redis:6379
+      COOKIE_DIR: /app/data/cookies
+      LOG_LEVEL: INFO
+      PROXY_URL: ${PROXY_URL:-}
+    volumes:
+      - scraper_cookies:/app/data/cookies
+    command: python start_worker.py
+    networks: [indigen-net]
 
   admin:
     build:
       context: ./admin
-    container_name: leadhangover-admin
-    restart: unless-stopped
-    networks:
-      - leadhangover
-    expose:
-      - '80'
-
-  nginx:
-    image: nginx:alpine
-    container_name: leadhangover-nginx
+      dockerfile: Dockerfile
+    container_name: indigen-admin
     restart: unless-stopped
     ports:
-      - '80:80'
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - "127.0.0.1:5173:80"
+    networks: [indigen-net]
+
+  migrate:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: indigen-migrate
     depends_on:
-      - server
-      - scraper
-      - admin
-    networks:
-      - leadhangover
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-indigen}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-indigen}
+      JWT_SECRET: ${JWT_SECRET}
+    command: ["npm", "run", "migrate"]
+    restart: "no"
+    networks: [indigen-net]
 
 volumes:
   postgres_data:
+  redis_data:
+  scraper_cookies:
 
 networks:
-  leadhangover:
+  indigen-net:
     driver: bridge
