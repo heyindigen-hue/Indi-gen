@@ -14,10 +14,10 @@ const router = Router();
 // Stats
 router.get('/stats', async (_req, res) => {
   const [mrr, dau, leadsToday, scrapeToday, topUsers] = await Promise.all([
-    query(`SELECT COALESCE(SUM(p.price_monthly),0) AS mrr FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.status='active'`),
+    query(`SELECT COALESCE(SUM(p.price_inr),0) AS mrr FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.status='active'`),
     query(`SELECT COUNT(DISTINCT user_id)::int AS dau FROM active_sessions WHERE created_at > NOW()-INTERVAL '24h' AND revoked_at IS NULL`),
     query(`SELECT COUNT(*)::int AS count FROM leads WHERE created_at > NOW()-INTERVAL '24h'`),
-    query(`SELECT COUNT(*)::int AS count FROM scrape_jobs WHERE created_at > NOW()-INTERVAL '24h'`),
+    query(`SELECT COUNT(*)::int AS count FROM scraper_runs WHERE started_at > NOW()-INTERVAL '24h'`),
     query(`SELECT u.id, u.email, COUNT(l.id) AS lead_count FROM users u LEFT JOIN leads l ON l.owner_id=u.id GROUP BY u.id ORDER BY lead_count DESC LIMIT 5`),
   ]);
   res.json({

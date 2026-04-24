@@ -34,7 +34,7 @@ const feedbackSchema = z.object({
 router.get('/', async (req: any, res) => {
   const { status, icp, score_min, q, limit = '50', offset = '0' } = req.query;
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
-  const conditions: string[] = ['l.deleted_at IS NULL'];
+  const conditions: string[] = ['1=1'];
   const params: any[] = [];
 
   if (!isAdmin) {
@@ -45,7 +45,7 @@ router.get('/', async (req: any, res) => {
     params.push(status);
     conditions.push(`l.status = $${params.length}`);
   }
-  if (icp === 'true') conditions.push('l.is_icp = TRUE');
+  if (icp === 'true') conditions.push('l.icp_type IS NOT NULL');
   if (score_min) {
     params.push(parseInt(score_min as string));
     conditions.push(`l.score >= $${params.length}`);
@@ -53,7 +53,7 @@ router.get('/', async (req: any, res) => {
   if (q) {
     params.push(`%${q}%`);
     const idx = params.length;
-    conditions.push(`(l.full_name ILIKE $${idx} OR l.company ILIKE $${idx} OR l.email ILIKE $${idx})`);
+    conditions.push(`(l.name ILIKE $${idx} OR l.company ILIKE $${idx} OR l.linkedin_url ILIKE $${idx})`);
   }
 
   const where = conditions.join(' AND ');
@@ -77,7 +77,7 @@ router.get('/', async (req: any, res) => {
 router.get('/:id', async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT l.* FROM leads l WHERE l.id=$1 AND l.deleted_at IS NULL ${isAdmin ? '' : 'AND l.owner_id=$2'}`,
+    `SELECT l.* FROM leads l WHERE l.id=$1  ${isAdmin ? '' : 'AND l.owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -92,7 +92,7 @@ router.get('/:id', async (req: any, res) => {
 router.patch('/:id/status', validateBody(statusUpdateSchema), async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT id, status FROM leads WHERE id=$1 AND deleted_at IS NULL ${isAdmin ? '' : 'AND owner_id=$2'}`,
+    `SELECT id, status FROM leads WHERE id=$1 ${isAdmin ? '' : 'AND owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -104,7 +104,7 @@ router.patch('/:id/status', validateBody(statusUpdateSchema), async (req: any, r
 router.patch('/:id/notes', validateBody(notesUpdateSchema), async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT id FROM leads WHERE id=$1 AND deleted_at IS NULL ${isAdmin ? '' : 'AND owner_id=$2'}`,
+    `SELECT id FROM leads WHERE id=$1 ${isAdmin ? '' : 'AND owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -115,7 +115,7 @@ router.patch('/:id/notes', validateBody(notesUpdateSchema), async (req: any, res
 router.post('/:id/enrich', async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT id, email, linkedin_url FROM leads WHERE id=$1 AND deleted_at IS NULL ${isAdmin ? '' : 'AND owner_id=$2'}`,
+    `SELECT id, email, linkedin_url FROM leads WHERE id=$1 ${isAdmin ? '' : 'AND owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -132,7 +132,7 @@ router.post('/:id/enrich', async (req: any, res) => {
 router.post('/:id/outreach', validateBody(outreachSchema), async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT id FROM leads WHERE id=$1 AND deleted_at IS NULL ${isAdmin ? '' : 'AND owner_id=$2'}`,
+    `SELECT id FROM leads WHERE id=$1 ${isAdmin ? '' : 'AND owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -150,7 +150,7 @@ router.post('/:id/outreach', validateBody(outreachSchema), async (req: any, res)
 router.get('/:id/outreach', async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT id FROM leads WHERE id=$1 AND deleted_at IS NULL ${isAdmin ? '' : 'AND owner_id=$2'}`,
+    `SELECT id FROM leads WHERE id=$1 ${isAdmin ? '' : 'AND owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -177,7 +177,7 @@ router.post('/manual', validateBody(manualLeadSchema), async (req: any, res) => 
 router.post('/:id/drafts', async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT l.* FROM leads l WHERE l.id=$1 AND l.deleted_at IS NULL ${isAdmin ? '' : 'AND l.owner_id=$2'}`,
+    `SELECT l.* FROM leads l WHERE l.id=$1  ${isAdmin ? '' : 'AND l.owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });

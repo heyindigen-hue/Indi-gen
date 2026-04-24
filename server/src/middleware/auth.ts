@@ -23,8 +23,12 @@ export async function requireAuth(req: AuthedReq, res: Response, next: NextFunct
 }
 
 export function requireRole(...roles: string[]) {
-  return (req: AuthedReq, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  return async (req: AuthedReq, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      // run requireAuth inline first
+      await new Promise<void>((resolve) => requireAuth(req, res, () => resolve()));
+      if (!req.user) return; // requireAuth already responded 401
+    }
     if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
     next();
   };

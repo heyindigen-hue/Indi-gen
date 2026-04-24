@@ -7,7 +7,7 @@ import { refundTokens } from '../services/tokens';
 
 async function pollRunningJobs(): Promise<void> {
   const jobs = await query(
-    `SELECT * FROM scrape_jobs WHERE status='running' AND created_at > NOW()-INTERVAL '2 hours'`
+    `SELECT * FROM scraper_runs WHERE status='running' AND created_at > NOW()-INTERVAL '2 hours'`
   );
 
   for (const job of jobs) {
@@ -47,7 +47,7 @@ async function pollRunningJobs(): Promise<void> {
         }
 
         await query(
-          `UPDATE scrape_jobs SET status='completed', actual_count=$1, completed_at=NOW() WHERE id=$2`,
+          `UPDATE scraper_runs SET status='completed', actual_count=$1, completed_at=NOW() WHERE id=$2`,
           [actualCount, job.id]
         );
         logger.info({ jobId: job.job_id, leadsInserted: actualCount }, 'Scrape job completed via cron poll');
@@ -58,7 +58,7 @@ async function pollRunningJobs(): Promise<void> {
           reason: 'scrape_job_failed',
           idempotencyKey: `scrape:refund:cron:${job.job_id}`,
         });
-        await query(`UPDATE scrape_jobs SET status='failed', completed_at=NOW() WHERE id=$1`, [job.id]);
+        await query(`UPDATE scraper_runs SET status='failed', completed_at=NOW() WHERE id=$1`, [job.id]);
         logger.warn({ jobId: job.job_id }, 'Scrape job failed');
       }
     } catch (err: any) {
@@ -69,7 +69,7 @@ async function pollRunningJobs(): Promise<void> {
 
 async function timeoutStaleJobs(): Promise<void> {
   const stale = await query(
-    `SELECT id, user_id, token_reserve, job_id FROM scrape_jobs
+    `SELECT id, user_id, token_reserve, job_id FROM scraper_runs
      WHERE status='running' AND created_at < NOW()-INTERVAL '2 hours'`
   );
 
@@ -80,7 +80,7 @@ async function timeoutStaleJobs(): Promise<void> {
       reason: 'scrape_timeout',
       idempotencyKey: `scrape:timeout:${job.job_id}`,
     });
-    await query(`UPDATE scrape_jobs SET status='failed', completed_at=NOW() WHERE id=$1`, [job.id]);
+    await query(`UPDATE scraper_runs SET status='failed', completed_at=NOW() WHERE id=$1`, [job.id]);
     logger.warn({ jobId: job.job_id }, 'Scrape job timed out');
   }
 }

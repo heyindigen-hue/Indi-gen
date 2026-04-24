@@ -18,7 +18,7 @@ import adminRouter from './routes/admin';
 import sduiRouter from './routes/sdui';
 import dpdpRouter from './routes/dpdp';
 import { attachSSE } from './sse/bus';
-import { startScrapeJobCron } from './cron/scrapeJob';
+// import { startScrapeJobCron } from './cron/scrapeJob';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -50,17 +50,17 @@ app.use('/api/scrape', requireAuth, scrapeRouter);
 app.use('/api/billing', requireAuth, billingRouter);
 
 // Admin
-app.use('/api/admin', requireAdmin, adminRouter);
-app.use('/api/admin', requireAdmin, sduiRouter);
-app.use('/api/admin', requireAdmin, dpdpRouter);
+app.use("/api/admin", requireAuth, requireAdmin, adminRouter);
+app.use("/api/admin", requireAuth, requireAdmin, sduiRouter);
+app.use("/api/admin", requireAuth, requireAdmin, dpdpRouter);
 
 // SSE
-app.get('/api/admin/live', requireAdmin, (req, res) => attachSSE(res, ['*']));
+app.get("/api/admin/live", requireAuth, requireAdmin, (req, res) => attachSSE(res, ['*']));
 app.get('/api/me/live', requireAuth, (req: any, res) => attachSSE(res, [`user:${req.user.id}`]));
 
 app.use(errorHandler);
 
-startScrapeJobCron();
+// startScrapeJobCron() - disabled pending fix;
 
 const server = app.listen(config.port, () => {
   logger.info(`Indi-gen API on :${config.port} (env: ${config.nodeEnv})`);
