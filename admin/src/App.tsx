@@ -6,6 +6,13 @@ import UsersPage from '@/pages/users/index';
 import UserDetailPage from '@/pages/users/[id]';
 import InvitesPage from '@/pages/users/invites';
 import WaitlistPage from '@/pages/users/waitlist';
+import LeadsPage from '@/pages/leads/index';
+import EnrichmentPage from '@/pages/leads/enrichment';
+import AddLeadPage from '@/pages/leads/add';
+import ScrapersPage from '@/pages/scrapers/index';
+import ScraperRunsPage from '@/pages/scrapers/runs';
+import ScraperAccountsPage from '@/pages/scrapers/accounts';
+import ScraperSchedulesPage from '@/pages/scrapers/schedules';
 import { useAuth } from '@/store/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -61,14 +68,18 @@ export default function App() {
         <Route path="users/roles" element={<PlaceholderPage title="Roles & Permissions" />} />
 
         {/* Leads */}
-        <Route path="leads" element={<PlaceholderPage title="Leads" description="Manage and review leads" />} />
+        <Route path="leads" element={<LeadsPage />} />
+        <Route path="leads/enrichment" element={<EnrichmentPage />} />
+        <Route path="leads/add" element={<AddLeadPage />} />
         <Route path="leads/scoring" element={<PlaceholderPage title="Lead Scoring" />} />
         <Route path="leads/export" element={<PlaceholderPage title="Lead Export" />} />
 
         {/* Scrapers */}
-        <Route path="scrapers" element={<PlaceholderPage title="Scraper Jobs" description="Monitor scraping jobs" />} />
+        <Route path="scrapers" element={<ScrapersPage />} />
+        <Route path="scrapers/runs" element={<ScraperRunsPage />} />
+        <Route path="scrapers/accounts" element={<ScraperAccountsPage />} />
+        <Route path="scrapers/schedules" element={<ScraperSchedulesPage />} />
         <Route path="scrapers/sources" element={<PlaceholderPage title="Scraper Sources" />} />
-        <Route path="scrapers/schedules" element={<PlaceholderPage title="Scraper Schedules" />} />
         <Route path="scrapers/logs" element={<PlaceholderPage title="Scraper Logs" />} />
 
         {/* AI */}
