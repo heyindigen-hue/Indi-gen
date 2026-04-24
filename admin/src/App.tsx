@@ -1,47 +1,123 @@
-import { Routes, Route } from 'react-router-dom';
-import DashboardPage from './pages/dashboard';
-import UsersPage from './pages/users';
-import LeadsPage from './pages/leads';
-import ScrapersPage from './pages/scrapers';
-import AiPage from './pages/ai';
-import IntegrationsPage from './pages/integrations';
-import SourcesPage from './pages/sources';
-import FinancialPage from './pages/financial';
-import GrowthPage from './pages/growth';
-import SupportPage from './pages/support';
-import PlatformPage from './pages/platform';
-import MobilePage from './pages/mobile';
-import TeamPage from './pages/team';
-import ConfigPage from './pages/config';
-import SecurityPage from './pages/security';
-import DeveloperPage from './pages/developer';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { AppShell } from '@/components/layout/AppShell';
+import Login from '@/pages/Login';
+import { useAuth } from '@/store/auth';
+import { PageHeader } from '@/components/common/PageHeader';
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const token = useAuth((s) => s.token);
+  if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+function PlaceholderPage({ title, description }: { title: string; description?: string }) {
+  return (
+    <div>
+      <PageHeader title={title} description={description} />
+      <div className="flex items-center justify-center h-64 border border-dashed border-border rounded-lg">
+        <p className="text-sm text-muted-foreground">Coming soon</p>
+      </div>
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-foreground">404</h1>
+        <p className="text-muted-foreground mt-2">Page not found</p>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b p-4">
-        <h1 className="text-xl font-bold">Indi-gen Admin — scaffold ready</h1>
-      </header>
-      <main className="p-4">
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/users" element={<UsersPage />} />
-          <Route path="/leads" element={<LeadsPage />} />
-          <Route path="/scrapers" element={<ScrapersPage />} />
-          <Route path="/ai" element={<AiPage />} />
-          <Route path="/integrations" element={<IntegrationsPage />} />
-          <Route path="/sources" element={<SourcesPage />} />
-          <Route path="/financial" element={<FinancialPage />} />
-          <Route path="/growth" element={<GrowthPage />} />
-          <Route path="/support" element={<SupportPage />} />
-          <Route path="/platform" element={<PlatformPage />} />
-          <Route path="/mobile" element={<MobilePage />} />
-          <Route path="/team" element={<TeamPage />} />
-          <Route path="/config" element={<ConfigPage />} />
-          <Route path="/security" element={<SecurityPage />} />
-          <Route path="/developer" element={<DeveloperPage />} />
-        </Routes>
-      </main>
-    </div>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/"
+        element={
+          <RequireAuth>
+            <AppShell />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<PlaceholderPage title="Dashboard" description="Overview of your platform" />} />
+
+        {/* Users */}
+        <Route path="users" element={<PlaceholderPage title="Users" description="Manage all registered users" />} />
+        <Route path="users/verification" element={<PlaceholderPage title="User Verification" />} />
+        <Route path="users/activity" element={<PlaceholderPage title="User Activity" />} />
+        <Route path="users/roles" element={<PlaceholderPage title="Roles & Permissions" />} />
+
+        {/* Leads */}
+        <Route path="leads" element={<PlaceholderPage title="Leads" description="Manage and review leads" />} />
+        <Route path="leads/scoring" element={<PlaceholderPage title="Lead Scoring" />} />
+        <Route path="leads/export" element={<PlaceholderPage title="Lead Export" />} />
+
+        {/* Scrapers */}
+        <Route path="scrapers" element={<PlaceholderPage title="Scraper Jobs" description="Monitor scraping jobs" />} />
+        <Route path="scrapers/sources" element={<PlaceholderPage title="Scraper Sources" />} />
+        <Route path="scrapers/schedules" element={<PlaceholderPage title="Scraper Schedules" />} />
+        <Route path="scrapers/logs" element={<PlaceholderPage title="Scraper Logs" />} />
+
+        {/* AI */}
+        <Route path="ai" element={<PlaceholderPage title="AI Models" description="Manage AI configuration" />} />
+        <Route path="ai/prompts" element={<PlaceholderPage title="AI Prompts" />} />
+        <Route path="ai/usage" element={<PlaceholderPage title="AI Usage" />} />
+
+        {/* Integrations */}
+        <Route
+          path="integrations"
+          element={<PlaceholderPage title="Integrations" description="Manage third-party integrations" />}
+        />
+        <Route path="integrations/webhooks" element={<PlaceholderPage title="Webhooks" />} />
+        <Route path="integrations/api-keys" element={<PlaceholderPage title="API Keys" />} />
+        <Route path="integrations/oauth" element={<PlaceholderPage title="OAuth Apps" />} />
+        <Route path="integrations/linkedin" element={<PlaceholderPage title="LinkedIn Integration" />} />
+        <Route path="integrations/crm" element={<PlaceholderPage title="CRM Integration" />} />
+        <Route path="integrations/notifications" element={<PlaceholderPage title="Notification Channels" />} />
+
+        {/* Billing */}
+        <Route path="billing" element={<PlaceholderPage title="Billing" description="Revenue and subscriptions" />} />
+        <Route path="billing/plans" element={<PlaceholderPage title="Plans" />} />
+        <Route path="billing/transactions" element={<PlaceholderPage title="Transactions" />} />
+        <Route path="billing/credits" element={<PlaceholderPage title="Credits" />} />
+        <Route path="billing/gst" element={<PlaceholderPage title="GST Reports" />} />
+
+        {/* Mobile UI */}
+        <Route
+          path="mobile-ui"
+          element={<PlaceholderPage title="Mobile UI" description="SDUI screen management" />}
+        />
+        <Route path="mobile-ui/navigation" element={<PlaceholderPage title="Navigation" />} />
+        <Route path="mobile-ui/components" element={<PlaceholderPage title="Components" />} />
+        <Route path="mobile-ui/themes" element={<PlaceholderPage title="Themes" />} />
+        <Route path="mobile-ui/assets" element={<PlaceholderPage title="Assets" />} />
+        <Route path="mobile-ui/announcements" element={<PlaceholderPage title="Announcements" />} />
+
+        {/* Settings */}
+        <Route path="settings" element={<PlaceholderPage title="Settings" description="Platform configuration" />} />
+        <Route path="settings/emails" element={<PlaceholderPage title="Email Settings" />} />
+        <Route path="settings/maintenance" element={<PlaceholderPage title="Maintenance Mode" />} />
+        <Route path="settings/features" element={<PlaceholderPage title="Feature Flags" />} />
+        <Route path="settings/dpdp" element={<PlaceholderPage title="DPDP Compliance" />} />
+        <Route path="settings/audit" element={<PlaceholderPage title="Audit Log" />} />
+
+        {/* Security */}
+        <Route path="security" element={<PlaceholderPage title="Security" description="Platform security overview" />} />
+        <Route path="security/sessions" element={<PlaceholderPage title="Active Sessions" />} />
+        <Route path="security/ip-allowlist" element={<PlaceholderPage title="IP Allowlist" />} />
+        <Route path="security/rate-limits" element={<PlaceholderPage title="Rate Limits" />} />
+        <Route path="security/alerts" element={<PlaceholderPage title="Security Alerts" />} />
+
+        {/* Platform */}
+        <Route path="platform" element={<PlaceholderPage title="Platform" description="Infrastructure overview" />} />
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 }
