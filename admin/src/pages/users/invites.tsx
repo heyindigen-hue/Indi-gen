@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { MailPlus, MoreHorizontal, RefreshCw, X } from 'lucide-react';
+import { MailIcon, FilterIcon, RefreshIcon, XIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { relTime } from '@/lib/utils';
@@ -142,7 +142,7 @@ export default function InvitesPage() {
         subtitle={isLoading ? 'Loading...' : `${data?.total ?? 0} pending`}
         actions={
           <Button size="sm" onClick={() => setNewOpen(true)}>
-            <MailPlus className="h-4 w-4 mr-1" />
+            <MailIcon size={16} className="mr-1" />
             New invite
           </Button>
         }
@@ -191,19 +191,19 @@ export default function InvitesPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
+                          <FilterIcon size={16} />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => resend.mutate(inv.id)}>
-                          <RefreshCw className="h-4 w-4 mr-2" />
+                          <RefreshIcon size={16} className="mr-2" />
                           Resend
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => revoke.mutate(inv.id)}
                         >
-                          <X className="h-4 w-4 mr-2" />
+                          <XIcon size={16} className="mr-2" />
                           Revoke
                         </DropdownMenuItem>
                       </DropdownMenuContent>

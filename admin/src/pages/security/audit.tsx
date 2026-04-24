@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowRightIcon, ChevronRightIcon, XIcon } from '@/icons';
 import ReactDiffViewer from 'react-diff-viewer-continued';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
@@ -268,7 +268,7 @@ export default function AuditPage() {
         </div>
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters}>
-            <X className="h-3.5 w-3.5 mr-1" />
+            <XIcon size={14} className="mr-1" />
             Clear
           </Button>
         )}
@@ -387,7 +387,7 @@ export default function AuditPage() {
             disabled={page === 0}
             onClick={() => setPage((p) => p - 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ArrowRightIcon size={16} className="rotate-180" />
             Prev
           </Button>
           <Button
@@ -397,7 +397,7 @@ export default function AuditPage() {
             onClick={() => setPage((p) => p + 1)}
           >
             Next
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRightIcon size={16} />
           </Button>
         </div>
       </div>

@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Check, Info, Loader2, Plus, Trash2, X } from 'lucide-react';
+import { CheckIcon, AlertCircleIcon, PlusIcon, TrashIcon, XIcon } from '@/icons';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -120,11 +120,11 @@ export default function ScraperAccountsPage() {
       cell: ({ getValue }) =>
         getValue() ? (
           <span className="flex items-center gap-1 text-green-500 text-sm">
-            <Check className="h-3.5 w-3.5" /> Valid
+            <CheckIcon size={14} /> Valid
           </span>
         ) : (
           <span className="flex items-center gap-1 text-red-500 text-sm">
-            <X className="h-3.5 w-3.5" /> Invalid
+            <XIcon size={14} /> Invalid
           </span>
         ),
       size: 100,
@@ -202,7 +202,7 @@ export default function ScraperAccountsPage() {
             disabled={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(row.original.id)}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <TrashIcon size={14} />
           </Button>
         </div>
       ),
@@ -230,7 +230,7 @@ export default function ScraperAccountsPage() {
           >
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="h-4 w-4 mr-1" />
+                <PlusIcon size={16} className="mr-1" />
                 Add Account
               </Button>
             </DialogTrigger>
@@ -283,10 +283,7 @@ export default function ScraperAccountsPage() {
                     Cancel
                   </Button>
                   <Button type="submit" disabled={addMutation.isPending}>
-                    {addMutation.isPending && (
-                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    )}
-                    Add account
+                    {addMutation.isPending ? 'Adding...' : 'Add account'}
                   </Button>
                 </DialogFooter>
               </form>
@@ -297,7 +294,7 @@ export default function ScraperAccountsPage() {
 
       {/* Security callout */}
       <div className="flex items-start gap-2 p-3 mb-5 rounded-lg border border-border bg-muted/50 text-sm">
-        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+        <AlertCircleIcon size={16} className="text-muted-foreground shrink-0 mt-0.5" />
         <span className="text-muted-foreground">
           Credentials are encrypted at rest. Passwords are never stored in plain text or logged.
         </span>

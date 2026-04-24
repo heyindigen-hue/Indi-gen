@@ -8,7 +8,7 @@ import {
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
-import { ChevronDown, ChevronUp, ChevronsUpDown, FileText } from 'lucide-react';
+import { ChevronDownIcon, ChevronUpIcon, ArrowRightIcon, EyeIcon } from '@/icons';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -153,7 +153,7 @@ export default function ScraperRunsPage() {
             setSelectedRun(row.original);
           }}
         >
-          <FileText className="h-4 w-4" />
+          <EyeIcon size={16} />
         </Button>
       ),
       size: 48,
@@ -209,11 +209,11 @@ export default function ScraperRunsPage() {
                       {header.column.getCanSort() && (
                         <span className="text-muted-foreground">
                           {header.column.getIsSorted() === 'asc' ? (
-                            <ChevronUp className="h-3 w-3" />
+                            <ChevronUpIcon size={12} />
                           ) : header.column.getIsSorted() === 'desc' ? (
-                            <ChevronDown className="h-3 w-3" />
+                            <ChevronDownIcon size={12} />
                           ) : (
-                            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+                            <ArrowRightIcon size={12} className="opacity-40 rotate-90" />
                           )}
                         </span>
                       )}

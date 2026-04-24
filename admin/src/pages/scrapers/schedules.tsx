@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Plus } from 'lucide-react';
+import { CalendarIcon, PlusIcon } from '@/icons';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -115,7 +115,7 @@ export default function ScraperSchedulesPage() {
         subtitle="Configure when scraper jobs run automatically"
         actions={
           <Button size="sm" onClick={() => setNewOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
+            <PlusIcon size={16} className="mr-1" />
             New Schedule
           </Button>
         }
@@ -127,10 +127,10 @@ export default function ScraperSchedulesPage() {
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
         ) : schedules.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 border border-dashed border-border rounded-lg">
-            <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
+            <CalendarIcon size={32} className="text-muted-foreground mb-2" />
             <p className="text-sm text-muted-foreground">No schedules yet</p>
             <Button size="sm" variant="outline" className="mt-3" onClick={() => setNewOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
+              <PlusIcon size={16} className="mr-1" />
               Create first schedule
             </Button>
           </div>

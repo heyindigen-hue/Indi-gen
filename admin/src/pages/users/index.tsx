@@ -11,17 +11,16 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import {
-  Ban,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  ChevronsUpDown,
-  Download,
-  Gift,
-  MessageSquare,
-  UserPlus,
-} from 'lucide-react';
+  XIcon,
+  ChevronDownIcon,
+  ArrowRightIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  DownloadIcon,
+  StarIcon,
+  SendIcon,
+  UserIcon,
+} from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, formatINR, relTime } from '@/lib/utils';
@@ -306,11 +305,11 @@ export default function UsersPage() {
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => navigate('/users/invites')}>
-              <UserPlus className="h-4 w-4 mr-1" />
+              <UserIcon size={16} className="mr-1" />
               Invite
             </Button>
             <Button variant="outline" size="sm" onClick={() => toast.info('Export started')}>
-              <Download className="h-4 w-4 mr-1" />
+              <DownloadIcon size={16} className="mr-1" />
               Export CSV
             </Button>
           </>
@@ -361,7 +360,7 @@ export default function UsersPage() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 text-sm gap-1">
               Saved views
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDownIcon size={14} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -385,7 +384,7 @@ export default function UsersPage() {
               className="h-7 text-xs"
               onClick={() => toast.info('Navigate to a user to grant tokens')}
             >
-              <Gift className="h-3 w-3 mr-1" />
+              <StarIcon size={12} className="mr-1" />
               Grant tokens
             </Button>
             <Button
@@ -394,7 +393,7 @@ export default function UsersPage() {
               className="h-7 text-xs"
               onClick={() => toast.info('Bulk message coming soon')}
             >
-              <MessageSquare className="h-3 w-3 mr-1" />
+              <SendIcon size={12} className="mr-1" />
               Message
             </Button>
             <Button
@@ -403,7 +402,7 @@ export default function UsersPage() {
               className="h-7 text-xs text-red-600 hover:text-red-600"
               onClick={() => toast.info('Bulk ban coming soon')}
             >
-              <Ban className="h-3 w-3 mr-1" />
+              <XIcon size={12} className="mr-1" />
               Ban
             </Button>
             <Button
@@ -412,7 +411,7 @@ export default function UsersPage() {
               className="h-7 text-xs"
               onClick={() => toast.info('Exporting selected users')}
             >
-              <Download className="h-3 w-3 mr-1" />
+              <DownloadIcon size={12} className="mr-1" />
               Export
             </Button>
           </div>
@@ -445,11 +444,11 @@ export default function UsersPage() {
                       {header.column.getCanSort() && (
                         <span className="text-muted-foreground">
                           {header.column.getIsSorted() === 'asc' ? (
-                            <ChevronUp className="h-3 w-3" />
+                            <ChevronUpIcon size={12} />
                           ) : header.column.getIsSorted() === 'desc' ? (
-                            <ChevronDown className="h-3 w-3" />
+                            <ChevronDownIcon size={12} />
                           ) : (
-                            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+                            <ArrowRightIcon size={12} className="opacity-40 rotate-90" />
                           )}
                         </span>
                       )}
@@ -512,7 +511,7 @@ export default function UsersPage() {
             disabled={page === 0}
             onClick={() => setPageParam(page - 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ArrowRightIcon size={16} className="rotate-180" />
           </Button>
           <Button
             variant="outline"
@@ -521,7 +520,7 @@ export default function UsersPage() {
             disabled={page >= pageCount - 1}
             onClick={() => setPageParam(page + 1)}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRightIcon size={16} />
           </Button>
         </div>
       </div>

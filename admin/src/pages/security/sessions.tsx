@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { ArrowRightIcon, ChevronRightIcon, TrashIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
@@ -195,7 +195,7 @@ export default function SessionsPage() {
           onClick={() => revokeMutation.mutate(row.original.id)}
           disabled={revokeMutation.isPending}
         >
-          <Trash2 className="h-3.5 w-3.5 mr-1" />
+          <TrashIcon size={14} className="mr-1" />
           Revoke
         </Button>
       ),
@@ -349,7 +349,7 @@ export default function SessionsPage() {
             disabled={page === 0}
             onClick={() => setPage((p) => p - 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ArrowRightIcon size={16} className="rotate-180" />
             Prev
           </Button>
           <Button
@@ -359,7 +359,7 @@ export default function SessionsPage() {
             onClick={() => setPage((p) => p + 1)}
           >
             Next
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRightIcon size={16} />
           </Button>
         </div>
       </div>

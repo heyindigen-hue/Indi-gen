@@ -6,14 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import {
-  AlertTriangle,
-  ChevronRight,
-  Copy,
-  Download,
-  Plus,
-  RefreshCw,
-} from 'lucide-react';
+import { AlertCircleIcon, ChevronRightIcon, LinkIcon, DownloadIcon, PlusIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
@@ -472,7 +465,7 @@ function ErasureTab() {
           size="sm"
           onClick={() => setWizard({ ...INITIAL_WIZARD, open: true })}
         >
-          <Plus className="h-4 w-4 mr-1.5" />
+          <PlusIcon size={16} className="mr-1.5" />
           New Erasure Request
         </Button>
       </div>
@@ -673,7 +666,7 @@ function ErasureTab() {
                   className="shrink-0"
                   onClick={copyApprovalLink}
                 >
-                  <Copy className="h-3.5 w-3.5" />
+                  <LinkIcon size={14} />
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -729,7 +722,7 @@ function ErasureTab() {
                   }
                 }}
               >
-                <Download className="h-4 w-4 mr-1.5" />
+                <DownloadIcon size={16} className="mr-1.5" />
                 Download PDF receipt
               </Button>
             </div>
@@ -756,7 +749,7 @@ function ErasureTab() {
                   }
                 >
                   {intakeMutation.isPending ? 'Submitting...' : 'Submit'}
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <ChevronRightIcon size={16} className="ml-1" />
                 </Button>
               </>
             )}
@@ -769,7 +762,7 @@ function ErasureTab() {
                   onClick={() => setWizard((w) => ({ ...w, step: 4 }))}
                 >
                   Confirm scope
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <ChevronRightIcon size={16} className="ml-1" />
                 </Button>
               </>
             )}
@@ -919,7 +912,7 @@ function BreachTab() {
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setNewIncidentOpen(true)}>
-          <AlertTriangle className="h-4 w-4 mr-1.5" />
+          <AlertCircleIcon size={16} className="mr-1.5" />
           New Incident
         </Button>
       </div>
@@ -1052,11 +1045,7 @@ function BreachTab() {
                   disabled={calculateMutation.isPending}
                   onClick={() => calculateMutation.mutate()}
                 >
-                  {calculateMutation.isPending ? (
-                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    'Calculate'
-                  )}
+                  {calculateMutation.isPending ? 'Calculating...' : 'Calculate'}
                 </Button>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { UserCheck, Trash2 } from 'lucide-react';
+import { UserIcon, TrashIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { relTime } from '@/lib/utils';
@@ -130,7 +130,7 @@ export default function WaitlistPage() {
                         disabled={convert.isPending}
                         onClick={() => convert.mutate(e.id)}
                       >
-                        <UserCheck className="h-3.5 w-3.5 mr-1" />
+                        <UserIcon size={14} className="mr-1" />
                         Convert
                       </Button>
                       <Button
@@ -140,7 +140,7 @@ export default function WaitlistPage() {
                         disabled={remove.isPending}
                         onClick={() => remove.mutate(e.id)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <TrashIcon size={14} />
                       </Button>
                     </div>
                   </TableCell>

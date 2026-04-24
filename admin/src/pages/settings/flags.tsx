@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { PlusIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -117,7 +117,7 @@ export default function FlagsPage() {
         subtitle="Control feature availability per plan and rollout percentage"
         actions={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-1.5" />
+            <PlusIcon size={16} className="mr-1.5" />
             New flag
           </Button>
         }

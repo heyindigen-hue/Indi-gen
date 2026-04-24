@@ -1,15 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Ban,
-  ChevronLeft,
-  Coins,
-  ExternalLink,
-  LogIn,
-  Shield,
-  Trash2,
-} from 'lucide-react';
+import { XIcon, ArrowRightIcon, ZapIcon, ExternalLinkIcon, ShieldIcon, TrashIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, formatINR, relTime } from '@/lib/utils';
@@ -555,7 +547,7 @@ function PaymentsTab({ userId }: { userId: string }) {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-xs text-primary hover:underline"
                 >
-                  PDF <ExternalLink className="h-3 w-3" />
+                  PDF <ExternalLinkIcon size={12} />
                 </a>
               )}
             </TableCell>
@@ -582,7 +574,7 @@ function TokensTab({ userId }: { userId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-        <Coins className="h-5 w-5 text-muted-foreground" />
+        <ZapIcon size={20} className="text-muted-foreground" />
         <span className="text-sm text-muted-foreground">Balance</span>
         <span className="text-lg font-semibold ml-auto tabular-nums">
           {(data?.balance ?? 0).toLocaleString()}
@@ -749,7 +741,7 @@ export default function UserDetailPage() {
         subtitle={user.email}
         actions={
           <Button variant="outline" size="sm" onClick={() => navigate('/users')}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <ArrowRightIcon size={16} className="rotate-180 mr-1" />
             All users
           </Button>
         }
@@ -798,7 +790,7 @@ export default function UserDetailPage() {
               className="justify-start gap-2"
               onClick={() => setImpOpen(true)}
             >
-              <LogIn className="h-4 w-4" />
+              <ArrowRightIcon size={16} />
               Impersonate
             </Button>
             <Button
@@ -807,7 +799,7 @@ export default function UserDetailPage() {
               className="justify-start gap-2"
               onClick={() => setGrantOpen(true)}
             >
-              <Coins className="h-4 w-4" />
+              <ZapIcon size={16} />
               Grant tokens
             </Button>
             <Button
@@ -817,7 +809,7 @@ export default function UserDetailPage() {
               onClick={() => setBanOpen(true)}
               disabled={user.status === 'banned'}
             >
-              <Ban className="h-4 w-4" />
+              <XIcon size={16} />
               {user.status === 'banned' ? 'Already banned' : 'Ban user'}
             </Button>
             <Button
@@ -826,7 +818,7 @@ export default function UserDetailPage() {
               className="justify-start gap-2 text-red-600 hover:text-red-600"
               onClick={() => navigate(`/security/dpdp?request_for=${user.id}`)}
             >
-              <Trash2 className="h-4 w-4" />
+              <TrashIcon size={16} />
               Delete (DPDP)
             </Button>
             <Button
@@ -835,7 +827,7 @@ export default function UserDetailPage() {
               className="justify-start gap-2"
               onClick={() => navigate(`/settings/audit?target_id=${user.id}`)}
             >
-              <Shield className="h-4 w-4" />
+              <ShieldIcon size={16} />
               Full audit trail
             </Button>
           </div>

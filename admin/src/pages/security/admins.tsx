@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { MoreHorizontal, UserPlus, Check, Minus } from 'lucide-react';
+import { FilterIcon, UserIcon, CheckIcon, XIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
@@ -173,9 +173,9 @@ export default function AdminsPage() {
       header: '2FA',
       cell: (info) =>
         info.getValue() ? (
-          <Check className="h-4 w-4 text-green-600" />
+          <CheckIcon size={16} className="text-green-600" />
         ) : (
-          <Minus className="h-4 w-4 text-muted-foreground" />
+          <XIcon size={16} className="text-muted-foreground" />
         ),
     }),
     col.accessor('last_login_at', {
@@ -196,7 +196,7 @@ export default function AdminsPage() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-              <MoreHorizontal className="h-4 w-4" />
+              <FilterIcon size={16} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -255,7 +255,7 @@ export default function AdminsPage() {
             size="sm"
             onClick={() => setDialog({ kind: 'invite' })}
           >
-            <UserPlus className="h-4 w-4 mr-1.5" />
+            <UserIcon size={16} className="mr-1.5" />
             Invite admin
           </Button>
         }

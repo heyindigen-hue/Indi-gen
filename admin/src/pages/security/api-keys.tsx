@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Plus, Copy, Check, Trash2 } from 'lucide-react';
+import { PlusIcon, LinkIcon, CheckIcon, TrashIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { relTime } from '@/lib/utils';
@@ -209,7 +209,7 @@ export default function ApiKeysPage() {
             disabled={revokeMutation.isPending}
             onClick={() => revokeMutation.mutate(row.original.id)}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
+            <TrashIcon size={14} className="mr-1" />
             Revoke
           </Button>
         ) : null,
@@ -239,7 +239,7 @@ export default function ApiKeysPage() {
         subtitle="Manage programmatic access keys"
         actions={
           <Button size="sm" onClick={() => setDialog({ kind: 'create' })}>
-            <Plus className="h-4 w-4 mr-1.5" />
+            <PlusIcon size={16} className="mr-1.5" />
             Create API Key
           </Button>
         }
@@ -395,9 +395,9 @@ export default function ApiKeysPage() {
                   }}
                 >
                   {copied ? (
-                    <Check className="h-4 w-4 text-green-600" />
+                    <CheckIcon size={16} className="text-green-600" />
                   ) : (
-                    <Copy className="h-4 w-4" />
+                    <LinkIcon size={16} />
                   )}
                 </Button>
               </div>

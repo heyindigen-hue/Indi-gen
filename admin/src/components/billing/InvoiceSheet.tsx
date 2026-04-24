@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Download, Upload } from 'lucide-react';
+import { DownloadIcon, UploadIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatINR, relTime } from '@/lib/utils';
@@ -73,7 +73,7 @@ export function InvoiceSheet({ invoiceId, open, onOpenChange }: InvoiceSheetProp
     onError: () => toast.error('Failed to update TDS'),
   });
 
-  const handleDownloadPdf = () => {
+  const handleDownloadIconPdf = () => {
     if (invoice?.pdf_url) {
       window.open(invoice.pdf_url, '_blank');
       return;
@@ -236,7 +236,7 @@ export function InvoiceSheet({ invoiceId, open, onOpenChange }: InvoiceSheetProp
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
                 >
-                  <Download className="h-3 w-3" />
+                  <DownloadIcon className="h-3 w-3" />
                   View TDS certificate
                 </a>
               ) : (
@@ -244,18 +244,18 @@ export function InvoiceSheet({ invoiceId, open, onOpenChange }: InvoiceSheetProp
                   variant="outline"
                   size="sm"
                   className="h-8 text-xs"
-                  onClick={() => toast.info('Upload TDS certificate')}
+                  onClick={() => toast.info('UploadIcon TDS certificate')}
                 >
-                  <Upload className="h-3.5 w-3.5 mr-1" />
-                  Upload TDS certificate
+                  <UploadIcon className="h-3.5 w-3.5 mr-1" />
+                  UploadIcon TDS certificate
                 </Button>
               )}
             </div>
 
-            {/* Download PDF */}
-            <Button className="w-full" variant="outline" onClick={handleDownloadPdf}>
-              <Download className="h-4 w-4 mr-2" />
-              Download PDF
+            {/* DownloadIcon PDF */}
+            <Button className="w-full" variant="outline" onClick={handleDownloadIconPdf}>
+              <DownloadIcon className="h-4 w-4 mr-2" />
+              DownloadIcon PDF
             </Button>
           </div>
         )}

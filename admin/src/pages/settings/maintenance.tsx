@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, XOctagon } from 'lucide-react';
+import { AlertCircleIcon, CheckIcon, XIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -158,12 +158,12 @@ export default function MaintenancePage() {
         <div className="space-y-6 max-w-2xl">
           {isEnabled ? (
             <div className="flex items-center gap-3 rounded-lg border border-destructive bg-destructive/10 px-4 py-3">
-              <XOctagon className="w-5 h-5 text-destructive shrink-0" />
+              <XIcon size={20} className="text-destructive shrink-0" />
               <span className="font-semibold text-destructive">MAINTENANCE MODE ACTIVE</span>
             </div>
           ) : (
             <div className="flex items-center gap-3 rounded-lg border border-green-500 bg-green-500/10 px-4 py-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+              <CheckIcon size={20} className="text-green-600 shrink-0" />
               <span className="font-semibold text-green-700 dark:text-green-400">System is live</span>
             </div>
           )}
@@ -193,7 +193,7 @@ export default function MaintenancePage() {
               'flex items-start gap-2',
             )}
           >
-            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <AlertCircleIcon size={16} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <p className="text-sm text-amber-800 dark:text-amber-200">
               Warning: Enabling this immediately blocks all mobile and public API requests
             </p>

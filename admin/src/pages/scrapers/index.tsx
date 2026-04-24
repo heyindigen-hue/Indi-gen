@@ -5,7 +5,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Activity, Check, Shield, Users, X, Zap } from 'lucide-react';
+import { ChartIcon, CheckIcon, ShieldIcon, UsersIcon, XIcon, ZapIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { relTime } from '@/lib/utils';
@@ -118,11 +118,11 @@ export default function ScrapersPage() {
       cell: ({ getValue }) =>
         getValue() ? (
           <span className="flex items-center gap-1 text-green-500 text-sm">
-            <Check className="h-3.5 w-3.5" /> Valid
+            <CheckIcon size={14} /> Valid
           </span>
         ) : (
           <span className="flex items-center gap-1 text-red-500 text-sm">
-            <X className="h-3.5 w-3.5" /> Invalid
+            <XIcon size={14} /> Invalid
           </span>
         ),
       size: 100,
@@ -226,25 +226,25 @@ export default function ScrapersPage() {
         <KpiCard
           title="Accounts healthy"
           value={isLoading ? '—' : (stats?.accounts_healthy ?? 0)}
-          icon={Users}
+          icon={UsersIcon}
           loading={isLoading}
         />
         <KpiCard
           title="Jobs running"
           value={isLoading ? '—' : (stats?.jobs_running ?? 0)}
-          icon={Activity}
+          icon={ChartIcon}
           loading={isLoading}
         />
         <KpiCard
           title="Leads today"
           value={isLoading ? '—' : (stats?.leads_today ?? 0)}
-          icon={Zap}
+          icon={ZapIcon}
           loading={isLoading}
         />
         <KpiCard
           title="Avg ban risk"
           value={isLoading ? '—' : `${(stats?.avg_ban_risk_pct ?? 0).toFixed(0)}%`}
-          icon={Shield}
+          icon={ShieldIcon}
           loading={isLoading}
         />
       </div>

@@ -1,46 +1,37 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Users,
-  Target,
-  Bot,
-  Plug,
-  CreditCard,
-  Smartphone,
-  Settings,
-  Shield,
-  ChevronDown,
-  ChevronRight,
-  LogOut,
-  PanelLeftClose,
-  PanelLeft,
-  Globe,
-  Cpu,
-  BarChart3,
-  Database,
-  Key,
-  Bell,
-  Sliders,
-  Server,
-  Lock,
-  FileText,
-  Activity,
-  UserCheck,
-  List,
-  Layers,
-  Zap,
-  Package,
-  Receipt,
-  Gift,
-  AlertCircle,
-  Layout,
-  Navigation,
-  Palette,
-  Image,
-  MessageSquare,
-  ChevronUp,
-} from 'lucide-react';
+  HomeIcon,
+  UsersIcon,
+  LeadIcon,
+  ScraperIcon,
+  AiIcon,
+  LinkIcon,
+  CreditCardIcon,
+  VibrateIcon,
+  SettingsIcon,
+  ShieldIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  LogOutIcon,
+  FilterIcon,
+  GlobeIcon,
+  ChartIcon,
+  TagIcon,
+  ZapIcon,
+  FileTextIcon,
+  AlertCircleIcon,
+  ArrowRightIcon,
+  EditIcon,
+  SparkleIcon,
+  BellIcon,
+  SendIcon,
+  CheckIcon,
+  ChevronUpIcon,
+  SearchIcon,
+  StarIcon,
+  CashIcon,
+} from '@/icons';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -56,117 +47,145 @@ import { useAuth } from '@/store/auth';
 const SIDEBAR_KEY = 'leadhangover_sidebar_collapsed';
 const EXPANDED_GROUPS_KEY = 'leadhangover_sidebar_groups';
 
+interface IconProps {
+  size?: number;
+  className?: string;
+  strokeWidth?: number;
+  color?: string;
+}
+
 type NavItem = {
   label: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<IconProps>;
 };
 
 type NavGroup = {
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<IconProps>;
   items: NavItem[];
 };
 
 const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Users',
-    icon: Users,
+    icon: UsersIcon,
     items: [
-      { label: 'All Users', href: '/users', icon: Users },
-      { label: 'Verification', href: '/users/verification', icon: UserCheck },
-      { label: 'Activity', href: '/users/activity', icon: Activity },
-      { label: 'Roles', href: '/users/roles', icon: Lock },
+      { label: 'All Users', href: '/users', icon: UsersIcon },
+      { label: 'Verification', href: '/users/verification', icon: CheckIcon },
+      { label: 'Activity', href: '/users/activity', icon: ChartIcon },
+      { label: 'Roles', href: '/users/roles', icon: ShieldIcon },
     ],
   },
   {
     label: 'Leads',
-    icon: Target,
+    icon: LeadIcon,
     items: [
-      { label: 'All Leads', href: '/leads', icon: List },
-      { label: 'Scoring', href: '/leads/scoring', icon: BarChart3 },
-      { label: 'Export', href: '/leads/export', icon: FileText },
+      { label: 'All Leads', href: '/leads', icon: FilterIcon },
+      { label: 'Scoring', href: '/leads/scoring', icon: ChartIcon },
+      { label: 'Export', href: '/leads/export', icon: FileTextIcon },
     ],
   },
   {
     label: 'Scrapers',
-    icon: Globe,
+    icon: ScraperIcon,
     items: [
-      { label: 'Jobs', href: '/scrapers', icon: Activity },
-      { label: 'Sources', href: '/scrapers/sources', icon: Database },
-      { label: 'Schedules', href: '/scrapers/schedules', icon: Zap },
-      { label: 'Logs', href: '/scrapers/logs', icon: FileText },
+      { label: 'Jobs', href: '/scrapers', icon: ChartIcon },
+      { label: 'Sources', href: '/scrapers/sources', icon: GlobeIcon },
+      { label: 'Schedules', href: '/scrapers/schedules', icon: ZapIcon },
+      { label: 'Logs', href: '/scrapers/logs', icon: FileTextIcon },
     ],
   },
   {
     label: 'AI',
-    icon: Bot,
+    icon: AiIcon,
     items: [
-      { label: 'Prompts', href: '/ai/prompts', icon: MessageSquare },
-      { label: 'Context', href: '/ai/context', icon: FileText },
-      { label: 'Usage', href: '/ai/usage', icon: BarChart3 },
+      { label: 'Prompts', href: '/ai/prompts', icon: SendIcon },
+      { label: 'Context', href: '/ai/context', icon: FileTextIcon },
+      { label: 'Usage', href: '/ai/usage', icon: ChartIcon },
     ],
   },
   {
     label: 'Integrations',
-    icon: Plug,
+    icon: LinkIcon,
     items: [
-      { label: 'Cashfree', href: '/integrations/cashfree', icon: CreditCard },
-      { label: 'Anthropic', href: '/integrations/anthropic', icon: Cpu },
-      { label: 'SignalHire', href: '/integrations/signalhire', icon: Zap },
-      { label: 'LinkedIn', href: '/integrations/linkedin', icon: Globe },
-      { label: 'Proxies', href: '/integrations/proxies', icon: Server },
-      { label: 'Email', href: '/integrations/email', icon: Bell },
-      { label: 'WhatsApp', href: '/integrations/whatsapp', icon: MessageSquare },
+      { label: 'Cashfree', href: '/integrations/cashfree', icon: CashIcon },
+      { label: 'Anthropic', href: '/integrations/anthropic', icon: SparkleIcon },
+      { label: 'SignalHire', href: '/integrations/signalhire', icon: ZapIcon },
+      { label: 'LinkedIn', href: '/integrations/linkedin', icon: GlobeIcon },
+      { label: 'Proxies', href: '/integrations/proxies', icon: ArrowRightIcon },
+      { label: 'Email', href: '/integrations/email', icon: BellIcon },
+      { label: 'WhatsApp', href: '/integrations/whatsapp', icon: SendIcon },
     ],
   },
   {
     label: 'Billing',
-    icon: CreditCard,
+    icon: CreditCardIcon,
     items: [
-      { label: 'Plans', href: '/billing/plans', icon: Package },
-      { label: 'Subscriptions', href: '/billing/subscriptions', icon: Receipt },
-      { label: 'Invoices', href: '/billing/invoices', icon: FileText },
-      { label: 'Refunds', href: '/billing/refunds', icon: AlertCircle },
-      { label: 'Coupons', href: '/billing/coupons', icon: Gift },
+      { label: 'Plans', href: '/billing/plans', icon: TagIcon },
+      { label: 'Subscriptions', href: '/billing/subscriptions', icon: StarIcon },
+      { label: 'Invoices', href: '/billing/invoices', icon: FileTextIcon },
+      { label: 'Refunds', href: '/billing/refunds', icon: AlertCircleIcon },
+      { label: 'Coupons', href: '/billing/coupons', icon: StarIcon },
     ],
   },
   {
     label: 'Mobile UI',
-    icon: Smartphone,
+    icon: VibrateIcon,
     items: [
-      { label: 'Screens', href: '/mobile-ui', icon: Layout },
-      { label: 'Navigation', href: '/mobile-ui/navigation', icon: Navigation },
-      { label: 'Components', href: '/mobile-ui/components', icon: Layers },
-      { label: 'Themes', href: '/mobile-ui/themes', icon: Palette },
-      { label: 'Assets', href: '/mobile-ui/assets', icon: Image },
-      { label: 'Announcements', href: '/mobile-ui/announcements', icon: Bell },
+      { label: 'Screens', href: '/mobile-ui', icon: FilterIcon },
+      { label: 'Navigation', href: '/mobile-ui/navigation', icon: ArrowRightIcon },
+      { label: 'Components', href: '/mobile-ui/components', icon: SparkleIcon },
+      { label: 'Themes', href: '/mobile-ui/themes', icon: StarIcon },
+      { label: 'Assets', href: '/mobile-ui/assets', icon: EyeIconPlaceholder },
+      { label: 'Announcements', href: '/mobile-ui/announcements', icon: BellIcon },
     ],
   },
   {
     label: 'Settings',
-    icon: Settings,
+    icon: SettingsIcon,
     items: [
-      { label: 'Brand', href: '/settings/brand', icon: Palette },
-      { label: 'Company', href: '/settings/company', icon: FileText },
-      { label: 'Legal', href: '/settings/legal', icon: Sliders },
-      { label: 'Templates', href: '/settings/templates', icon: Layers },
-      { label: 'Feature Flags', href: '/settings/flags', icon: Zap },
-      { label: 'Maintenance', href: '/settings/maintenance', icon: AlertCircle },
+      { label: 'Brand', href: '/settings/brand', icon: StarIcon },
+      { label: 'Company', href: '/settings/company', icon: FileTextIcon },
+      { label: 'Legal', href: '/settings/legal', icon: EditIcon },
+      { label: 'Templates', href: '/settings/templates', icon: SparkleIcon },
+      { label: 'Feature Flags', href: '/settings/flags', icon: ZapIcon },
+      { label: 'Maintenance', href: '/settings/maintenance', icon: AlertCircleIcon },
     ],
   },
   {
     label: 'Security',
-    icon: Shield,
+    icon: ShieldIcon,
     items: [
-      { label: 'Admins', href: '/security/admins', icon: Users },
-      { label: 'Sessions', href: '/security/sessions', icon: Key },
-      { label: 'API Keys', href: '/security/api-keys', icon: Lock },
-      { label: 'Audit Log', href: '/security/audit', icon: Activity },
-      { label: 'DPDP / Privacy', href: '/security/dpdp', icon: Shield },
+      { label: 'Admins', href: '/security/admins', icon: UsersIcon },
+      { label: 'Sessions', href: '/security/sessions', icon: SearchIcon },
+      { label: 'API Keys', href: '/security/api-keys', icon: ShieldIcon },
+      { label: 'Audit Log', href: '/security/audit', icon: ChartIcon },
+      { label: 'DPDP / Privacy', href: '/security/dpdp', icon: ShieldIcon },
     ],
   },
 ];
+
+// Simple placeholder for image/eye icon usage
+function EyeIconPlaceholder(props: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={props.size ?? 24}
+      height={props.size ?? 24}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={props.color || 'currentColor'}
+      strokeWidth={props.strokeWidth ?? 2.25}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={props.className}
+    >
+      <path d="M1 12S5 5 12 5 23 12 23 12 19 19 12 19 1 12 1 12Z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true');
@@ -230,7 +249,7 @@ export function Sidebar() {
           className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors ml-auto"
           aria-label="Toggle sidebar"
         >
-          {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          {collapsed ? <ArrowRightIcon size={16} /> : <FilterIcon size={16} />}
         </button>
       </div>
 
@@ -250,7 +269,7 @@ export function Sidebar() {
               )
             }
           >
-            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            <HomeIcon size={16} className="shrink-0" />
             {!collapsed && <span>Dashboard</span>}
           </NavLink>
         </div>
@@ -269,14 +288,14 @@ export function Sidebar() {
                     collapsed && 'justify-center px-0',
                   )}
                 >
-                  <GroupIcon className="h-4 w-4 shrink-0" />
+                  <GroupIcon size={16} className="shrink-0" />
                   {!collapsed && (
                     <>
                       <span className="flex-1 text-left">{group.label}</span>
                       {isExpanded ? (
-                        <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                        <ChevronDownIcon size={14} className="opacity-50" />
                       ) : (
-                        <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                        <ChevronRightIcon size={14} className="opacity-50" />
                       )}
                     </>
                   )}
@@ -299,7 +318,7 @@ export function Sidebar() {
                             )
                           }
                         >
-                          <ItemIcon className="h-3.5 w-3.5 shrink-0" />
+                          <ItemIcon size={14} className="shrink-0" />
                           <span>{item.label}</span>
                         </NavLink>
                       );
@@ -311,7 +330,7 @@ export function Sidebar() {
           })}
         </div>
 
-        {/* Platform — "More" footer group */}
+        {/* Platform footer group */}
         <div className="px-2 mt-2">
           <button
             onClick={() => !collapsed && toggleGroup('Platform')}
@@ -320,14 +339,14 @@ export function Sidebar() {
               collapsed && 'justify-center px-0',
             )}
           >
-            <Server className="h-4 w-4 shrink-0" />
+            <ChartIcon size={16} className="shrink-0" />
             {!collapsed && (
               <>
                 <span className="flex-1 text-left">Platform</span>
                 {expandedGroups.has('Platform') ? (
-                  <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  <ChevronDownIcon size={14} className="opacity-50" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                  <ChevronRightIcon size={14} className="opacity-50" />
                 )}
               </>
             )}
@@ -335,9 +354,9 @@ export function Sidebar() {
           {!collapsed && expandedGroups.has('Platform') && (
             <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-2">
               {[
-                { label: 'Logs', href: '/platform/logs', icon: FileText },
-                { label: 'Errors', href: '/platform/errors', icon: AlertCircle },
-                { label: 'Webhooks', href: '/platform/webhooks', icon: Zap },
+                { label: 'Logs', href: '/platform/logs', icon: FileTextIcon },
+                { label: 'Errors', href: '/platform/errors', icon: AlertCircleIcon },
+                { label: 'Webhooks', href: '/platform/webhooks', icon: ZapIcon },
               ].map((item) => {
                 const ItemIcon = item.icon;
                 return (
@@ -354,7 +373,7 @@ export function Sidebar() {
                       )
                     }
                   >
-                    <ItemIcon className="h-3.5 w-3.5 shrink-0" />
+                    <ItemIcon size={14} className="shrink-0" />
                     <span>{item.label}</span>
                   </NavLink>
                 );
@@ -384,7 +403,7 @@ export function Sidebar() {
                   <div className="text-xs text-muted-foreground capitalize truncate">{user?.role}</div>
                 </div>
               )}
-              {!collapsed && <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+              {!collapsed && <ChevronUpIcon size={14} className="text-muted-foreground shrink-0" />}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-52">
@@ -394,7 +413,7 @@ export function Sidebar() {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings')}>
-              <Settings className="mr-2 h-4 w-4" />
+              <SettingsIcon size={16} className="mr-2" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -405,7 +424,7 @@ export function Sidebar() {
                 navigate('/login');
               }}
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOutIcon size={16} className="mr-2" />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
