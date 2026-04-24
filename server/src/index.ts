@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import { config } from './config';
@@ -23,6 +24,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: config.corsOrigins, credentials: true }));
+app.use('/brand', express.static(path.resolve(__dirname, '../../shared/brand')));
 
 // Webhooks BEFORE json parser (need raw body for signature verification)
 app.use('/webhook', webhooksRouter);

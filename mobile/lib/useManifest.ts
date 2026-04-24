@@ -3,7 +3,7 @@ import { api } from './api';
 import { createMMKV } from 'react-native-mmkv';
 import defaultManifest from '../constants/defaultManifest.json';
 
-const cache = createMMKV({ id: 'indigen' });
+const cache = createMMKV({ id: 'leadhangover' });
 const KEY = 'ui_manifest_v1';
 
 export function useManifest() {

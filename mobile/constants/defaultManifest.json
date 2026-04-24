@@ -5,10 +5,11 @@
     "density": "comfortable"
   },
   "brand": {
-    "name": "Indi-gen",
-    "tagline": "AI-Powered Lead Generation",
-    "logo_url": null,
-    "primary_color": "#7170FF"
+    "name": "LeadHangover",
+    "tagline": "Wake up to better leads",
+    "logo_light": "",
+    "logo_dark": "",
+    "primary_color": "#FF4716"
   },
   "tabs": [
     { "id": "index", "label": "Home", "icon": "home", "enabled": true },

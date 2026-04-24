@@ -3,6 +3,7 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16
+    container_name: leadhangover-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -13,19 +14,21 @@ services:
     ports:
       - '5432:5432'
     networks:
-      - indigen
+      - leadhangover
 
   redis:
     image: redis:7-alpine
+    container_name: leadhangover-redis
     restart: unless-stopped
     ports:
       - '6379:6379'
     networks:
-      - indigen
+      - leadhangover
 
   server:
     build:
       context: ./server
+    container_name: leadhangover-server
     restart: unless-stopped
     env_file: .env
     environment:
@@ -35,13 +38,14 @@ services:
       - postgres
       - redis
     networks:
-      - indigen
+      - leadhangover
     expose:
       - '3001'
 
   scraper:
     build:
       context: ./scraper-service
+    container_name: leadhangover-scraper
     restart: unless-stopped
     env_file: .env
     environment:
@@ -49,21 +53,23 @@ services:
     depends_on:
       - redis
     networks:
-      - indigen
+      - leadhangover
     expose:
       - '8000'
 
   admin:
     build:
       context: ./admin
+    container_name: leadhangover-admin
     restart: unless-stopped
     networks:
-      - indigen
+      - leadhangover
     expose:
       - '80'
 
   nginx:
     image: nginx:alpine
+    container_name: leadhangover-nginx
     restart: unless-stopped
     ports:
       - '80:80'
@@ -74,11 +80,11 @@ services:
       - scraper
       - admin
     networks:
-      - indigen
+      - leadhangover
 
 volumes:
   postgres_data:
 
 networks:
-  indigen:
+  leadhangover:
     driver: bridge

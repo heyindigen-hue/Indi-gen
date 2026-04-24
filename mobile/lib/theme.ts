@@ -2,7 +2,7 @@ export const palettes = {
   graphite: {
     bg: '#08090B', card: '#111113', border: '#1F1F23',
     text: '#F7F8F8', muted: '#8A8F98',
-    primary: '#7170FF', primaryFg: '#FFFFFF',
+    primary: '#FF4716', primaryFg: '#FFFFFF',
     success: '#4CB782', warning: '#F2C94C', destructive: '#E5484D',
   },
   vercel: {

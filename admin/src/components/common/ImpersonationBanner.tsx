@@ -1,8 +1,8 @@
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const TOKEN_KEY = 'indigen_imp_token';
-const USER_KEY = 'indigen_imp_user';
+const TOKEN_KEY = 'leadhangover_imp_token';
+const USER_KEY = 'leadhangover_imp_user';
 
 type ImpUser = { name: string; email: string };
 

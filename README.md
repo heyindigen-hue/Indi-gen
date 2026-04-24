@@ -1,6 +1,6 @@
-# Indi-gen
+# LeadHangover
 
-SaaS LinkedIn lead-hunting platform — mobile app + admin web + backend.
+"Wake up to better leads" — mobile app + admin web + backend.
 
 ## Folder Structure
 

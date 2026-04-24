@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/command';
 import { useCommands } from '@/store/commands';
 
-const RECENT_KEY = 'indigen_recent_pages';
+const RECENT_KEY = 'leadhangover_recent_pages';
 
 const NAV_COMMANDS = [
   { id: 'go-dashboard', label: 'Dashboard', href: '/' },

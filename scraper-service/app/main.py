@@ -13,7 +13,7 @@ from app.linkedin_client import get_client
 logging.basicConfig(level=settings.log_level, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 log = logging.getLogger("main")
 
-app = FastAPI(title="Indi-gen Scraper Service", version="0.1.0")
+app = FastAPI(title="LeadHangover Scraper Service", version="0.1.0")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_credentials=True,
     allow_methods=["*"], allow_headers=["*"],

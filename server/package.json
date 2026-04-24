@@ -1,5 +1,5 @@
 {
-  "name": "indigen-server",
+  "name": "leadhangover-server",
   "version": "1.0.0",
   "description": "Indi-gen API server",
   "main": "src/index.ts",

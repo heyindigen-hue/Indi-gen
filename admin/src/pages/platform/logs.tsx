@@ -71,7 +71,7 @@ export default function LogsPage() {
   // SSE connection — re-runs when paused changes so we can close/reopen
   useEffect(() => {
     const BASE = (import.meta.env.VITE_API_URL as string) || '/api';
-    const token = localStorage.getItem('indigen_token');
+    const token = localStorage.getItem('leadhangover_token');
     const es = new EventSource(`${BASE}/admin/logs/stream?token=${token}`);
 
     es.onmessage = (e: MessageEvent) => {

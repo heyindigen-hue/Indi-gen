@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { createMMKV } from 'react-native-mmkv';
 import * as SecureStore from 'expo-secure-store';
 
-const mmkv = createMMKV({ id: 'indigen' });
+const mmkv = createMMKV({ id: 'leadhangover' });
 const storage = {
   getItem: (k: string) => mmkv.getString(k) ?? null,
   setItem: (k: string, v: string) => mmkv.set(k, v),
@@ -22,11 +22,11 @@ export const useAuth = create<AuthState>()(
     (set) => ({
       user: null,
       setAuth: async (token, user) => {
-        await SecureStore.setItemAsync('indigen_token', token);
+        await SecureStore.setItemAsync('leadhangover_token', token);
         set({ user });
       },
       logout: async () => {
-        await SecureStore.deleteItemAsync('indigen_token');
+        await SecureStore.deleteItemAsync('leadhangover_token');
         set({ user: null });
       },
     }),

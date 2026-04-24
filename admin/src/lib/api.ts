@@ -6,7 +6,7 @@ export class ApiError extends Error {
   }
 }
 
-const getToken = () => localStorage.getItem('indigen_token');
+const getToken = () => localStorage.getItem('leadhangover_token');
 
 export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();
@@ -19,7 +19,7 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
     },
   });
   if (res.status === 401) {
-    localStorage.removeItem('indigen_token');
+    localStorage.removeItem('leadhangover_token');
     if (location.pathname !== '/login') location.href = '/login';
     throw new ApiError(401, 'Unauthorized');
   }

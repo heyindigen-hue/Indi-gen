@@ -171,8 +171,8 @@ function ImpersonateDialog({
         `/admin/users/${user.id}/impersonate`,
       ),
     onSuccess: ({ token, user: impUser }) => {
-      localStorage.setItem('indigen_imp_token', token);
-      localStorage.setItem('indigen_imp_user', JSON.stringify(impUser));
+      localStorage.setItem('leadhangover_imp_token', token);
+      localStorage.setItem('leadhangover_imp_user', JSON.stringify(impUser));
       window.open(`/?imp_token=${token}`, '_blank');
       toast.success('Impersonation session started in new tab');
       onClose();

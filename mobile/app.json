@@ -1,28 +1,28 @@
 {
   "expo": {
-    "name": "Indi-gen",
-    "slug": "indi-gen",
+    "name": "LeadHangover",
+    "slug": "leadhangover",
     "version": "1.0.0",
-    "scheme": "indigen",
+    "scheme": "leadhangover",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FF4716"
     },
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.indigenservices.indigen"
+      "bundleIdentifier": "com.leadhangover.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FF4716"
       },
-      "package": "com.indigenservices.indigen",
+      "package": "com.leadhangover.app",
       "permissions": ["NOTIFICATIONS"],
       "blockedPermissions": [],
       "softwareKeyboardLayoutMode": "pan"

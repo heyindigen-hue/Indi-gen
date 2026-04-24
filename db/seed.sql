@@ -15,9 +15,9 @@ INSERT INTO app_settings (key, value, category) VALUES
   ('filter_stats_in', '0', 'filter'),
   ('filter_stats_kept', '0', 'filter'),
   ('filter_stats_discarded', '0', 'filter'),
-  ('brand_name', 'Indi-gen', 'branding'),
-  ('brand_tagline', 'Find leads that actually convert', 'branding'),
-  ('brand_primary_color', '#7170FF', 'branding'),
+  ('brand_name', 'LeadHangover', 'branding'),
+  ('brand_tagline', 'Wake up to better leads', 'branding'),
+  ('brand_primary_color', '#FF4716', 'branding'),
   ('brand_logo_light_url', '', 'branding'),
   ('brand_logo_dark_url', '', 'branding'),
   ('brand_favicon_url', '', 'branding'),
@@ -30,7 +30,7 @@ INSERT INTO app_settings (key, value, category) VALUES
   ('company_pan', '', 'company'),
   ('company_address', '', 'company'),
   ('company_state_code', '27', 'company'),
-  ('ai_context_pitch', 'Indigen Services — full-stack AI + SaaS dev agency.', 'ai'),
+  ('ai_context_pitch', 'LeadHangover — full-stack AI + SaaS dev agency.', 'ai'),
   ('ai_context_ideal_clients', 'D2C, SaaS, SMEs needing automation.', 'ai'),
   ('ai_model_filter', 'claude-haiku-4-5', 'ai'),
   ('ai_model_drafts', 'claude-haiku-4-5', 'ai'),
@@ -88,7 +88,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Default mobile UI manifest
 INSERT INTO ui_manifests (platform, name, version, manifest, is_default, enabled, published_at) VALUES
 ('mobile', 'default', 1, '{
-  "brand": {"name":"Indi-gen","tagline":"Find leads that convert","primary":"#7170FF","logo_light":"","logo_dark":""},
+  "brand": {"name":"LeadHangover","tagline":"Wake up to better leads","primary":"#FF4716","logo_light":"","logo_dark":""},
   "theme": {"palette":"graphite","font":"Inter","radius":14,"density":"comfortable"},
   "tabs": [
     {"id":"home","icon":"house","label":"Home","route":"/(tabs)","enabled":true},
@@ -106,7 +106,7 @@ INSERT INTO ui_manifests (platform, name, version, manifest, is_default, enabled
     {"type":"ActionButtons","props":{"actions":["scrape","import_manual","invite"]}}
   ],
   "onboarding_steps": [
-    {"id":"welcome","title":"Welcome to Indi-gen","body":"Find real buyers on LinkedIn","cta":"Get started"},
+    {"id":"welcome","title":"Welcome to LeadHangover","body":"Find real buyers on LinkedIn","cta":"Get started"},
     {"id":"icp","title":"Who do you sell to?","body":"Pick your ideal customer profile","input":"multi_chip","options":["D2C","SaaS","SME","Healthcare","Logistics","Fintech","Ecommerce"]},
     {"id":"phrases","title":"What are you looking for?","body":"Add search phrases","input":"chip_editor","suggestions":["looking for developer","building SaaS","AI chatbot","custom Shopify"]},
     {"id":"done","title":"Finding your first leads...","body":"We are scanning LinkedIn now","animated":true}
@@ -122,7 +122,7 @@ INSERT INTO ui_manifests (platform, name, version, manifest, is_default, enabled
     "footer":"Credits never expire. Cancel anytime."
   },
   "features": {"swipe_stack":true,"webview_browser":true,"voice_notes":false,"maintenance":false},
-  "legal": {"tos_url":"","privacy_url":"","support_email":"support@indigen.app"}
+  "legal": {"tos_url":"","privacy_url":"","support_email":"support@leadhangover.com"}
 }', TRUE, TRUE, NOW())
 ON CONFLICT DO NOTHING;
 
@@ -153,3 +153,13 @@ INSERT INTO push_templates (id, name, title, body) VALUES
 ('payment_success','Payment Success','Payment received','Your tokens are ready'),
 ('trial_ending','Trial Ending','Your trial ends soon','Upgrade to keep your leads flowing')
 ON CONFLICT (id) DO NOTHING;
+
+-- LeadHangover rebrand
+UPDATE app_settings SET value='LeadHangover' WHERE key='brand_name';
+UPDATE app_settings SET value='Wake up to better leads' WHERE key='brand_tagline';
+UPDATE app_settings SET value='#FF4716' WHERE key='brand_primary_color';
+UPDATE app_settings SET value='/brand/logo-light-256.png' WHERE key='brand_logo_light_url';
+UPDATE app_settings SET value='/brand/logo-dark-256.png' WHERE key='brand_logo_dark_url';
+UPDATE app_settings SET value='/brand/favicon.png' WHERE key='brand_favicon_url';
+UPDATE app_settings SET value='/brand/icon-1024.png' WHERE key='brand_og_image_url';
+UPDATE app_settings SET value='support@leadhangover.com' WHERE key='brand_support_email';

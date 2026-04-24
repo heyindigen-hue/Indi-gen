@@ -22,16 +22,16 @@ export const useAuth = create<State>()(
       user: null,
       token: null,
       setAuth: (token, user) => {
-        localStorage.setItem('indigen_token', token);
+        localStorage.setItem('leadhangover_token', token);
         set({ token, user });
       },
       logout: () => {
-        localStorage.removeItem('indigen_token');
+        localStorage.removeItem('leadhangover_token');
         set({ token: null, user: null });
       },
     }),
     {
-      name: 'indigen_auth',
+      name: 'leadhangover_auth',
       partialize: (s) => ({ user: s.user, token: s.token }),
     },
   ),

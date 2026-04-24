@@ -53,8 +53,8 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/store/auth';
 
-const SIDEBAR_KEY = 'indigen_sidebar_collapsed';
-const EXPANDED_GROUPS_KEY = 'indigen_sidebar_groups';
+const SIDEBAR_KEY = 'leadhangover_sidebar_collapsed';
+const EXPANDED_GROUPS_KEY = 'leadhangover_sidebar_groups';
 
 type NavItem = {
   label: string;
@@ -220,7 +220,10 @@ export function Sidebar() {
       {/* Logo + toggle */}
       <div className="flex items-center h-topbar px-3 border-b border-border shrink-0">
         {!collapsed && (
-          <span className="flex-1 font-semibold text-foreground text-sm tracking-tight">Indi-gen</span>
+          <>
+            <img src="/brand/logo-dark-256.png" alt="LeadHangover" className="h-8 w-8" />
+            <span className="flex-1 font-semibold text-foreground text-sm tracking-tight">LeadHangover</span>
+          </>
         )}
         <button
           onClick={() => setCollapsed((c) => !c)}

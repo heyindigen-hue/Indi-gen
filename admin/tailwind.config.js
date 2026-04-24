@@ -60,6 +60,11 @@ export default {
       height: {
         topbar: '52px',
       },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['Geist Mono', 'ui-monospace'],
+        display: ['Fraunces', 'serif'],
+      },
     },
   },
   plugins: [],
