@@ -18,11 +18,9 @@ const outreachSchema = z.object({
   subject: z.string().optional(),
 });
 const manualLeadSchema = z.object({
-  fullName: z.string().min(1),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
+  name: z.string().min(1),
   company: z.string().optional(),
-  title: z.string().optional(),
+  headline: z.string().optional(),
   linkedinUrl: z.string().url().optional(),
   notes: z.string().optional(),
 });
@@ -83,7 +81,7 @@ router.get('/:id', async (req: any, res) => {
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
   const contacts = await query(
-    `SELECT * FROM lead_contacts WHERE lead_id=$1 ORDER BY created_at ASC`,
+    `SELECT * FROM contacts WHERE lead_id=$1 ORDER BY created_at ASC`,
     [req.params.id]
   );
   res.json({ ...lead, contacts });
@@ -115,18 +113,13 @@ router.patch('/:id/notes', validateBody(notesUpdateSchema), async (req: any, res
 router.post('/:id/enrich', async (req: any, res) => {
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const lead = await queryOne<any>(
-    `SELECT id, email, linkedin_url FROM leads WHERE id=$1 ${isAdmin ? '' : 'AND owner_id=$2'}`,
+    `SELECT id, linkedin_url FROM leads WHERE id=$1 ${isAdmin ? '' : 'AND owner_id=$2'}`,
     isAdmin ? [req.params.id] : [req.params.id, req.user.id]
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
-  const jobId = `enrich:${lead.id}:${Date.now()}`;
-  await query(
-    `INSERT INTO enrichment_requests (lead_id, provider, status, job_id) VALUES ($1,'signalhire','queued',$2)
-     ON CONFLICT DO NOTHING`,
-    [lead.id, jobId]
-  );
-  res.status(202).json({ queued: true, jobId });
+  await query(`UPDATE leads SET enrichment_status='queued', updated_at=NOW() WHERE id=$1`, [lead.id]);
+  res.status(202).json({ queued: true });
 });
 
 router.post('/:id/outreach', validateBody(outreachSchema), async (req: any, res) => {
@@ -139,7 +132,7 @@ router.post('/:id/outreach', validateBody(outreachSchema), async (req: any, res)
 
   const { channel, message, subject } = req.body;
   await query(
-    `INSERT INTO outreach_logs (lead_id, user_id, channel, message, subject, sent_at)
+    `INSERT INTO outreach_log (lead_id, user_id, channel, message, subject, sent_at)
      VALUES ($1,$2,$3,$4,$5,NOW())`,
     [lead.id, req.user.id, channel, message || null, subject || null]
   );
@@ -156,19 +149,19 @@ router.get('/:id/outreach', async (req: any, res) => {
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
   const logs = await query(
-    `SELECT * FROM outreach_logs WHERE lead_id=$1 ORDER BY sent_at DESC`,
+    `SELECT * FROM outreach_log WHERE lead_id=$1 ORDER BY sent_at DESC`,
     [req.params.id]
   );
   res.json(logs);
 });
 
 router.post('/manual', validateBody(manualLeadSchema), async (req: any, res) => {
-  const { fullName, email, phone, company, title, linkedinUrl, notes } = req.body;
+  const { name, company, headline, linkedinUrl, notes } = req.body;
   const lead = await queryOne<any>(
-    `INSERT INTO leads (full_name, email, phone, company, title, linkedin_url, notes, owner_id, source, status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'manual','new')
+    `INSERT INTO leads (name, company, headline, linkedin_url, notes, owner_id, status)
+     VALUES ($1,$2,$3,$4,$5,$6,'new')
      RETURNING *`,
-    [fullName, email || null, phone || null, company || null, title || null, linkedinUrl || null, notes || null, req.user.id]
+    [name, company || null, headline || null, linkedinUrl || null, notes || null, req.user.id]
   );
   await audit({ actorId: req.user.id, action: 'lead.manual_add', targetType: 'lead', targetId: lead.id });
   res.status(201).json(lead);
@@ -182,14 +175,10 @@ router.post('/:id/drafts', async (req: any, res) => {
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
-  const cacheKey = `draft:${lead.id}:${req.user.id}`;
-  const cached = await query(`SELECT drafts, created_at FROM ai_drafts_cache WHERE cache_key=$1 AND created_at > NOW() - INTERVAL '24 hours'`, [cacheKey]);
-  if (cached.length) return res.json({ drafts: cached[0].drafts, cached: true });
-
   const prompts = [
-    `Write a concise, professional cold email to ${lead.full_name || 'the prospect'}${lead.company ? ` at ${lead.company}` : ''}${lead.title ? ` (${lead.title})` : ''}. Focus on value, keep it under 150 words.`,
-    `Write a LinkedIn connection request message for ${lead.full_name || 'a prospect'}${lead.company ? ` at ${lead.company}` : ''}. Max 300 characters, no fluff.`,
-    `Write a WhatsApp outreach message to ${lead.full_name || 'a prospect'}${lead.title ? ` who is a ${lead.title}` : ''}. Friendly, brief, under 100 words.`,
+    `Write a concise, professional cold email to ${lead.name || 'the prospect'}${lead.company ? ` at ${lead.company}` : ''}${lead.headline ? ` (${lead.headline})` : ''}. Focus on value, keep it under 150 words.`,
+    `Write a LinkedIn connection request message for ${lead.name || 'a prospect'}${lead.company ? ` at ${lead.company}` : ''}. Max 300 characters, no fluff.`,
+    `Write a WhatsApp outreach message to ${lead.name || 'a prospect'}${lead.headline ? ` who is a ${lead.headline}` : ''}. Friendly, brief, under 100 words.`,
   ];
 
   let drafts: string[] = [];
@@ -208,22 +197,16 @@ router.post('/:id/drafts', async (req: any, res) => {
     drafts = prompts.map(() => '');
   }
 
-  await query(
-    `INSERT INTO ai_drafts_cache (cache_key, lead_id, user_id, drafts, created_at)
-     VALUES ($1,$2,$3,$4,NOW())
-     ON CONFLICT (cache_key) DO UPDATE SET drafts=$4, created_at=NOW()`,
-    [cacheKey, lead.id, req.user.id, JSON.stringify(drafts)]
-  );
-
   res.json({ drafts, cached: false });
 });
 
 router.post('/:id/feedback', validateBody(feedbackSchema), async (req: any, res) => {
   const { rejected, reason } = req.body;
+  const verdict = rejected ? 'rejected' : 'approved';
   await query(
-    `INSERT INTO lead_feedback (lead_id, user_id, rejected, reason, created_at)
+    `INSERT INTO filter_feedback (lead_id, user_id, verdict, reason, created_at)
      VALUES ($1,$2,$3,$4,NOW())`,
-    [req.params.id, req.user.id, rejected, reason || null]
+    [req.params.id, req.user.id, verdict, reason || null]
   );
   if (rejected) {
     await query(`UPDATE leads SET status='rejected', updated_at=NOW() WHERE id=$1`, [req.params.id]);

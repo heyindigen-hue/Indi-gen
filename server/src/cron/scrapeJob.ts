@@ -6,82 +6,92 @@ import { logger } from '../logger';
 import { refundTokens } from '../services/tokens';
 
 async function pollRunningJobs(): Promise<void> {
-  const jobs = await query(
-    `SELECT * FROM scraper_runs WHERE status='running' AND created_at > NOW()-INTERVAL '2 hours'`
+  const runs = await query(
+    `SELECT * FROM scraper_runs WHERE status='running' AND started_at > NOW()-INTERVAL '2 hours'`
   );
 
-  for (const job of jobs) {
+  for (const run of runs) {
+    const runLog = run.run_log ? (typeof run.run_log === 'string' ? JSON.parse(run.run_log) : run.run_log) : {};
+    const externalJobId: string | undefined = runLog.job_id;
+    const tokenReserve: number = runLog.token_reserve || 0;
+
+    if (!externalJobId) continue;
+
     try {
-      const resp = await axios.get(`${config.scraperServiceUrl}/scrape/jobs/${job.job_id}`, { timeout: 5000 });
+      const resp = await axios.get(`${config.scraperServiceUrl}/scrape/jobs/${externalJobId}`, { timeout: 5000 });
       const scraperData = resp.data;
 
       if (scraperData.status === 'completed') {
         const leads = scraperData.results || [];
         for (const lead of leads) {
           await query(
-            `INSERT INTO leads (full_name, email, phone, company, title, linkedin_url, owner_id, source, scrape_job_id, status)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,'scrape',$8,'new')
-             ON CONFLICT (linkedin_url, owner_id) DO NOTHING`,
+            `INSERT INTO leads (name, company, headline, linkedin_url, owner_id, status)
+             VALUES ($1,$2,$3,$4,$5,'new')
+             ON CONFLICT (linkedin_url) DO NOTHING`,
             [
               lead.full_name || lead.name || null,
-              lead.email || null,
-              lead.phone || null,
               lead.company || null,
-              lead.title || null,
+              lead.title || lead.headline || null,
               lead.linkedin_url || null,
-              job.user_id,
-              job.id,
+              run.user_id,
             ]
           );
         }
 
-        const actualCount = leads.length;
-        const refundCount = Math.max(0, job.token_reserve - actualCount);
+        const leadsKept = leads.length;
+        const refundCount = Math.max(0, tokenReserve - leadsKept);
         if (refundCount > 0) {
           await refundTokens({
-            userId: job.user_id,
+            userId: run.user_id,
             amount: refundCount,
             reason: 'scrape_under_delivery',
-            idempotencyKey: `scrape:refund:cron:${job.job_id}`,
+            idempotencyKey: `scrape:refund:cron:${run.id}`,
           });
         }
 
         await query(
-          `UPDATE scraper_runs SET status='completed', actual_count=$1, completed_at=NOW() WHERE id=$2`,
-          [actualCount, job.id]
+          `UPDATE scraper_runs SET status='completed', leads_kept=$1, finished_at=NOW() WHERE id=$2`,
+          [leadsKept, run.id]
         );
-        logger.info({ jobId: job.job_id, leadsInserted: actualCount }, 'Scrape job completed via cron poll');
+        logger.info({ runId: run.id, externalJobId, leadsInserted: leadsKept }, 'Scrape job completed via cron poll');
       } else if (scraperData.status === 'failed') {
-        await refundTokens({
-          userId: job.user_id,
-          amount: job.token_reserve,
-          reason: 'scrape_job_failed',
-          idempotencyKey: `scrape:refund:cron:${job.job_id}`,
-        });
-        await query(`UPDATE scraper_runs SET status='failed', completed_at=NOW() WHERE id=$1`, [job.id]);
-        logger.warn({ jobId: job.job_id }, 'Scrape job failed');
+        if (tokenReserve > 0) {
+          await refundTokens({
+            userId: run.user_id,
+            amount: tokenReserve,
+            reason: 'scrape_job_failed',
+            idempotencyKey: `scrape:refund:cron:${run.id}`,
+          });
+        }
+        await query(`UPDATE scraper_runs SET status='failed', finished_at=NOW() WHERE id=$1`, [run.id]);
+        logger.warn({ runId: run.id, externalJobId }, 'Scrape job failed');
       }
     } catch (err: any) {
-      logger.error({ err: err.message, jobId: job.job_id }, 'Cron: error polling scrape job');
+      logger.error({ err: err.message, runId: run.id, externalJobId }, 'Cron: error polling scrape job');
     }
   }
 }
 
 async function timeoutStaleJobs(): Promise<void> {
   const stale = await query(
-    `SELECT id, user_id, token_reserve, job_id FROM scraper_runs
-     WHERE status='running' AND created_at < NOW()-INTERVAL '2 hours'`
+    `SELECT id, user_id, run_log FROM scraper_runs
+     WHERE status='running' AND started_at < NOW()-INTERVAL '2 hours'`
   );
 
-  for (const job of stale) {
-    await refundTokens({
-      userId: job.user_id,
-      amount: job.token_reserve,
-      reason: 'scrape_timeout',
-      idempotencyKey: `scrape:timeout:${job.job_id}`,
-    });
-    await query(`UPDATE scraper_runs SET status='failed', completed_at=NOW() WHERE id=$1`, [job.id]);
-    logger.warn({ jobId: job.job_id }, 'Scrape job timed out');
+  for (const run of stale) {
+    const runLog = run.run_log ? (typeof run.run_log === 'string' ? JSON.parse(run.run_log) : run.run_log) : {};
+    const tokenReserve: number = runLog.token_reserve || 0;
+
+    if (tokenReserve > 0) {
+      await refundTokens({
+        userId: run.user_id,
+        amount: tokenReserve,
+        reason: 'scrape_timeout',
+        idempotencyKey: `scrape:timeout:${run.id}`,
+      });
+    }
+    await query(`UPDATE scraper_runs SET status='failed', error_msg='timed out', finished_at=NOW() WHERE id=$1`, [run.id]);
+    logger.warn({ runId: run.id }, 'Scrape job timed out');
   }
 }
 

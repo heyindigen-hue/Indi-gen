@@ -22,20 +22,22 @@ interface SignalHireResult {
   status?: 'found' | 'not_found' | 'processing';
 }
 
-export async function enrichLead(leadId: string, linkedinUrl?: string, email?: string): Promise<void> {
+export async function enrichLead(leadId: string, linkedinUrl?: string): Promise<void> {
   const apiKey = config.signalhire.apiKey;
   if (!apiKey) {
     logger.warn('SignalHire API key not configured');
     return;
   }
 
-  const searchData: any = { webhookUrl: `${process.env.PUBLIC_URL || ''}/webhook/signalhire` };
-  if (linkedinUrl) searchData.url = linkedinUrl;
-  else if (email) searchData.email = email;
-  else {
-    logger.warn({ leadId }, 'No linkedin URL or email to enrich');
+  if (!linkedinUrl) {
+    logger.warn({ leadId }, 'No linkedin URL to enrich');
     return;
   }
+
+  const searchData: any = {
+    url: linkedinUrl,
+    webhookUrl: `${process.env.PUBLIC_URL || ''}/webhook/signalhire`,
+  };
 
   try {
     const resp = await axios.post(`${BASE_URL}/candidate/search`, searchData, {
@@ -44,17 +46,20 @@ export async function enrichLead(leadId: string, linkedinUrl?: string, email?: s
     });
 
     const requestId = resp.data?.requestId;
+    // Store request ID in profile_data for callback matching
     await query(
-      `UPDATE enrichment_requests SET provider_job_id=$1, status='processing'
-       WHERE lead_id=$2 AND provider='signalhire' AND status='queued'`,
-      [requestId || null, leadId]
+      `UPDATE leads
+       SET enrichment_status='processing',
+           profile_data = COALESCE(profile_data,'{}') || $2::jsonb,
+           updated_at=NOW()
+       WHERE id=$1`,
+      [leadId, JSON.stringify({ signalhire_request_id: requestId || null })]
     );
   } catch (err: any) {
     logger.error({ err: err.message, leadId }, 'SignalHire enrichment request failed');
     await query(
-      `UPDATE enrichment_requests SET status='failed', error=$1
-       WHERE lead_id=$2 AND provider='signalhire' AND status='queued'`,
-      [err.message, leadId]
+      `UPDATE leads SET enrichment_status='failed', updated_at=NOW() WHERE id=$1`,
+      [leadId]
     );
   }
 }
@@ -65,44 +70,35 @@ export async function handleCallback(results: SignalHireResult[]): Promise<void>
       const requestId = result.requestId || result.candidateId;
       if (!requestId) continue;
 
-      const enrichReq = await queryOne<any>(
-        `SELECT lead_id FROM enrichment_requests WHERE provider_job_id=$1 AND provider='signalhire'`,
+      // Find lead by stored signalhire_request_id in profile_data
+      const lead = await queryOne<any>(
+        `SELECT id FROM leads WHERE profile_data->>'signalhire_request_id'=$1`,
         [requestId]
       );
-      if (!enrichReq) {
-        logger.warn({ requestId }, 'No enrichment request found for SignalHire callback');
+      if (!lead) {
+        logger.warn({ requestId }, 'No lead found for SignalHire callback');
         continue;
       }
 
-      const leadId = enrichReq.lead_id;
+      const leadId = lead.id;
       const contacts = result.contacts || [];
 
+      // contacts table: lead_id, type, value, verified_at — UNIQUE(lead_id, value)
       for (const contact of contacts) {
         await query(
-          `INSERT INTO lead_contacts (lead_id, type, value, is_verified, source)
-           VALUES ($1,$2,$3,$4,'signalhire')
-           ON CONFLICT (lead_id, type, value) DO UPDATE SET is_verified=$4, updated_at=NOW()`,
-          [leadId, contact.type, contact.value, contact.isVerified || false]
+          `INSERT INTO contacts (lead_id, type, value, verified_at)
+           VALUES ($1,$2,$3,$4)
+           ON CONFLICT (lead_id, value) DO UPDATE SET verified_at=$4`,
+          [leadId, contact.type, contact.value, contact.isVerified ? new Date() : null]
         );
       }
 
-      const updates: string[] = ['enriched_at=NOW()', 'updated_at=NOW()'];
+      const updates: string[] = ['enrichment_status=\'completed\'', 'enriched_at=NOW()', 'updated_at=NOW()'];
       const params: any[] = [];
 
-      const emails = contacts.filter(c => c.type === 'email').map(c => c.value);
-      const phones = contacts.filter(c => c.type === 'phone').map(c => c.value);
-
-      if (emails.length) {
-        params.push(emails[0]);
-        updates.push(`email=COALESCE(NULLIF(email,''), $${params.length})`);
-      }
-      if (phones.length) {
-        params.push(phones[0]);
-        updates.push(`phone=COALESCE(NULLIF(phone,''), $${params.length})`);
-      }
       if (result.currentJobTitle) {
         params.push(result.currentJobTitle);
-        updates.push(`title=COALESCE(NULLIF(title,''), $${params.length})`);
+        updates.push(`headline=COALESCE(NULLIF(headline,''), $${params.length})`);
       }
       if (result.currentCompany) {
         params.push(result.currentCompany);
@@ -110,17 +106,12 @@ export async function handleCallback(results: SignalHireResult[]): Promise<void>
       }
       if (result.fullName) {
         params.push(result.fullName);
-        updates.push(`full_name=COALESCE(NULLIF(full_name,''), $${params.length})`);
+        updates.push(`name=COALESCE(NULLIF(name,''), $${params.length})`);
       }
 
       params.push(leadId);
       await query(`UPDATE leads SET ${updates.join(',')} WHERE id=$${params.length}`, params);
 
-      await query(
-        `UPDATE enrichment_requests SET status='completed', completed_at=NOW()
-         WHERE lead_id=$1 AND provider='signalhire'`,
-        [leadId]
-      );
       logger.info({ leadId, contactsFound: contacts.length }, 'SignalHire enrichment completed');
     } catch (err: any) {
       logger.error({ err: err.message, result }, 'SignalHire callback processing failed');
@@ -130,8 +121,8 @@ export async function handleCallback(results: SignalHireResult[]): Promise<void>
 
 export async function batchEnrich(leadIds: string[]): Promise<void> {
   for (const leadId of leadIds) {
-    const lead = await queryOne<any>(`SELECT id, linkedin_url, email FROM leads WHERE id=$1`, [leadId]);
-    if (lead) await enrichLead(lead.id, lead.linkedin_url || undefined, lead.email || undefined);
+    const lead = await queryOne<any>(`SELECT id, linkedin_url FROM leads WHERE id=$1`, [leadId]);
+    if (lead) await enrichLead(lead.id, lead.linkedin_url || undefined);
     await new Promise(r => setTimeout(r, 200));
   }
 }

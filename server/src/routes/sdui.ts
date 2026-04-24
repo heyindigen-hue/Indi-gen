@@ -20,9 +20,9 @@ router.get('/ui-manifest', async (req, res) => {
   let experiments: any[] = [];
   if (user_id) {
     experiments = await query(
-      `SELECT e.key, ea.variant FROM experiment_assignments ea
-       JOIN experiments e ON e.id=ea.experiment_id
-       WHERE ea.user_id=$1 AND e.is_active=TRUE`,
+      `SELECT e.name AS key, ea.variant_index AS variant FROM ui_assignments ea
+       JOIN ui_experiments e ON e.id=ea.experiment_id
+       WHERE ea.user_id=$1 AND e.status='active'`,
       [user_id]
     );
   }
@@ -57,7 +57,7 @@ router.get('/manifests', async (_req, res) => {
 const manifestSchema = z.object({
   name: z.string().min(1),
   platform: z.enum(['mobile', 'web', 'all']).default('mobile'),
-  version: z.string().min(1),
+  version: z.number().int().positive(),
   content: z.record(z.any()),
 });
 
@@ -81,7 +81,7 @@ router.patch('/manifests/:id', async (req: any, res) => {
   if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
   params.push(req.params.id);
   const row = await queryOne<any>(
-    `UPDATE ui_manifests SET ${updates.join(',')}, updated_at=NOW() WHERE id=$${params.length} RETURNING *`,
+    `UPDATE ui_manifests SET ${updates.join(',')} WHERE id=$${params.length} RETURNING *`,
     params
   );
   if (!row) return res.status(404).json({ error: 'Manifest not found' });
@@ -91,8 +91,8 @@ router.patch('/manifests/:id', async (req: any, res) => {
 router.post('/manifests/:id/publish', async (req: any, res) => {
   await query(`UPDATE ui_manifests SET enabled=FALSE WHERE platform=(SELECT platform FROM ui_manifests WHERE id=$1)`, [req.params.id]);
   const row = await queryOne<any>(
-    `UPDATE ui_manifests SET enabled=TRUE, published_at=NOW(), published_by=$1 WHERE id=$2 RETURNING *`,
-    [req.user?.id || null, req.params.id]
+    `UPDATE ui_manifests SET enabled=TRUE, published_at=NOW() WHERE id=$1 RETURNING *`,
+    [req.params.id]
   );
   if (!row) return res.status(404).json({ error: 'Manifest not found' });
   res.json(row);
@@ -115,46 +115,44 @@ router.post('/manifests/:id/rollback', async (req: any, res) => {
 
 // Experiments
 router.get('/experiments', async (_req, res) => {
-  const rows = await query(`SELECT * FROM experiments ORDER BY created_at DESC`);
+  const rows = await query(`SELECT * FROM ui_experiments ORDER BY created_at DESC`);
   res.json(rows);
 });
 
 const experimentSchema = z.object({
-  key: z.string().min(1),
   name: z.string().min(1),
-  description: z.string().optional(),
+  platform: z.enum(['mobile', 'web', 'all']).default('mobile'),
   variants: z.array(z.object({ key: z.string(), weight: z.number() })),
 });
 
 router.post('/experiments', validateBody(experimentSchema), async (req: any, res) => {
-  const { key, name, description, variants } = req.body;
+  const { name, platform, variants } = req.body;
   const row = await queryOne<any>(
-    `INSERT INTO experiments (key, name, description, variants, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-    [key, name, description || null, JSON.stringify(variants), req.user?.id || null]
+    `INSERT INTO ui_experiments (name, platform, variants) VALUES ($1,$2,$3) RETURNING *`,
+    [name, platform, JSON.stringify(variants)]
   );
   res.status(201).json(row);
 });
 
 router.patch('/experiments/:id', async (req: any, res) => {
-  const { name, description, variants, is_active } = req.body;
+  const { name, variants, status } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
   if (name !== undefined) { params.push(name); updates.push(`name=$${params.length}`); }
-  if (description !== undefined) { params.push(description); updates.push(`description=$${params.length}`); }
   if (variants !== undefined) { params.push(JSON.stringify(variants)); updates.push(`variants=$${params.length}`); }
-  if (is_active !== undefined) { params.push(is_active); updates.push(`is_active=$${params.length}`); }
+  if (status !== undefined) { params.push(status); updates.push(`status=$${params.length}`); }
   if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
   params.push(req.params.id);
   const row = await queryOne<any>(
-    `UPDATE experiments SET ${updates.join(',')}, updated_at=NOW() WHERE id=$${params.length} RETURNING *`,
+    `UPDATE ui_experiments SET ${updates.join(',')} WHERE id=$${params.length} RETURNING *`,
     params
   );
   if (!row) return res.status(404).json({ error: 'Experiment not found' });
   res.json(row);
 });
 
-router.delete('/experiments/:id', async (_req, res) => {
-  await query(`DELETE FROM experiments WHERE id=$1`, [_req.params.id]);
+router.delete('/experiments/:id', async (req: any, res) => {
+  await query(`DELETE FROM ui_experiments WHERE id=$1`, [req.params.id]);
   res.json({ ok: true });
 });
 

@@ -41,7 +41,7 @@ router.get('/users', async (req, res) => {
   const where = conditions.join(' AND ');
   params.push(parseInt(limit as string), parseInt(offset as string));
   const users = await query(
-    `SELECT id, email, name, role, created_at, last_login_at, is_active FROM users WHERE ${where} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    `SELECT id, email, name, role, created_at, last_login_at FROM users WHERE ${where} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
   res.json(users);
@@ -53,7 +53,7 @@ router.get('/users/:id', async (req, res) => {
   const [subs, tokenBalance, outreach] = await Promise.all([
     query(`SELECT s.*, p.name AS plan_name FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.user_id=$1`, [req.params.id]),
     query(`SELECT COALESCE(SUM(delta),0)::bigint AS balance FROM token_transactions WHERE user_id=$1`, [req.params.id]),
-    query(`SELECT COUNT(*)::int AS count FROM outreach_logs WHERE user_id=$1`, [req.params.id]),
+    query(`SELECT COUNT(*)::int AS count FROM outreach_log WHERE user_id=$1`, [req.params.id]),
   ]);
   delete user.password_hash;
   res.json({ ...user, subscriptions: subs, tokenBalance: parseInt(tokenBalance[0]?.balance || '0'), outreachCount: outreach[0]?.count || 0 });
@@ -77,7 +77,7 @@ router.post('/users/:id/grant-tokens', validateBody(grantSchema), async (req: an
 
 router.delete('/users/:id', async (req: any, res) => {
   await query(`UPDATE users SET deleted_at=NOW(), updated_at=NOW() WHERE id=$1`, [req.params.id]);
-  await query(`INSERT INTO erasure_requests (user_id, requested_by, status) VALUES ($1,$2,'pending') ON CONFLICT DO NOTHING`, [req.params.id, req.user.id]);
+  await query(`INSERT INTO erasure_requests (user_id, status) VALUES ($1,'pending')`, [req.params.id]);
   await audit({ actorId: req.user.id, actorType: 'admin', action: 'admin.delete_user', targetType: 'user', targetId: req.params.id });
   res.json({ ok: true });
 });
@@ -107,7 +107,7 @@ router.get('/webhooks', async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   params.push(parseInt(limit as string), parseInt(offset as string));
   const rows = await query(
-    `SELECT * FROM webhooks_log ${where} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    `SELECT * FROM webhooks_log ${where} ORDER BY received_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
   res.json(rows);
@@ -124,30 +124,24 @@ router.post('/webhooks/:id/replay', async (req: any, res) => {
 router.get('/alerts', async (req, res) => {
   const { limit = '50', offset = '0' } = req.query;
   const rows = await query(
-    `SELECT * FROM system_alerts WHERE acked_at IS NULL ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+    `SELECT * FROM alerts WHERE acknowledged_at IS NULL ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
     [parseInt(limit as string), parseInt(offset as string)]
   );
   res.json(rows);
 });
 
 router.post('/alerts/:id/ack', async (req: any, res) => {
-  await query(`UPDATE system_alerts SET acked_at=NOW(), acked_by=$1 WHERE id=$2`, [req.user.id, req.params.id]);
+  await query(`UPDATE alerts SET acknowledged_at=NOW(), acknowledged_by=$1 WHERE id=$2`, [req.user.id, req.params.id]);
   res.json({ ok: true });
 });
 
-// Errors
-router.get('/errors/groups', async (req, res) => {
-  const { limit = '50', offset = '0' } = req.query;
-  const rows = await query(
-    `SELECT * FROM error_groups WHERE resolved_at IS NULL ORDER BY last_seen DESC LIMIT $1 OFFSET $2`,
-    [parseInt(limit as string), parseInt(offset as string)]
-  );
-  res.json(rows);
+// Errors — table not in schema, return empty
+router.get('/errors/groups', async (_req, res) => {
+  res.json([]);
 });
 
-router.post('/errors/groups/:id/resolve', async (req: any, res) => {
-  await query(`UPDATE error_groups SET resolved_at=NOW(), resolved_by=$1 WHERE id=$2`, [req.user.id, req.params.id]);
-  res.json({ ok: true });
+router.post('/errors/groups/:id/resolve', async (_req, res) => {
+  res.status(501).json({ error: 'Error tracking not implemented' });
 });
 
 // Settings
@@ -170,27 +164,28 @@ router.get('/settings/secret/:key', async (req: any, res) => {
   res.json({ key: req.params.key, value: row.value });
 });
 
-// Feature flags
+// Feature flags — schema: id TEXT PK, description, enabled BOOLEAN, rollout_percent, user_allowlist, plan_allowlist
 router.get('/feature_flags', async (_req, res) => {
-  const rows = await query(`SELECT * FROM feature_flags ORDER BY key ASC`);
+  const rows = await query(`SELECT * FROM feature_flags ORDER BY id ASC`);
   res.json(rows);
 });
 
-const flagSchema = z.object({ key: z.string().min(1), value: z.any(), description: z.string().optional() });
+const flagSchema = z.object({ id: z.string().min(1), enabled: z.boolean().default(false), description: z.string().optional() });
 router.post('/feature_flags', validateBody(flagSchema), async (req: any, res) => {
   const flag = await queryOne<any>(
-    `INSERT INTO feature_flags (key, value, description, created_by) VALUES ($1,$2,$3,$4) RETURNING *`,
-    [req.body.key, JSON.stringify(req.body.value), req.body.description || null, req.user.id]
+    `INSERT INTO feature_flags (id, enabled, description) VALUES ($1,$2,$3) RETURNING *`,
+    [req.body.id, req.body.enabled ?? false, req.body.description || null]
   );
   res.status(201).json(flag);
 });
 
 router.patch('/feature_flags/:id', async (req: any, res) => {
-  const { value, description } = req.body;
+  const { enabled, description, rollout_percent } = req.body;
   const updates: string[] = [];
   const params: any[] = [];
-  if (value !== undefined) { params.push(JSON.stringify(value)); updates.push(`value=$${params.length}`); }
+  if (enabled !== undefined) { params.push(enabled); updates.push(`enabled=$${params.length}`); }
   if (description !== undefined) { params.push(description); updates.push(`description=$${params.length}`); }
+  if (rollout_percent !== undefined) { params.push(rollout_percent); updates.push(`rollout_percent=$${params.length}`); }
   if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
   params.push(req.params.id);
   await query(`UPDATE feature_flags SET ${updates.join(',')}, updated_at=NOW() WHERE id=$${params.length}`, params);
@@ -203,38 +198,23 @@ router.delete('/feature_flags/:id', async (req: any, res) => {
 });
 
 router.post('/feature_flags/:id/toggle', async (req: any, res) => {
-  const flag = await queryOne<any>(`SELECT id, value FROM feature_flags WHERE id=$1`, [req.params.id]);
+  const flag = await queryOne<any>(`SELECT id, enabled FROM feature_flags WHERE id=$1`, [req.params.id]);
   if (!flag) return res.status(404).json({ error: 'Flag not found' });
-  const current = typeof flag.value === 'boolean' ? flag.value : flag.value === 'true';
-  await query(`UPDATE feature_flags SET value=$1, updated_at=NOW() WHERE id=$2`, [JSON.stringify(!current), req.params.id]);
-  res.json({ ok: true, enabled: !current });
+  await query(`UPDATE feature_flags SET enabled=$1, updated_at=NOW() WHERE id=$2`, [!flag.enabled, req.params.id]);
+  res.json({ ok: true, enabled: !flag.enabled });
 });
 
-// Approvals
-router.get('/approvals', async (req, res) => {
-  const rows = await query(
-    `SELECT * FROM approval_queue WHERE status='pending' ORDER BY created_at ASC LIMIT 50`
-  );
-  res.json(rows);
+// Approvals — table not in schema, return stubs
+router.get('/approvals', async (_req, res) => {
+  res.json([]);
 });
 
-const approvalActionSchema = z.object({ note: z.string().optional() });
-router.post('/approvals/:id/approve', validateBody(approvalActionSchema), async (req: any, res) => {
-  await query(
-    `UPDATE approval_queue SET status='approved', reviewed_by=$1, reviewed_at=NOW(), note=$2 WHERE id=$3`,
-    [req.user.id, req.body.note || null, req.params.id]
-  );
-  await audit({ actorId: req.user.id, actorType: 'admin', action: 'admin.approval_approve', targetType: 'approval', targetId: req.params.id });
-  res.json({ ok: true });
+router.post('/approvals/:id/approve', async (_req, res) => {
+  res.status(501).json({ error: 'Approval queue not implemented' });
 });
 
-router.post('/approvals/:id/reject', validateBody(approvalActionSchema), async (req: any, res) => {
-  await query(
-    `UPDATE approval_queue SET status='rejected', reviewed_by=$1, reviewed_at=NOW(), note=$2 WHERE id=$3`,
-    [req.user.id, req.body.note || null, req.params.id]
-  );
-  await audit({ actorId: req.user.id, actorType: 'admin', action: 'admin.approval_reject', targetType: 'approval', targetId: req.params.id });
-  res.json({ ok: true });
+router.post('/approvals/:id/reject', async (_req, res) => {
+  res.status(501).json({ error: 'Approval queue not implemented' });
 });
 
 // SQL playground (read-only)

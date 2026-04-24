@@ -19,8 +19,8 @@ const subscribeSchema = z.object({
 
 router.get('/plans', async (_req, res) => {
   const plans = await query(
-    `SELECT id, name, description, price_monthly, price_annual, tokens_included, features, is_active
-     FROM subscription_plans WHERE is_active=TRUE ORDER BY price_monthly ASC`
+    `SELECT id, name, description, price_inr, tokens_included, features, enabled
+     FROM subscription_plans WHERE enabled=TRUE ORDER BY price_inr ASC`
   );
   res.json(plans);
 });
@@ -70,12 +70,6 @@ router.post('/checkout/topup', validateBody(topupSchema), async (req: any, res) 
     const response = await Cashfree.PGCreateOrder('2023-08-01', orderReq);
     const order = response.data;
 
-    await query(
-      `INSERT INTO payment_orders (order_id, user_id, amount, currency, status, tokens, order_type, cf_order_id)
-       VALUES ($1,$2,$3,'INR','created',$4,'topup',$5)`,
-      [orderId, req.user.id, amount, tokens, order.cf_order_id || null]
-    );
-
     res.status(201).json({ orderId, paymentSessionId: order.payment_session_id, cfOrderId: order.cf_order_id });
   } catch (err: any) {
     res.status(502).json({ error: 'Payment gateway error', detail: err.message });
@@ -84,7 +78,7 @@ router.post('/checkout/topup', validateBody(topupSchema), async (req: any, res) 
 
 router.post('/checkout/subscribe', validateBody(subscribeSchema), async (req: any, res) => {
   const { planId } = req.body;
-  const plan = await queryOne<any>(`SELECT * FROM subscription_plans WHERE id=$1 AND is_active=TRUE`, [planId]);
+  const plan = await queryOne<any>(`SELECT * FROM subscription_plans WHERE id=$1 AND enabled=TRUE`, [planId]);
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
 
   const user = await queryOne<any>(`SELECT id, email, name, phone FROM users WHERE id=$1`, [req.user.id]);
@@ -108,7 +102,7 @@ router.post('/checkout/subscribe', validateBody(subscribeSchema), async (req: an
     await query(
       `INSERT INTO subscriptions (user_id, plan_id, cashfree_subscription_id, status, current_period_start)
        VALUES ($1,$2,$3,'pending',NOW())
-       ON CONFLICT (user_id, plan_id) DO UPDATE SET cashfree_subscription_id=$3, status='pending', updated_at=NOW()`,
+       ON CONFLICT (cashfree_subscription_id) DO UPDATE SET status='pending', updated_at=NOW()`,
       [req.user.id, planId, sub.subscription_id || subReq.subscription_id]
     );
 
@@ -133,7 +127,7 @@ router.post('/subscriptions/:id/cancel', async (req: any, res) => {
 
 router.get('/invoices', async (req: any, res) => {
   const invoices = await query(
-    `SELECT id, amount, currency, status, invoice_date, due_date, pdf_url, created_at
+    `SELECT id, total, currency, status, issued_at, due_at, created_at
      FROM invoices WHERE user_id=$1 ORDER BY created_at DESC`,
     [req.user.id]
   );

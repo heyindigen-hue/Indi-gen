@@ -18,7 +18,7 @@ import adminRouter from './routes/admin';
 import sduiRouter from './routes/sdui';
 import dpdpRouter from './routes/dpdp';
 import { attachSSE } from './sse/bus';
-// import { startScrapeJobCron } from './cron/scrapeJob';
+import { startScrapeJobCron } from './cron/scrapeJob';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -60,7 +60,7 @@ app.get('/api/me/live', requireAuth, (req: any, res) => attachSSE(res, [`user:${
 
 app.use(errorHandler);
 
-// startScrapeJobCron() - disabled pending fix;
+startScrapeJobCron();
 
 const server = app.listen(config.port, () => {
   logger.info(`Indi-gen API on :${config.port} (env: ${config.nodeEnv})`);

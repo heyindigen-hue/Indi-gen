@@ -65,10 +65,6 @@ router.post('/cashfree', express.raw({ type: '*/*' }), async (req, res) => {
           userId, amount: parseInt(tokens), source: 'topup', sourceRef: orderId,
           idempotencyKey: `cf:order:${orderId}`,
         });
-        await query(
-          `UPDATE payment_orders SET status='paid', updated_at=NOW() WHERE order_id=$1`,
-          [orderId]
-        );
       }
     } else if (eventType === 'SUBSCRIPTION_ACTIVATED') {
       const subId = data?.subscription_details?.subscription_id;
