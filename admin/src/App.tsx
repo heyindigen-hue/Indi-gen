@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import Login from '@/pages/Login';
+import Dashboard from '@/pages/dashboard';
 import { useAuth } from '@/store/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -44,7 +45,7 @@ export default function App() {
           </RequireAuth>
         }
       >
-        <Route index element={<PlaceholderPage title="Dashboard" description="Overview of your platform" />} />
+        <Route index element={<Dashboard />} />
 
         {/* Users */}
         <Route path="users" element={<PlaceholderPage title="Users" description="Manage all registered users" />} />
