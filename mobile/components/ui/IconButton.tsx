@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity } from 'react-native';
-import * as Icons from 'lucide-react-native';
+import * as Icons from '../icons';
 import { useTheme } from '../../lib/themeContext';
 import { haptic } from '../../lib/haptics';
 
@@ -20,9 +20,9 @@ function toPascalCase(name: string): string {
 
 export function IconButton({ icon, onPress, size = 22, color }: Props) {
   const { palette } = useTheme();
-  const IconCmp = (Icons as unknown as Record<string, React.FC<{ size: number; color: string; strokeWidth: number }>>)[
-    toPascalCase(icon)
-  ];
+  const pascalName = toPascalCase(icon);
+  const withSuffix = pascalName.endsWith('Icon') ? pascalName : `${pascalName}Icon`;
+  const IconCmp = (Icons as unknown as Record<string, React.FC<{ size: number; color: string; strokeWidth: number }>>)[withSuffix];
 
   const handlePress = () => {
     haptic.light();

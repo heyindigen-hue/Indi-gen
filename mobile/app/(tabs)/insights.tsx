@@ -10,13 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
-import {
-  TrendingUp,
-  Send,
-  MessageSquare,
-  Target,
-  Calendar,
-} from 'lucide-react-native';
+import { ChartIcon, SendIcon, SparkleIcon, SearchIcon, TagIcon } from '../../components/icons';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 
@@ -117,7 +111,7 @@ function ActivityHeatmap({
       ]}
     >
       <View style={styles.heatmapHeader}>
-        <Calendar size={16} color={palette.muted} strokeWidth={1.5} />
+        <TagIcon size={16} color={palette.muted} strokeWidth={1.5} />
         <Text style={[styles.heatmapTitle, { color: palette.text }]}>
           Activity (last 30 days)
         </Text>
@@ -194,21 +188,21 @@ export default function InsightsScreen() {
         >
           <View style={styles.kpiGrid}>
             <KpiCard
-              icon={<TrendingUp size={24} color={palette.muted} strokeWidth={1.5} />}
+              icon={<ChartIcon size={24} color={palette.muted} strokeWidth={1.5} />}
               value={String(d.totalLeadsSaved)}
               subtitle="Total leads saved"
               palette={palette}
               radius={radius}
             />
             <KpiCard
-              icon={<Send size={24} color={palette.muted} strokeWidth={1.5} />}
+              icon={<SendIcon size={24} color={palette.muted} strokeWidth={1.5} />}
               value={String(d.sentThisWeek)}
               subtitle="Messages sent this week"
               palette={palette}
               radius={radius}
             />
             <KpiCard
-              icon={<MessageSquare size={24} color={palette.muted} strokeWidth={1.5} />}
+              icon={<SparkleIcon size={24} color={palette.muted} strokeWidth={1.5} />}
               value={`${d.replyRate}%`}
               subtitle="Reply rate"
               valueColor={replyColor}
@@ -216,7 +210,7 @@ export default function InsightsScreen() {
               radius={radius}
             />
             <KpiCard
-              icon={<Target size={24} color={palette.muted} strokeWidth={1.5} />}
+              icon={<SearchIcon size={24} color={palette.muted} strokeWidth={1.5} />}
               value={d.topIcp ?? '—'}
               subtitle="Top ICP segment"
               palette={palette}

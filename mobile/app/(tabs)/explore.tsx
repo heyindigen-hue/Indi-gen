@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bookmark } from 'lucide-react-native';
+import { BookmarkIcon } from '../../components/icons';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
@@ -83,7 +83,7 @@ function EmptyState({
   const hasSearch = search.trim().length > 0;
   return (
     <View style={styles.emptyState}>
-      <Bookmark size={40} color={palette.muted} strokeWidth={1.5} />
+      <BookmarkIcon size={40} color={palette.muted} strokeWidth={1.5} />
       <Text style={[styles.emptyText, { color: palette.muted }]}>
         {hasSearch
           ? `No leads match "${search}"`

@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Inbox, Send, MessageSquare } from 'lucide-react-native';
+import { BookmarkIcon, SendIcon, SparkleIcon } from '../../components/icons';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
@@ -96,15 +96,15 @@ function ChannelBadge({ channel, palette }: { channel: OutreachItem['channel']; 
 function EmptyState({ tab, palette }: { tab: OutreachTab; palette: any }) {
   const messages: Record<OutreachTab, { icon: React.ReactNode; text: string }> = {
     pending: {
-      icon: <Inbox size={40} color={palette.muted} strokeWidth={1.5} />,
+      icon: <BookmarkIcon size={40} color={palette.muted} strokeWidth={1.5} />,
       text: 'No drafts pending. Go save some leads!',
     },
     sent: {
-      icon: <Send size={40} color={palette.muted} strokeWidth={1.5} />,
+      icon: <SendIcon size={40} color={palette.muted} strokeWidth={1.5} />,
       text: 'No messages sent yet.',
     },
     replied: {
-      icon: <MessageSquare size={40} color={palette.muted} strokeWidth={1.5} />,
+      icon: <SparkleIcon size={40} color={palette.muted} strokeWidth={1.5} />,
       text: 'No replies yet. Keep reaching out!',
     },
   };

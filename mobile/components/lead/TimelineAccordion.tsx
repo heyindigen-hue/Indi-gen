@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDownIcon } from '../icons';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 import { haptic } from '../../lib/haptics';
@@ -157,7 +157,7 @@ export default function TimelineAccordion({ leadId }: TimelineAccordionProps) {
 
         <View style={styles.chevronContainer}>
           <Animated.View style={{ transform: [{ rotate: chevronRotation }] }}>
-            <ChevronDown size={16} color={palette.muted} />
+            <ChevronDownIcon size={16} color={palette.muted} />
           </Animated.View>
         </View>
       </Pressable>

@@ -15,16 +15,16 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronLeft,
-  X,
-  Wand2,
-  Globe,
-  Users,
-  Mail,
-  Phone,
-  Link2,
-  PenLine,
-} from 'lucide-react-native';
+  ChevronLeftIcon,
+  XIcon,
+  SparkleIcon,
+  SearchIcon,
+  UsersIcon,
+  MailIcon,
+  PhoneIcon,
+  LinkIcon,
+  PenLineIcon,
+} from '../../components/icons';
 
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
@@ -186,7 +186,7 @@ function RecentPostSection({ postPreview }: PostSectionProps) {
   return (
     <View style={styles.section}>
       <SectionHeader
-        icon={<Globe size={16} color={palette.muted} />}
+        icon={<SearchIcon size={16} color={palette.muted} />}
         title="Recent Post"
       />
       <View
@@ -229,13 +229,13 @@ function ContactsSection({ lead }: ContactsSectionProps) {
   return (
     <View style={styles.section}>
       <SectionHeader
-        icon={<Users size={16} color={palette.muted} />}
+        icon={<UsersIcon size={16} color={palette.muted} />}
         title="Contacts"
       />
       <View style={styles.contactList}>
         {lead.email ? (
           <ContactRow
-            icon={<Mail size={18} color={palette.muted} />}
+            icon={<MailIcon size={18} color={palette.muted} />}
             label="Email"
             value={lead.email}
             onPress={() => Linking.openURL(`mailto:${lead.email}`)}
@@ -244,7 +244,7 @@ function ContactsSection({ lead }: ContactsSectionProps) {
         ) : null}
         {lead.phone ? (
           <ContactRow
-            icon={<Phone size={18} color={palette.muted} />}
+            icon={<PhoneIcon size={18} color={palette.muted} />}
             label="Phone"
             value={lead.phone}
             onPress={() => Linking.openURL(`tel:${lead.phone}`)}
@@ -253,7 +253,7 @@ function ContactsSection({ lead }: ContactsSectionProps) {
         ) : null}
         {lead.linkedinUrl ? (
           <ContactRow
-            icon={<Link2 size={18} color={palette.muted} />}
+            icon={<LinkIcon size={18} color={palette.muted} />}
             label="LinkedIn"
             value="View Profile"
             onPress={() => Linking.openURL(lead.linkedinUrl!)}
@@ -294,7 +294,7 @@ function NotesSection({ leadId, initialNotes }: NotesSectionProps) {
   return (
     <View style={styles.section}>
       <SectionHeader
-        icon={<PenLine size={16} color={palette.muted} />}
+        icon={<PenLineIcon size={16} color={palette.muted} />}
         title="Notes"
       />
       <TextInput
@@ -341,7 +341,7 @@ function StickyHeader({ title, topInset }: StickyHeaderProps) {
         style={styles.headerBtn}
         hitSlop={8}
       >
-        <ChevronLeft size={22} color={palette.text} />
+        <ChevronLeftIcon size={22} color={palette.text} />
       </Pressable>
       <Text style={[styles.headerTitle, { color: palette.text }]} numberOfLines={1}>
         {title}
@@ -354,7 +354,7 @@ function StickyHeader({ title, topInset }: StickyHeaderProps) {
         style={styles.headerBtn}
         hitSlop={8}
       >
-        <X size={20} color={palette.muted} />
+        <XIcon size={20} color={palette.muted} />
       </Pressable>
     </BlurView>
   );
@@ -505,7 +505,7 @@ export default function LeadDetailScreen() {
         {/* AI Drafts */}
         <View style={styles.section}>
           <SectionHeader
-            icon={<Wand2 size={16} color={palette.muted} />}
+            icon={<SparkleIcon size={16} color={palette.muted} />}
             title="AI Drafts"
           />
           <DraftEditor

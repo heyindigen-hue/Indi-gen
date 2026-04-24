@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
+import { ChevronRightIcon } from '../icons';
 import { useTheme } from '../../lib/themeContext';
 import { haptic } from '../../lib/haptics';
 
@@ -56,7 +56,7 @@ export default function ContactRow({
       </View>
 
       {/* Arrow */}
-      <ChevronRight size={16} color={palette.muted} />
+      <ChevronRightIcon size={16} color={palette.muted} />
     </Pressable>
   );
 }

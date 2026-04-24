@@ -13,22 +13,26 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import {
-  User,
-  Mail,
-  CreditCard,
-  LogOut,
-  Zap,
-  Star,
-  Bell,
-  Vibrate,
-  FileText,
-  Shield,
-  BookOpen,
-  HelpCircle,
-  Info,
-  Trash2,
-  ChevronRight,
-} from 'lucide-react-native';
+  UserIcon,
+  MailIcon,
+  CreditCardIcon,
+  LogOutIcon,
+  ZapIcon,
+  StarIcon,
+  BellIcon,
+  VibrateIcon,
+  FileTextIcon,
+  ShieldIcon,
+  BookIcon,
+  HelpCircleIcon,
+  InfoIcon,
+  TrashIcon,
+  ChevronRightIcon,
+  SunIcon,
+  MoonIcon,
+  SparkleIcon,
+  CheckIcon,
+} from '../../components/icons';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 import { useAuth } from '../../store/auth';
@@ -81,7 +85,7 @@ function Row({ icon, label, value, onPress, showChevron = false, labelColor, isL
       ) : null}
       {right ?? null}
       {showChevron ? (
-        <ChevronRight size={16} color={palette.muted} strokeWidth={1.5} />
+        <ChevronRightIcon size={16} color={palette.muted} strokeWidth={1.5} />
       ) : null}
     </Pressable>
   );
@@ -121,7 +125,7 @@ function ToggleRow({
 }
 
 export default function SettingsScreen() {
-  const { palette, radius } = useTheme();
+  const { palette, radius, mode, setMode } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
 
@@ -190,25 +194,25 @@ export default function SettingsScreen() {
       >
         <Section title="Account">
           <Row
-            icon={<User size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<UserIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Name"
             value={user?.name ?? '—'}
             isLast={false}
           />
           <Row
-            icon={<Mail size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<MailIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Email"
             value={user?.email ?? '—'}
             isLast={false}
           />
           <Row
-            icon={<CreditCard size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<CreditCardIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Plan"
             value="Free Plan"
             isLast={false}
           />
           <Row
-            icon={<LogOut size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
+            icon={<LogOutIcon size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
             label="Sign Out"
             labelColor={palette.destructive}
             onPress={handleSignOut}
@@ -219,13 +223,13 @@ export default function SettingsScreen() {
 
         <Section title="Billing">
           <Row
-            icon={<Zap size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<ZapIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Token Balance"
             value={`${tokenData?.balance ?? 0} tokens`}
             isLast={false}
           />
           <Row
-            icon={<Star size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<StarIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Upgrade Plan"
             onPress={() => router.push('/paywall' as any)}
             showChevron
@@ -235,14 +239,14 @@ export default function SettingsScreen() {
 
         <Section title="Preferences">
           <ToggleRow
-            icon={<Bell size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<BellIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Push Notifications"
             value={notificationsOn}
             onChange={setNotificationsOn}
             isLast={false}
           />
           <ToggleRow
-            icon={<Vibrate size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<VibrateIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Haptic Feedback"
             value={hapticsOn}
             onChange={setHapticsOn}
@@ -250,9 +254,32 @@ export default function SettingsScreen() {
           />
         </Section>
 
+        <Section title="Appearance">
+          {(['light', 'dark', 'system'] as const).map((m, i, arr) => (
+            <Pressable
+              key={m}
+              onPress={() => setMode(m)}
+              style={[
+                styles.row,
+                i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: palette.border },
+              ]}
+            >
+              <View style={styles.rowIcon}>
+                {m === 'light' ? <SunIcon size={iconSize} color={iconColor} /> :
+                 m === 'dark' ? <MoonIcon size={iconSize} color={iconColor} /> :
+                 <SparkleIcon size={iconSize} color={iconColor} />}
+              </View>
+              <Text style={[styles.rowLabel, { color: palette.text }]}>
+                {m.charAt(0).toUpperCase() + m.slice(1)}
+              </Text>
+              {mode === m && <CheckIcon size={16} color={palette.primary} />}
+            </Pressable>
+          ))}
+        </Section>
+
         <Section title="Branding">
           <Row
-            icon={<Star size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<StarIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="White Label"
             value="Contact sales to enable"
             isLast
@@ -261,21 +288,21 @@ export default function SettingsScreen() {
 
         <Section title="Legal">
           <Row
-            icon={<FileText size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<FileTextIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Terms of Service"
             onPress={() => openUrl('https://indigenservices.com/terms')}
             showChevron
             isLast={false}
           />
           <Row
-            icon={<Shield size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<ShieldIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Privacy Policy"
             onPress={() => openUrl('https://indigenservices.com/privacy')}
             showChevron
             isLast={false}
           />
           <Row
-            icon={<BookOpen size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<BookIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="DPDP Compliance"
             onPress={() => openUrl('https://indigenservices.com/dpdp')}
             showChevron
@@ -285,14 +312,14 @@ export default function SettingsScreen() {
 
         <Section title="Support">
           <Row
-            icon={<HelpCircle size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<HelpCircleIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Get Help"
             onPress={() => openUrl('mailto:support@indigenservices.com')}
             showChevron
             isLast={false}
           />
           <Row
-            icon={<Info size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            icon={<InfoIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="App Version"
             value={APP_VERSION}
             isLast
@@ -308,7 +335,7 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: palette.destructive }]}>Danger Zone</Text>
           <View style={[styles.sectionCard, { backgroundColor: palette.card, borderColor: palette.destructive + '40' }]}>
             <Row
-              icon={<Trash2 size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
+              icon={<TrashIcon size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
               label="Delete Account"
               labelColor={palette.destructive}
               onPress={handleDeleteAccount}
