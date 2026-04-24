@@ -22,7 +22,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.indigenservices.indigen"
+      "package": "com.indigenservices.indigen",
+      "permissions": ["NOTIFICATIONS"],
+      "blockedPermissions": [],
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "bundler": "metro"
