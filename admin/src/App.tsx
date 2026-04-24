@@ -2,6 +2,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/dashboard';
+import UsersPage from '@/pages/users/index';
+import UserDetailPage from '@/pages/users/[id]';
+import InvitesPage from '@/pages/users/invites';
+import WaitlistPage from '@/pages/users/waitlist';
 import { useAuth } from '@/store/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -48,7 +52,10 @@ export default function App() {
         <Route index element={<Dashboard />} />
 
         {/* Users */}
-        <Route path="users" element={<PlaceholderPage title="Users" description="Manage all registered users" />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="users/invites" element={<InvitesPage />} />
+        <Route path="users/waitlist" element={<WaitlistPage />} />
+        <Route path="users/:id" element={<UserDetailPage />} />
         <Route path="users/verification" element={<PlaceholderPage title="User Verification" />} />
         <Route path="users/activity" element={<PlaceholderPage title="User Activity" />} />
         <Route path="users/roles" element={<PlaceholderPage title="Roles & Permissions" />} />
