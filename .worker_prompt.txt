@@ -1,0 +1,237 @@
+You are the WORKER Claude on PC2 building the "Indi-gen" project, a SaaS LinkedIn lead-hunting platform with mobile + admin web + backend.
+
+## Your Task: Scaffold the monorepo structure
+
+Create this exact folder/file structure in the current directory (C:\Users\Indigen-Server-2\Desktop\Indi-gen). Do not implement logic yet — just create empty/placeholder files and working configs.
+
+```
+Indi-gen/
+├── server/                    # Node.js + Express + TypeScript API
+│   ├── src/
+│   │   ├── db/                # pg pool, migrations, seed
+│   │   ├── routes/            # REST routes (leads, admin, auth, etc.)
+│   │   ├── middleware/        # auth, rate-limit, logging
+│   │   ├── services/          # business logic (scoring, filter, drafts, payments)
+│   │   ├── scraper/           # calls Python scraper service via HTTP
+│   │   ├── enrichment/        # SignalHire integration
+│   │   ├── cron/              # scheduled jobs (scrapeJob, billingJob)
+│   │   ├── sse/               # server-sent events for live admin updates
+│   │   ├── queue/             # BullMQ job queue helpers
+│   │   ├── utils/
+│   │   └── index.ts           # entrypoint
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── .env.example
+│   └── Dockerfile
+├── scraper-service/           # Python FastAPI microservice using linkedin-api lib
+│   ├── app/
+│   │   ├── main.py            # FastAPI entrypoint
+│   │   ├── linkedin_client.py # wraps linkedin-api library
+│   │   ├── cache.py           # Redis-backed result cache
+│   │   ├── rate_limiter.py    # protect against LinkedIn bans
+│   │   └── models.py          # pydantic models
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
+├── admin/                     # React + Vite + Shadcn admin panel
+│   ├── src/
+│   │   ├── pages/             # each sidebar section is a folder
+│   │   │   ├── dashboard/
+│   │   │   ├── users/
+│   │   │   ├── leads/
+│   │   │   ├── scrapers/
+│   │   │   ├── ai/
+│   │   │   ├── integrations/
+│   │   │   ├── sources/
+│   │   │   ├── financial/
+│   │   │   ├── growth/
+│   │   │   ├── support/
+│   │   │   ├── platform/
+│   │   │   ├── mobile/
+│   │   │   ├── team/
+│   │   │   ├── config/
+│   │   │   ├── security/
+│   │   │   └── developer/
+│   │   ├── components/
+│   │   │   ├── ui/            # shadcn primitives (button, card, etc.)
+│   │   │   ├── charts/        # recharts/tremor wrappers
+│   │   │   ├── layout/        # sidebar, topbar, page shell
+│   │   │   └── common/
+│   │   ├── hooks/
+│   │   ├── lib/               # utils, api client, query hooks
+│   │   ├── store/             # zustand stores
+│   │   ├── types/
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── public/
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   └── .env.example
+├── mobile/                    # Expo SDK 50 React Native app
+│   ├── app/                   # Expo Router (file-based)
+│   │   ├── (auth)/
+│   │   │   ├── login.tsx
+│   │   │   └── _layout.tsx
+│   │   ├── (tabs)/
+│   │   │   ├── index.tsx      # Home/Leads feed
+│   │   │   ├── explore.tsx    # Saved/starred
+│   │   │   ├── outreach.tsx   # Drafts/sent
+│   │   │   ├── insights.tsx   # Personal KPIs
+│   │   │   ├── settings.tsx
+│   │   │   └── _layout.tsx
+│   │   ├── lead/[id].tsx      # lead detail screen
+│   │   ├── onboarding.tsx
+│   │   ├── paywall.tsx        # token/subscription purchase
+│   │   ├── webview-linkedin.tsx  # in-app LinkedIn browser to add leads manually
+│   │   └── _layout.tsx
+│   ├── components/
+│   ├── hooks/
+│   ├── lib/                   # api, auth, theme
+│   ├── constants/
+│   ├── assets/
+│   ├── app.json               # Expo config
+│   ├── eas.json               # EAS build config
+│   ├── package.json
+│   ├── babel.config.js
+│   └── tsconfig.json
+├── shared/
+│   └── types/                 # shared TS types used by server + admin + mobile
+│       ├── lead.ts
+│       ├── user.ts
+│       ├── subscription.ts
+│       └── index.ts
+├── db/
+│   ├── migrations/            # numbered SQL migration files
+│   │   └── 001_initial_schema.sql   # leave empty, next task fills it
+│   └── seed.sql               # leave empty, next task fills it
+├── docs/
+│   └── architecture.md        # short description of the system
+├── docker-compose.yml         # postgres + redis + server + scraper + admin + nginx
+├── nginx.conf                 # routes /api to server, /admin to admin, /scrape to scraper
+├── .gitignore
+├── .env.example               # root-level env reference
+└── README.md
+```
+
+## Specific requirements for the scaffold
+
+### server/package.json
+- Name: `indigen-server`
+- Scripts: `dev` (tsx watch src/index.ts), `start` (tsx src/index.ts), `build` (tsc), `migrate` (runs SQL files in db/migrations against $DATABASE_URL)
+- Dependencies: `express`, `cors`, `helmet`, `pg`, `jsonwebtoken`, `bcrypt`, `dotenv`, `zod`, `pino`, `pino-http`, `ioredis`, `bullmq`, `node-cron`, `axios`, `cashfree-pg`
+- DevDependencies: `typescript`, `tsx`, `@types/node`, `@types/express`, `@types/cors`, `@types/pg`, `@types/jsonwebtoken`, `@types/bcrypt`
+
+### server/tsconfig.json
+Standard Node strict TS config (target ES2022, module commonjs, strict true, esModuleInterop true, outDir dist).
+
+### server/src/index.ts
+Create a minimal but real Express app that:
+- Loads dotenv
+- Mounts cors + helmet + json body parser + pino-http logger
+- Registers a `/health` endpoint returning `{ status: 'ok', uptime, version }`
+- Listens on `process.env.PORT || 3001`
+- Logs "Indi-gen API server on :PORT" on boot
+- Has placeholder comments where future routes will mount
+
+### scraper-service/app/main.py
+FastAPI app with:
+- POST `/scrape/search` (keywords: list[str], limit: int) — returns stub `{ "status": "not_implemented" }`
+- GET `/scrape/profile/{public_id}` — returns stub
+- GET `/health` — returns `{ "status": "ok" }`
+- Runs on port 8000
+
+### scraper-service/requirements.txt
+```
+fastapi==0.110.0
+uvicorn[standard]==0.27.0
+linkedin-api==2.1.1
+redis==5.0.1
+pydantic==2.6.0
+python-dotenv==1.0.1
+httpx==0.27.0
+```
+
+### scraper-service/Dockerfile
+Python 3.11-slim, installs requirements, exposes 8000, runs `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
+
+### admin/package.json
+Name `indigen-admin`. Vite + React 18 + TypeScript.
+Dependencies: `react`, `react-dom`, `react-router-dom`, `@tanstack/react-query`, `zustand`, `axios`, `lucide-react`, `recharts`, `framer-motion`, `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`, `react-hook-form`, `zod`, `@hookform/resolvers`, `sonner` (toasts), `cmdk` (command palette)
+DevDeps: `vite`, `@vitejs/plugin-react`, `typescript`, `tailwindcss`, `postcss`, `autoprefixer`, `@types/react`, `@types/react-dom`
+Scripts: `dev` (vite), `build`, `preview`
+
+### admin/vite.config.ts
+- Port 5173
+- Path alias `@` -> `./src`
+- Proxy `/api` -> `http://localhost:3001`
+
+### admin/tailwind.config.js
+Full shadcn/ui preset with CSS variables for theme (dark + light).
+
+### admin/src/main.tsx + App.tsx
+Set up:
+- QueryClient + QueryClientProvider
+- BrowserRouter
+- Toaster (sonner)
+- Root route showing "Indi-gen Admin — scaffold ready"
+Set up all sidebar section folders with an `index.tsx` returning `<div>Section coming soon</div>` so routes don't 404.
+
+### mobile/package.json
+Name `indigen-mobile`. Expo SDK 50.
+Dependencies: `expo` (~50.0.0), `expo-router`, `expo-linking`, `expo-status-bar`, `expo-constants`, `expo-font`, `expo-secure-store`, `expo-web-browser`, `react`, `react-native`, `react-native-reanimated`, `react-native-gesture-handler`, `react-native-safe-area-context`, `react-native-screens`, `@tanstack/react-query`, `axios`, `react-native-svg`, `nativewind`, `react-hook-form`, `zod`
+DevDeps: `typescript`, `@types/react`, `@babel/core`
+
+### mobile/app.json
+Expo config with name "Indi-gen", slug "indi-gen", scheme "indigen", newArchEnabled: true, android package `com.indigenservices.indigen`, plugins: `expo-router`, `expo-secure-store`, `expo-font`.
+
+### mobile/eas.json
+Three build profiles: `development` (internal), `preview` (internal apk), `production` (aab).
+
+### mobile/app/_layout.tsx
+Expo Router root layout with Stack, QueryClientProvider, SafeAreaProvider.
+
+### mobile/app/(tabs)/_layout.tsx
+Bottom tab layout with 5 tabs (Home, Explore, Outreach, Insights, Settings) — all with Lucide icons.
+
+### mobile/app/index.tsx
+Simple splash "Indi-gen" text, redirect to (tabs).
+
+### docker-compose.yml
+Services: `postgres` (postgres:16), `redis` (redis:7-alpine), `server` (builds ./server), `scraper` (builds ./scraper-service), `admin` (builds ./admin), `nginx` (nginx:alpine with conf mount). Networks, volumes, env_file setup.
+
+### nginx.conf
+Routes:
+- `/api/*` -> `server:3001`
+- `/admin/*` -> `admin:80`
+- `/scrape/*` -> `scraper:8000`
+- `/webhook/*` -> `server:3001`
+
+### .gitignore
+Comprehensive: node_modules, dist, .env, *.log, .DS_Store, mobile/.expo, ios/, android/, *.keystore, .next, .turbo, python __pycache__, .venv, Thumbs.db
+
+### README.md
+Brief project overview, folder structure table, quick-start commands (`docker compose up`).
+
+### docs/architecture.md
+2-3 paragraph description of the system architecture + a simple ASCII diagram.
+
+## Execution instructions
+1. Create all folders and files above.
+2. Run `npm install` inside `server/`, `admin/`, `mobile/` in that order to verify package.json is valid. DO NOT worry if some downloads fail due to network — just report.
+3. Run `pip install -r requirements.txt` inside `scraper-service/` (or `py -m pip install` if `pip` isn't on PATH).
+4. After scaffold, run:
+   ```
+   git add .
+   git commit -m "feat: scaffold monorepo structure (server + scraper + admin + mobile)"
+   git push origin master
+   ```
+5. Report: files created, any install failures, and final git commit SHA.
+
+## Important
+- Don't implement business logic yet — keep all files minimal placeholders.
+- The goal is a clean compilable scaffold that we'll fill in subsequent tasks.
+- Use exact versions/dependencies above, don't substitute.
+- Work fully autonomously — do not ask questions, make reasonable choices.
