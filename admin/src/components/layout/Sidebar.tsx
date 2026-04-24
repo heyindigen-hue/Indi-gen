@@ -147,23 +147,23 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Settings',
     icon: Settings,
     items: [
-      { label: 'General', href: '/settings', icon: Sliders },
-      { label: 'Emails', href: '/settings/emails', icon: MessageSquare },
+      { label: 'Brand', href: '/settings/brand', icon: Palette },
+      { label: 'Company', href: '/settings/company', icon: FileText },
+      { label: 'Legal', href: '/settings/legal', icon: Sliders },
+      { label: 'Templates', href: '/settings/templates', icon: Layers },
+      { label: 'Feature Flags', href: '/settings/flags', icon: Zap },
       { label: 'Maintenance', href: '/settings/maintenance', icon: AlertCircle },
-      { label: 'Features', href: '/settings/features', icon: Zap },
-      { label: 'DPDP', href: '/settings/dpdp', icon: FileText },
-      { label: 'Audit Log', href: '/settings/audit', icon: Activity },
     ],
   },
   {
     label: 'Security',
     icon: Shield,
     items: [
-      { label: 'Overview', href: '/security', icon: Shield },
+      { label: 'Admins', href: '/security/admins', icon: Users },
       { label: 'Sessions', href: '/security/sessions', icon: Key },
-      { label: 'IP Allowlist', href: '/security/ip-allowlist', icon: Lock },
-      { label: 'Rate Limits', href: '/security/rate-limits', icon: Activity },
-      { label: 'Alerts', href: '/security/alerts', icon: AlertCircle },
+      { label: 'API Keys', href: '/security/api-keys', icon: Lock },
+      { label: 'Audit Log', href: '/security/audit', icon: Activity },
+      { label: 'DPDP / Privacy', href: '/security/dpdp', icon: Shield },
     ],
   },
 ];
@@ -308,23 +308,56 @@ export function Sidebar() {
           })}
         </div>
 
-        {/* Platform (hidden under more) */}
+        {/* Platform — "More" footer group */}
         <div className="px-2 mt-2">
-          <NavLink
-            to="/platform"
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 px-2 rounded-md h-8 text-sm transition-colors',
-                isActive
-                  ? 'bg-accent text-foreground border-l-2 border-primary pl-[6px]'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
-                collapsed && 'justify-center px-0',
-              )
-            }
+          <button
+            onClick={() => !collapsed && toggleGroup('Platform')}
+            className={cn(
+              'w-full flex items-center gap-2.5 px-2 rounded-md h-8 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors',
+              collapsed && 'justify-center px-0',
+            )}
           >
             <Server className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Platform</span>}
-          </NavLink>
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">Platform</span>
+                {expandedGroups.has('Platform') ? (
+                  <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                )}
+              </>
+            )}
+          </button>
+          {!collapsed && expandedGroups.has('Platform') && (
+            <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-2">
+              {[
+                { label: 'Logs', href: '/platform/logs', icon: FileText },
+                { label: 'Errors', href: '/platform/errors', icon: AlertCircle },
+                { label: 'Webhooks', href: '/platform/webhooks', icon: Zap },
+              ].map((item) => {
+                const ItemIcon = item.icon;
+                return (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    end
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-2 px-2 rounded-md h-8 text-sm transition-colors',
+                        isActive
+                          ? 'bg-accent text-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
+                      )
+                    }
+                  >
+                    <ItemIcon className="h-3.5 w-3.5 shrink-0" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          )}
         </div>
       </ScrollArea>
 

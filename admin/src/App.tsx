@@ -36,6 +36,20 @@ import MobileUiPaywallPage from '@/pages/mobile-ui/paywall';
 import MobileUiThemePage from '@/pages/mobile-ui/theme';
 import MobileUiStringsPage from '@/pages/mobile-ui/strings';
 import MobileUiTemplatesPage from '@/pages/mobile-ui/templates';
+import BrandPage from '@/pages/settings/brand';
+import CompanyPage from '@/pages/settings/company';
+import LegalPage from '@/pages/settings/legal';
+import SettingsTemplatesPage from '@/pages/settings/templates';
+import FlagsPage from '@/pages/settings/flags';
+import MaintenancePage from '@/pages/settings/maintenance';
+import AdminsPage from '@/pages/security/admins';
+import SessionsPage from '@/pages/security/sessions';
+import ApiKeysPage from '@/pages/security/api-keys';
+import AuditPage from '@/pages/security/audit';
+import DpdpPage from '@/pages/security/dpdp';
+import LogsPage from '@/pages/platform/logs';
+import ErrorsPage from '@/pages/platform/errors';
+import WebhooksPage from '@/pages/platform/webhooks';
 import { useAuth } from '@/store/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -146,21 +160,26 @@ export default function App() {
 
         {/* Settings */}
         <Route path="settings" element={<PlaceholderPage title="Settings" description="Platform configuration" />} />
-        <Route path="settings/emails" element={<PlaceholderPage title="Email Settings" />} />
-        <Route path="settings/maintenance" element={<PlaceholderPage title="Maintenance Mode" />} />
-        <Route path="settings/features" element={<PlaceholderPage title="Feature Flags" />} />
-        <Route path="settings/dpdp" element={<PlaceholderPage title="DPDP Compliance" />} />
-        <Route path="settings/audit" element={<PlaceholderPage title="Audit Log" />} />
+        <Route path="settings/brand" element={<BrandPage />} />
+        <Route path="settings/company" element={<CompanyPage />} />
+        <Route path="settings/legal" element={<LegalPage />} />
+        <Route path="settings/templates" element={<SettingsTemplatesPage />} />
+        <Route path="settings/flags" element={<FlagsPage />} />
+        <Route path="settings/maintenance" element={<MaintenancePage />} />
 
         {/* Security */}
         <Route path="security" element={<PlaceholderPage title="Security" description="Platform security overview" />} />
-        <Route path="security/sessions" element={<PlaceholderPage title="Active Sessions" />} />
-        <Route path="security/ip-allowlist" element={<PlaceholderPage title="IP Allowlist" />} />
-        <Route path="security/rate-limits" element={<PlaceholderPage title="Rate Limits" />} />
-        <Route path="security/alerts" element={<PlaceholderPage title="Security Alerts" />} />
+        <Route path="security/admins" element={<AdminsPage />} />
+        <Route path="security/sessions" element={<SessionsPage />} />
+        <Route path="security/api-keys" element={<ApiKeysPage />} />
+        <Route path="security/audit" element={<AuditPage />} />
+        <Route path="security/dpdp" element={<DpdpPage />} />
 
         {/* Platform */}
         <Route path="platform" element={<PlaceholderPage title="Platform" description="Infrastructure overview" />} />
+        <Route path="platform/logs" element={<LogsPage />} />
+        <Route path="platform/errors" element={<ErrorsPage />} />
+        <Route path="platform/webhooks" element={<WebhooksPage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

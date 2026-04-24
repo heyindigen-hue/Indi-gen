@@ -36,6 +36,7 @@
     "framer-motion": "^11.0.22",
     "lucide-react": "^0.365.0",
     "react": "^18.2.0",
+    "react-diff-viewer-continued": "^4.2.2",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.1",
     "react-hotkeys-hook": "^5.2.4",

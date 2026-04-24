@@ -1,139 +1,144 @@
-You are WORKER Claude on PC2. Build the **Mobile UI Builder** — the SDUI editor that lets admin control the mobile app without releases. This is the most complex admin task and the user asked for it explicitly.
+You are WORKER Claude on PC2. Build final admin sections: Settings (6 pages) + Security (5 pages) + Platform (3 hidden pages).
 
 ## Context
 - `C:\Users\Indigen-Server-2\Desktop\Indi-gen\admin`
-- Backend routes (already built in Task 4):
-  - `GET /api/admin/manifests?platform=mobile`
-  - `POST /api/admin/manifests` (create new version)
-  - `PATCH /api/admin/manifests/:id`
-  - `POST /api/admin/manifests/:id/publish`
-  - `POST /api/admin/manifests/:id/rollback`
-  - `GET /api/public/ui-manifest?platform=mobile&user_id=...` (fetches resolved manifest)
-  - `GET /api/admin/experiments`
-  - `POST /api/admin/experiments`
-  - `GET /api/admin/i18n-strings?locale=en-IN`, `POST /api/admin/i18n-strings`
-  - `GET /api/admin/templates/email|push`, `POST /api/admin/templates/email|push/:id`
+- Backend routes already built.
 
-## Your Task: 6 sub-pages under /mobile-ui
+## SETTINGS (6 pages under /settings)
 
-### Layout
-Create `admin/src/pages/mobile-ui/layout.tsx` — shared layout with sub-tabs:
-- Home · Tabs · Onboarding · Paywall · Theme · Strings · Templates
-- Right sticky panel: Version selector, Publish button, Save Draft, Preview in iPhone/Android frame
+### 1. `admin/src/pages/settings/brand.tsx`
+- Logo upload: light + dark (store URL in `app_settings.brand_logo_light_url` / `brand_logo_dark_url`)
+- Accent color picker with live CSS var update
+- Favicon upload
+- App name + tagline
+- Support email
+- Preview card showing branded look
 
-### 1. `admin/src/pages/mobile-ui/home.tsx` — Home screen widget builder
-The crown jewel. Three columns:
-- **Left palette** (240px): draggable widget types
-  - TokenBalance
-  - AnnouncementBanner
-  - QuickFilters
-  - LeadSwipeStack
-  - RecentLeadsCarousel
-  - ActionButtons
-  - MetricCard
-  - CustomHtml
-  - Divider / Spacer
-- **Center preview** (~375px iPhone frame): draggable canvas showing current widgets in order
-  - Use `dnd-kit` for reordering + adding from palette
-  - Each widget renders a simplified visual preview (no actual mobile render)
-  - Delete button on hover
-  - Click widget → selected state (highlight border)
-- **Right inspector** (320px): props editor for selected widget
-  - Schema-driven form (use `react-hook-form` with a props schema map)
-  - Live preview updates as you type
+### 2. `admin/src/pages/settings/company.tsx`
+- Legal entity name
+- GSTIN (with format validation regex)
+- PAN
+- CIN (optional)
+- Address (JSONB: line1, line2, city, state, pincode, country)
+- State code dropdown (for place of supply default)
 
-Behavior:
-- "Save Draft" → POST /api/admin/manifests with enabled=false (creates version)
-- "Publish" → POST /api/admin/manifests/:id/publish (flips enabled=true for this manifest, disables prior)
-- "Rollback to v12" dropdown → POST /api/admin/manifests/:id/rollback
+### 3. `admin/src/pages/settings/legal.tsx`
+- Tabs: ToS / Privacy / DPDP / Refund Policy
+- Each tab: markdown editor (textarea w/ preview toggle)
+- Version history below (save bumps version, users re-consent on version change if policy_version stored)
 
-Install: `npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities`
+### 4. `admin/src/pages/settings/templates.tsx`
+- Shortcut redirect to /mobile-ui/templates (same editor)
 
-### 2. `admin/src/pages/mobile-ui/tabs.tsx`
-- Reorderable list of bottom tabs (dnd-kit sortable)
-- Each tab row: drag handle, icon picker (Lucide icon name dropdown), label input, route (readonly), enabled toggle
-- "Add tab" button appends default
-- Max 5 tabs (mobile constraint)
+### 5. `admin/src/pages/settings/flags.tsx`
+- Feature flag list
+- Each row: id, description, enabled toggle, rollout % slider, plan targeting chips
+- "New flag" button
 
-### 3. `admin/src/pages/mobile-ui/onboarding.tsx`
-- Reorderable list of onboarding steps
-- Each step: title, body, illustration URL, input type select (none/chip/text/select/skip), options array (if select), validation regex, "Animated" toggle
-- "Add step" button
+### 6. `admin/src/pages/settings/maintenance.tsx`
+- Big toggle: Maintenance mode (on/off)
+- Banner message textarea
+- ETA datetime picker
+- Allow-list: admin IPs that bypass (read from `maintenance_bypass_ips` setting)
+- Warning: "Enabling this immediately blocks all mobile and public API requests"
+- Cancel/Enable buttons with double-confirm when enabling
 
-### 4. `admin/src/pages/mobile-ui/paywall.tsx`
-- Headline + subheadline inputs
-- Bundles editor (array of {id, tokens, price_inr, badge, savings})
-- Drag to reorder, "Add bundle" button
-- Footer text input
-- Live iPhone preview on right
+## SECURITY (5 pages)
 
-### 5. `admin/src/pages/mobile-ui/theme.tsx`
-- Palette picker: 3 presets (Graphite / Vercel / Cron) + Custom
-- Custom lets admin pick each role color (bg, card, border, text, muted, accent, success, warning, destructive) with hex input + color swatch
-- Font select (Inter / Geist / SF-like system)
-- Radius slider (0-24px)
-- Density toggle (compact/comfortable/spacious)
-- Live preview of a sample screen with current theme
-- "Apply to active manifest" button
+### 7. `admin/src/pages/security/admins.tsx`
+- Admin users table (separate from customer users): email, role chip, 2FA enabled?, last_login_at, actions
+- "Invite admin" dialog: email + role select
+- Actions per row: Change role, Revoke, Reset password
 
-### 6. `admin/src/pages/mobile-ui/strings.tsx`
-- Locale switcher (en-IN, hi-IN, add new)
-- Searchable key-value table (keys like `login.cta`, `tabs.home`)
-- Inline edit on click
-- "AI translate" button per locale (uses Claude to translate missing keys from en-IN) — just a stub for now, log "todo" to console
-- "Add key" button
-- Bulk import from CSV
+### 8. `admin/src/pages/security/sessions.tsx`
+- All active JWT sessions across all users
+- Columns: user email, device UA, IP, country (with flag), last_seen relative, Revoke button
+- Filters: user, country, device type
+- "Revoke all for user X" bulk action
 
-### 7. `admin/src/pages/mobile-ui/templates.tsx`
-- Tabs: Email / Push
-- List of template IDs with subject/title previews
-- Click → editor Sheet with markdown editor for body + variables chips
-- Test send button
+### 9. `admin/src/pages/security/api-keys.tsx`
+- API keys we issue (for mobile app or 3rd-party integrations):
+  - Columns: name, key_prefix, scopes chips, last_used_at, expires_at, Revoke button
+- "Create API Key" dialog: name, scopes multi-select, expiry (30d/90d/365d/never)
+- On create, show the full key once with copy button + warning "Save this — you won't see it again"
 
-## Components to create
+### 10. `admin/src/pages/security/audit.tsx` (MAIN audit log)
+- DataTable with virtualized rows (this will be big)
+- Columns: time, actor (avatar + name), action verb (colored by category), target (type + link), IP, diff
+- Click row → Sheet with before/after JSON diff (use `react-diff-viewer-continued`)
+- Filters: actor (autocomplete), action multi-select, target_type, time range (presets + custom)
+- Saved filters per admin
 
-### `admin/src/components/sdui/DeviceFrame.tsx`
-iPhone 15 Pro and Pixel 8 frames (pure CSS/SVG). Props: `device: 'iphone'|'android'`, `children` renders inside the screen bounds.
+Install: `npm install react-diff-viewer-continued`
 
-### `admin/src/components/sdui/WidgetPreview.tsx`
-Renders a simplified React visual of each widget type for preview. Matches the JSON manifest shape.
+### 11. `admin/src/pages/security/dpdp.tsx` — Consent + Erasure + Breach combined
+Three tabs:
 
-### `admin/src/components/sdui/IconPicker.tsx`
-Lucide icon name selector — grid of icons with search.
+**Tab A — Consent Manager**
+- Query: per-user consent timeline if user_id search
+- Global stats: active consents per purpose, withdrawals this month
 
-### `admin/src/components/sdui/ManifestVersionDropdown.tsx`
-Version dropdown with Publish/Rollback actions.
+**Tab B — Erasure Requests** (the wizard)
+- List of pending / processing / completed erasure requests
+- "New Erasure Request" button opens a wizard modal with steps:
+  1. Intake: user email or ID, reason, channel
+  2. Verify: OTP sent to user's email + phone (mock for now — show "Pretend verified" button)
+  3. Scope Preview: shows table → rowcount map of what will be deleted. Button calls `POST /api/admin/erasure-requests/:id/preview`
+  4. 2-Admin Approve: current admin clicks Approve, then requires second admin in a different session (show pending state)
+  5. Queue Deletion: shows progress bar via SSE
+  6. Receipt: download PDF button
 
-### `admin/src/hooks/useManifest.ts`
-```ts
-export function useManifest(platform: 'mobile' = 'mobile') {
-  const { data, isLoading } = useQuery({
-    queryKey: ['manifests', platform],
-    queryFn: () => api.get(`/admin/manifests?platform=${platform}`),
-  });
-  // select active version + draft version
-  return { active, draft, versions: data, isLoading };
-}
-```
+**Tab C — Breach Log** (DPDP 72h workflow)
+- List of incidents with status pill
+- "New Incident" button opens form:
+  - discovered_at (auto-now button), occurred_at, severity (auto-suggested from user_count + data_categories), data_categories multi-select, affected_users_count (with "Calculate" button that runs a query), description markdown, mitigation markdown
+  - 72h countdown from discovered_at — color changes green→amber→red as deadline approaches
+- Detail view:
+  - Timeline (discovered → contained → closed)
+  - Notifications sent (to users, DPB) with delivery status
+  - "Generate DPB Report PDF" button
 
-## URL state
-Each page's state (selected widget, current version id) in URL via `nuqs` where useful.
+## PLATFORM (3 hidden pages under "More" menu)
+
+### 12. `admin/src/pages/platform/logs.tsx`
+- Live streaming log viewer (SSE from `/api/admin/logs/stream`)
+- Virtualized list (windowed render, cap 10k)
+- Filter bar: level (debug/info/warn/error), service (api/scraper/worker), regex, time range
+- ANSI color support (use `ansi_up` or just regex replace escape codes)
+- Pause / Resume / Follow-tail toggle
+- Export last N lines button
+
+### 13. `admin/src/pages/platform/errors.tsx`
+- Error groups table from `/api/admin/errors/groups`
+- Columns: severity, fingerprint, title, events count (sparkline last 24h), users affected, last seen, status (unresolved/resolved/muted), assignee
+- Click row → Sheet with stack trace, recent events, affected users list, "Resolve/Mute" buttons
+
+### 14. `admin/src/pages/platform/webhooks.tsx`
+- Three-pane layout:
+  - Left: event list (virtualized, filterable by provider/event_type/signature_valid)
+  - Middle: payload viewer (react-json-view) + copy as curl
+  - Right: attempts timeline with status codes
+- "Replay" button per event
+
+## Sidebar updates
+- Settings group: 6 children (brand, company, legal, templates, flags, maintenance)
+- Security group: 5 children (admins, sessions, api-keys, audit, dpdp)
+- Platform: put under "More" menu item in sidebar footer (not primary nav)
 
 ## Register commands
-- "Publish mobile UI" → publish current draft
-- "Rollback to previous version" → rollback
-- "Add home widget" → opens palette
+- "Toggle maintenance mode"
+- "View audit log"
+- "New erasure request"
+- "View logs"
+- "View errors"
 
 ## Verify + commit
 ```
 cd C:\Users\Indigen-Server-2\Desktop\Indi-gen\admin
 npx tsc --noEmit
 git add -A
-git commit -m "feat(admin): mobile UI builder (SDUI editor) — home/tabs/onboarding/paywall/theme/strings/templates"
+git commit -m "feat(admin): settings (brand/company/legal/templates/flags/maintenance) + security (admins/sessions/api-keys/audit/dpdp) + platform (logs/errors/webhooks)"
 git push origin master
 ```
 
-Autonomous. No dev server.
-
-## Note on complexity
-This is a BIG page. Keep individual components small. You don't need fancy physics — dnd-kit provides the affordances. Preview can be static visual approximation, not a real mobile render.
+Autonomous. No dev server. This is the final admin task.
