@@ -1,0 +1,106 @@
+{
+  "theme": {
+    "palette": "graphite",
+    "radius": 14,
+    "density": "comfortable"
+  },
+  "brand": {
+    "name": "Indi-gen",
+    "tagline": "AI-Powered Lead Generation",
+    "logo_url": null,
+    "primary_color": "#7170FF"
+  },
+  "tabs": [
+    { "id": "index", "label": "Home", "icon": "home", "enabled": true },
+    { "id": "explore", "label": "Explore", "icon": "search", "enabled": true },
+    { "id": "outreach", "label": "Outreach", "icon": "send", "enabled": true },
+    { "id": "insights", "label": "Insights", "icon": "bar-chart-2", "enabled": true },
+    { "id": "settings", "label": "Settings", "icon": "settings", "enabled": true }
+  ],
+  "home_widgets": [
+    {
+      "type": "AnnouncementBanner",
+      "props": {
+        "message": "Welcome to Indi-gen! Start exploring leads.",
+        "dismissible": true
+      }
+    },
+    {
+      "type": "TokenBalance",
+      "props": {
+        "balance": 100,
+        "showTopUp": true
+      }
+    },
+    {
+      "type": "QuickFilters",
+      "props": {
+        "filters": ["All", "New", "Hot", "Contacted"]
+      }
+    },
+    {
+      "type": "RecentLeadsCarousel",
+      "props": {
+        "title": "Recent Leads"
+      }
+    },
+    {
+      "type": "ActionButtons",
+      "props": {
+        "actions": [
+          { "label": "Find Leads", "action": "navigate:/explore", "variant": "primary" },
+          { "label": "Outreach", "action": "navigate:/outreach", "variant": "secondary" }
+        ]
+      }
+    }
+  ],
+  "onboarding_steps": [
+    {
+      "id": "welcome",
+      "title": "Welcome to Indi-gen",
+      "description": "AI-powered lead generation at your fingertips.",
+      "image": null
+    },
+    {
+      "id": "leads",
+      "title": "Discover Leads",
+      "description": "Browse and filter high-quality leads curated for your business.",
+      "image": null
+    },
+    {
+      "id": "outreach",
+      "title": "Automate Outreach",
+      "description": "Send personalized messages at scale with our AI outreach engine.",
+      "image": null
+    }
+  ],
+  "paywall": {
+    "title": "Unlock Full Access",
+    "subtitle": "Choose a plan that fits your needs",
+    "bundles": [
+      {
+        "id": "starter",
+        "name": "Starter",
+        "price": "₹999/mo",
+        "features": ["100 leads/month", "Basic outreach", "Email support"]
+      },
+      {
+        "id": "pro",
+        "name": "Pro",
+        "price": "₹2,999/mo",
+        "features": ["500 leads/month", "AI outreach", "Priority support", "Analytics"]
+      },
+      {
+        "id": "enterprise",
+        "name": "Enterprise",
+        "price": "Custom",
+        "features": ["Unlimited leads", "Dedicated account manager", "Custom integrations"]
+      }
+    ]
+  },
+  "feature_flags": {
+    "show_swipe_stack": false,
+    "show_ai_suggestions": true,
+    "maintenance_mode": false
+  }
+}
