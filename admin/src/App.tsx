@@ -16,6 +16,11 @@ import ScraperSchedulesPage from '@/pages/scrapers/schedules';
 import PromptsPage from '@/pages/ai/prompts';
 import AiContextPage from '@/pages/ai/context';
 import AiUsagePage from '@/pages/ai/usage';
+import PlansPage from '@/pages/billing/plans';
+import SubscriptionsPage from '@/pages/billing/subscriptions';
+import InvoicesPage from '@/pages/billing/invoices';
+import RefundsPage from '@/pages/billing/refunds';
+import CouponsPage from '@/pages/billing/coupons';
 import CashfreePage from '@/pages/integrations/cashfree';
 import AnthropicPage from '@/pages/integrations/anthropic';
 import SignalHirePage from '@/pages/integrations/signalhire';
@@ -113,10 +118,11 @@ export default function App() {
 
         {/* Billing */}
         <Route path="billing" element={<PlaceholderPage title="Billing" description="Revenue and subscriptions" />} />
-        <Route path="billing/plans" element={<PlaceholderPage title="Plans" />} />
-        <Route path="billing/transactions" element={<PlaceholderPage title="Transactions" />} />
-        <Route path="billing/credits" element={<PlaceholderPage title="Credits" />} />
-        <Route path="billing/gst" element={<PlaceholderPage title="GST Reports" />} />
+        <Route path="billing/plans" element={<PlansPage />} />
+        <Route path="billing/subscriptions" element={<SubscriptionsPage />} />
+        <Route path="billing/invoices" element={<InvoicesPage />} />
+        <Route path="billing/refunds" element={<RefundsPage />} />
+        <Route path="billing/coupons" element={<CouponsPage />} />
 
         {/* Mobile UI */}
         <Route

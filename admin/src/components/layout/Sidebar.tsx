@@ -31,7 +31,6 @@ import {
   Layers,
   Zap,
   Package,
-  DollarSign,
   Receipt,
   Gift,
   AlertCircle,
@@ -125,11 +124,11 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Billing',
     icon: CreditCard,
     items: [
-      { label: 'Overview', href: '/billing', icon: DollarSign },
       { label: 'Plans', href: '/billing/plans', icon: Package },
-      { label: 'Transactions', href: '/billing/transactions', icon: Receipt },
-      { label: 'Credits', href: '/billing/credits', icon: Gift },
-      { label: 'GST', href: '/billing/gst', icon: FileText },
+      { label: 'Subscriptions', href: '/billing/subscriptions', icon: Receipt },
+      { label: 'Invoices', href: '/billing/invoices', icon: FileText },
+      { label: 'Refunds', href: '/billing/refunds', icon: AlertCircle },
+      { label: 'Coupons', href: '/billing/coupons', icon: Gift },
     ],
   },
   {
