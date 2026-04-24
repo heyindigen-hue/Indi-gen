@@ -13,6 +13,16 @@ import ScrapersPage from '@/pages/scrapers/index';
 import ScraperRunsPage from '@/pages/scrapers/runs';
 import ScraperAccountsPage from '@/pages/scrapers/accounts';
 import ScraperSchedulesPage from '@/pages/scrapers/schedules';
+import PromptsPage from '@/pages/ai/prompts';
+import AiContextPage from '@/pages/ai/context';
+import AiUsagePage from '@/pages/ai/usage';
+import CashfreePage from '@/pages/integrations/cashfree';
+import AnthropicPage from '@/pages/integrations/anthropic';
+import SignalHirePage from '@/pages/integrations/signalhire';
+import LinkedInPage from '@/pages/integrations/linkedin';
+import ProxiesPage from '@/pages/integrations/proxies';
+import EmailPage from '@/pages/integrations/email';
+import WhatsAppPage from '@/pages/integrations/whatsapp';
 import { useAuth } from '@/store/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -84,20 +94,22 @@ export default function App() {
 
         {/* AI */}
         <Route path="ai" element={<PlaceholderPage title="AI Models" description="Manage AI configuration" />} />
-        <Route path="ai/prompts" element={<PlaceholderPage title="AI Prompts" />} />
-        <Route path="ai/usage" element={<PlaceholderPage title="AI Usage" />} />
+        <Route path="ai/prompts" element={<PromptsPage />} />
+        <Route path="ai/context" element={<AiContextPage />} />
+        <Route path="ai/usage" element={<AiUsagePage />} />
 
         {/* Integrations */}
         <Route
           path="integrations"
           element={<PlaceholderPage title="Integrations" description="Manage third-party integrations" />}
         />
-        <Route path="integrations/webhooks" element={<PlaceholderPage title="Webhooks" />} />
-        <Route path="integrations/api-keys" element={<PlaceholderPage title="API Keys" />} />
-        <Route path="integrations/oauth" element={<PlaceholderPage title="OAuth Apps" />} />
-        <Route path="integrations/linkedin" element={<PlaceholderPage title="LinkedIn Integration" />} />
-        <Route path="integrations/crm" element={<PlaceholderPage title="CRM Integration" />} />
-        <Route path="integrations/notifications" element={<PlaceholderPage title="Notification Channels" />} />
+        <Route path="integrations/cashfree" element={<CashfreePage />} />
+        <Route path="integrations/anthropic" element={<AnthropicPage />} />
+        <Route path="integrations/signalhire" element={<SignalHirePage />} />
+        <Route path="integrations/linkedin" element={<LinkedInPage />} />
+        <Route path="integrations/proxies" element={<ProxiesPage />} />
+        <Route path="integrations/email" element={<EmailPage />} />
+        <Route path="integrations/whatsapp" element={<WhatsAppPage />} />
 
         {/* Billing */}
         <Route path="billing" element={<PlaceholderPage title="Billing" description="Revenue and subscriptions" />} />
