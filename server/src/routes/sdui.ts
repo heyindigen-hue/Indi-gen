@@ -28,7 +28,7 @@ router.get('/ui-manifest', async (req, res) => {
   }
 
   res.json({
-    ...manifest.content,
+    ...manifest.manifest,
     _meta: {
       manifestId: manifest.id,
       version: manifest.version,
@@ -41,7 +41,7 @@ router.get('/ui-manifest', async (req, res) => {
 router.get('/brand', async (req, res) => {
   const { platform = 'mobile' } = req.query;
   const manifests = await query(
-    `SELECT content->'brand' AS brand FROM ui_manifests WHERE enabled=TRUE AND (platform=$1 OR platform='all') ORDER BY published_at DESC LIMIT 1`,
+    `SELECT manifest->'brand' AS brand FROM ui_manifests WHERE enabled=TRUE AND (platform=$1 OR platform='all') ORDER BY published_at DESC LIMIT 1`,
     [platform]
   );
   if (!manifests.length) return res.status(404).json({ error: 'No manifest found' });
@@ -64,7 +64,7 @@ const manifestSchema = z.object({
 router.post('/manifests', validateBody(manifestSchema), async (req: any, res) => {
   const { name, platform, version, content } = req.body;
   const row = await queryOne<any>(
-    `INSERT INTO ui_manifests (name, platform, version, content, created_by)
+    `INSERT INTO ui_manifests (name, platform, version, manifest, created_by)
      VALUES ($1,$2,$3,$4,$5) RETURNING *`,
     [name, platform, version, JSON.stringify(content), req.user?.id || null]
   );
@@ -77,7 +77,7 @@ router.patch('/manifests/:id', async (req: any, res) => {
   const params: any[] = [];
   if (name !== undefined) { params.push(name); updates.push(`name=$${params.length}`); }
   if (version !== undefined) { params.push(version); updates.push(`version=$${params.length}`); }
-  if (content !== undefined) { params.push(JSON.stringify(content)); updates.push(`content=$${params.length}`); }
+  if (content !== undefined) { params.push(JSON.stringify(content)); updates.push(`manifest=$${params.length}`); }
   if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
   params.push(req.params.id);
   const row = await queryOne<any>(

@@ -69,3 +69,6 @@ const server = app.listen(config.port, () => {
 process.on('SIGTERM', () => { logger.info('SIGTERM, closing'); server.close(() => process.exit(0)); });
 
 export default app;
+
+process.on('unhandledRejection', (err) => { console.error('unhandledRejection', err); });
+process.on('uncaughtException', (err) => { console.error('uncaughtException', err); });
