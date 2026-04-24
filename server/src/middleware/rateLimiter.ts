@@ -1,2 +1,2 @@
-// Rate limiter middleware — implemented in subsequent tasks
-export {};
+// Re-export from rateLimit for backwards compatibility
+export * from './rateLimit';

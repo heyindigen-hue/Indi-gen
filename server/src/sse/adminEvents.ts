@@ -1,2 +1,2 @@
-// Server-sent events for live admin updates — implemented in subsequent tasks
-export {};
+// Re-export SSE utilities for admin event streaming
+export { attachSSE, emit } from './bus';

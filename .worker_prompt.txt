@@ -1,237 +1,385 @@
-You are the WORKER Claude on PC2 building the "Indi-gen" project, a SaaS LinkedIn lead-hunting platform with mobile + admin web + backend.
+You are WORKER Claude on PC2. Tasks 1 (scaffold) and 2 (DB schema) are done.
 
-## Your Task: Scaffold the monorepo structure
+## Your Task: Backend core — middleware, auth, services, SSE bus
 
-Create this exact folder/file structure in the current directory (C:\Users\Indigen-Server-2\Desktop\Indi-gen). Do not implement logic yet — just create empty/placeholder files and working configs.
+Project root: `C:\Users\Indigen-Server-2\Desktop\Indi-gen\server`
 
-```
-Indi-gen/
-├── server/                    # Node.js + Express + TypeScript API
-│   ├── src/
-│   │   ├── db/                # pg pool, migrations, seed
-│   │   ├── routes/            # REST routes (leads, admin, auth, etc.)
-│   │   ├── middleware/        # auth, rate-limit, logging
-│   │   ├── services/          # business logic (scoring, filter, drafts, payments)
-│   │   ├── scraper/           # calls Python scraper service via HTTP
-│   │   ├── enrichment/        # SignalHire integration
-│   │   ├── cron/              # scheduled jobs (scrapeJob, billingJob)
-│   │   ├── sse/               # server-sent events for live admin updates
-│   │   ├── queue/             # BullMQ job queue helpers
-│   │   ├── utils/
-│   │   └── index.ts           # entrypoint
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── .env.example
-│   └── Dockerfile
-├── scraper-service/           # Python FastAPI microservice using linkedin-api lib
-│   ├── app/
-│   │   ├── main.py            # FastAPI entrypoint
-│   │   ├── linkedin_client.py # wraps linkedin-api library
-│   │   ├── cache.py           # Redis-backed result cache
-│   │   ├── rate_limiter.py    # protect against LinkedIn bans
-│   │   └── models.py          # pydantic models
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   └── .env.example
-├── admin/                     # React + Vite + Shadcn admin panel
-│   ├── src/
-│   │   ├── pages/             # each sidebar section is a folder
-│   │   │   ├── dashboard/
-│   │   │   ├── users/
-│   │   │   ├── leads/
-│   │   │   ├── scrapers/
-│   │   │   ├── ai/
-│   │   │   ├── integrations/
-│   │   │   ├── sources/
-│   │   │   ├── financial/
-│   │   │   ├── growth/
-│   │   │   ├── support/
-│   │   │   ├── platform/
-│   │   │   ├── mobile/
-│   │   │   ├── team/
-│   │   │   ├── config/
-│   │   │   ├── security/
-│   │   │   └── developer/
-│   │   ├── components/
-│   │   │   ├── ui/            # shadcn primitives (button, card, etc.)
-│   │   │   ├── charts/        # recharts/tremor wrappers
-│   │   │   ├── layout/        # sidebar, topbar, page shell
-│   │   │   └── common/
-│   │   ├── hooks/
-│   │   ├── lib/               # utils, api client, query hooks
-│   │   ├── store/             # zustand stores
-│   │   ├── types/
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── public/
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   ├── tsconfig.json
-│   └── .env.example
-├── mobile/                    # Expo SDK 50 React Native app
-│   ├── app/                   # Expo Router (file-based)
-│   │   ├── (auth)/
-│   │   │   ├── login.tsx
-│   │   │   └── _layout.tsx
-│   │   ├── (tabs)/
-│   │   │   ├── index.tsx      # Home/Leads feed
-│   │   │   ├── explore.tsx    # Saved/starred
-│   │   │   ├── outreach.tsx   # Drafts/sent
-│   │   │   ├── insights.tsx   # Personal KPIs
-│   │   │   ├── settings.tsx
-│   │   │   └── _layout.tsx
-│   │   ├── lead/[id].tsx      # lead detail screen
-│   │   ├── onboarding.tsx
-│   │   ├── paywall.tsx        # token/subscription purchase
-│   │   ├── webview-linkedin.tsx  # in-app LinkedIn browser to add leads manually
-│   │   └── _layout.tsx
-│   ├── components/
-│   ├── hooks/
-│   ├── lib/                   # api, auth, theme
-│   ├── constants/
-│   ├── assets/
-│   ├── app.json               # Expo config
-│   ├── eas.json               # EAS build config
-│   ├── package.json
-│   ├── babel.config.js
-│   └── tsconfig.json
-├── shared/
-│   └── types/                 # shared TS types used by server + admin + mobile
-│       ├── lead.ts
-│       ├── user.ts
-│       ├── subscription.ts
-│       └── index.ts
-├── db/
-│   ├── migrations/            # numbered SQL migration files
-│   │   └── 001_initial_schema.sql   # leave empty, next task fills it
-│   └── seed.sql               # leave empty, next task fills it
-├── docs/
-│   └── architecture.md        # short description of the system
-├── docker-compose.yml         # postgres + redis + server + scraper + admin + nginx
-├── nginx.conf                 # routes /api to server, /admin to admin, /scrape to scraper
-├── .gitignore
-├── .env.example               # root-level env reference
-└── README.md
+### File: `src/config.ts`
+```typescript
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+export const config = {
+  port: parseInt(process.env.PORT || '3001'),
+  nodeEnv: process.env.NODE_ENV || 'development',
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/indigen',
+  redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+  jwtSecret: process.env.JWT_SECRET || 'indigen-lead-hunter-secret-2026',
+  jwtExpiry: process.env.JWT_EXPIRY || '30d',
+  scraperServiceUrl: process.env.SCRAPER_SERVICE_URL || 'http://localhost:8000',
+  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173,http://localhost:19006').split(','),
+  cashfree: {
+    appId: process.env.CASHFREE_APP_ID || '',
+    secret: process.env.CASHFREE_SECRET_KEY || '',
+    env: (process.env.CASHFREE_ENV || 'TEST') as 'TEST' | 'PRODUCTION',
+    webhookSecret: process.env.CASHFREE_WEBHOOK_SECRET || '',
+  },
+  anthropic: { apiKey: process.env.CLAUDE_API_KEY || '' },
+  signalhire: { apiKey: process.env.SIGNALHIRE_API_KEY || '' },
+};
 ```
 
-## Specific requirements for the scaffold
+### File: `src/logger.ts`
+```typescript
+import pino from 'pino';
+import { config } from './config';
 
-### server/package.json
-- Name: `indigen-server`
-- Scripts: `dev` (tsx watch src/index.ts), `start` (tsx src/index.ts), `build` (tsc), `migrate` (runs SQL files in db/migrations against $DATABASE_URL)
-- Dependencies: `express`, `cors`, `helmet`, `pg`, `jsonwebtoken`, `bcrypt`, `dotenv`, `zod`, `pino`, `pino-http`, `ioredis`, `bullmq`, `node-cron`, `axios`, `cashfree-pg`
-- DevDependencies: `typescript`, `tsx`, `@types/node`, `@types/express`, `@types/cors`, `@types/pg`, `@types/jsonwebtoken`, `@types/bcrypt`
-
-### server/tsconfig.json
-Standard Node strict TS config (target ES2022, module commonjs, strict true, esModuleInterop true, outDir dist).
-
-### server/src/index.ts
-Create a minimal but real Express app that:
-- Loads dotenv
-- Mounts cors + helmet + json body parser + pino-http logger
-- Registers a `/health` endpoint returning `{ status: 'ok', uptime, version }`
-- Listens on `process.env.PORT || 3001`
-- Logs "Indi-gen API server on :PORT" on boot
-- Has placeholder comments where future routes will mount
-
-### scraper-service/app/main.py
-FastAPI app with:
-- POST `/scrape/search` (keywords: list[str], limit: int) — returns stub `{ "status": "not_implemented" }`
-- GET `/scrape/profile/{public_id}` — returns stub
-- GET `/health` — returns `{ "status": "ok" }`
-- Runs on port 8000
-
-### scraper-service/requirements.txt
-```
-fastapi==0.110.0
-uvicorn[standard]==0.27.0
-linkedin-api==2.1.1
-redis==5.0.1
-pydantic==2.6.0
-python-dotenv==1.0.1
-httpx==0.27.0
+export const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  transport: config.nodeEnv === 'development'
+    ? { target: 'pino-pretty', options: { colorize: true } }
+    : undefined,
+});
 ```
 
-### scraper-service/Dockerfile
-Python 3.11-slim, installs requirements, exposes 8000, runs `uvicorn app.main:app --host 0.0.0.0 --port 8000`.
+### File: `src/redis.ts`
+```typescript
+import Redis from 'ioredis';
+import { config } from './config';
 
-### admin/package.json
-Name `indigen-admin`. Vite + React 18 + TypeScript.
-Dependencies: `react`, `react-dom`, `react-router-dom`, `@tanstack/react-query`, `zustand`, `axios`, `lucide-react`, `recharts`, `framer-motion`, `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`, `react-hook-form`, `zod`, `@hookform/resolvers`, `sonner` (toasts), `cmdk` (command palette)
-DevDeps: `vite`, `@vitejs/plugin-react`, `typescript`, `tailwindcss`, `postcss`, `autoprefixer`, `@types/react`, `@types/react-dom`
-Scripts: `dev` (vite), `build`, `preview`
+export const redis = new Redis(config.redisUrl, { lazyConnect: true, maxRetriesPerRequest: null });
+redis.connect().catch(() => { /* retry in background */ });
 
-### admin/vite.config.ts
-- Port 5173
-- Path alias `@` -> `./src`
-- Proxy `/api` -> `http://localhost:3001`
+export const pub = redis.duplicate();
+export const sub = redis.duplicate();
+```
 
-### admin/tailwind.config.js
-Full shadcn/ui preset with CSS variables for theme (dark + light).
+### File: `src/middleware/auth.ts`
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { config } from '../config';
+import { query } from '../db/client';
 
-### admin/src/main.tsx + App.tsx
-Set up:
-- QueryClient + QueryClientProvider
-- BrowserRouter
-- Toaster (sonner)
-- Root route showing "Indi-gen Admin — scaffold ready"
-Set up all sidebar section folders with an `index.tsx` returning `<div>Section coming soon</div>` so routes don't 404.
+export interface AuthPayload { id: string; email: string; role: string; jti?: string; }
+export interface AuthedReq extends Request { user?: AuthPayload; }
 
-### mobile/package.json
-Name `indigen-mobile`. Expo SDK 50.
-Dependencies: `expo` (~50.0.0), `expo-router`, `expo-linking`, `expo-status-bar`, `expo-constants`, `expo-font`, `expo-secure-store`, `expo-web-browser`, `react`, `react-native`, `react-native-reanimated`, `react-native-gesture-handler`, `react-native-safe-area-context`, `react-native-screens`, `@tanstack/react-query`, `axios`, `react-native-svg`, `nativewind`, `react-hook-form`, `zod`
-DevDeps: `typescript`, `@types/react`, `@babel/core`
+export async function requireAuth(req: AuthedReq, res: Response, next: NextFunction) {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const payload = jwt.verify(header.slice(7), config.jwtSecret) as AuthPayload;
+    // Optional: check session not revoked
+    if (payload.jti) {
+      const rev = await query('SELECT revoked_at FROM active_sessions WHERE jti=$1', [payload.jti]);
+      if (rev.length && rev[0].revoked_at) return res.status(401).json({ error: 'Session revoked' });
+    }
+    req.user = payload;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}
 
-### mobile/app.json
-Expo config with name "Indi-gen", slug "indi-gen", scheme "indigen", newArchEnabled: true, android package `com.indigenservices.indigen`, plugins: `expo-router`, `expo-secure-store`, `expo-font`.
+export function requireRole(...roles: string[]) {
+  return (req: AuthedReq, res: Response, next: NextFunction) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
+    next();
+  };
+}
 
-### mobile/eas.json
-Three build profiles: `development` (internal), `preview` (internal apk), `production` (aab).
+export const requireAdmin = requireRole('admin', 'super_admin');
+export const requireSuperAdmin = requireRole('super_admin');
+```
 
-### mobile/app/_layout.tsx
-Expo Router root layout with Stack, QueryClientProvider, SafeAreaProvider.
+### File: `src/middleware/rateLimit.ts`
+Simple sliding-window Redis-backed rate limit.
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import { redis } from '../redis';
 
-### mobile/app/(tabs)/_layout.tsx
-Bottom tab layout with 5 tabs (Home, Explore, Outreach, Insights, Settings) — all with Lucide icons.
+export function rateLimit(opts: { key: (req: Request) => string; limit: number; windowSec: number }) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const k = `rl:${opts.key(req)}`;
+    const count = await redis.incr(k);
+    if (count === 1) await redis.expire(k, opts.windowSec);
+    if (count > opts.limit) return res.status(429).json({ error: 'Rate limit exceeded' });
+    res.setHeader('X-RateLimit-Remaining', Math.max(0, opts.limit - count));
+    next();
+  };
+}
 
-### mobile/app/index.tsx
-Simple splash "Indi-gen" text, redirect to (tabs).
+export const ipLimit = rateLimit({ key: (r) => r.ip || 'unknown', limit: 300, windowSec: 60 });
+export const authLimit = rateLimit({
+  key: (r) => `${r.ip}:${r.body?.email || ''}`,
+  limit: 5, windowSec: 60,
+});
+```
 
-### docker-compose.yml
-Services: `postgres` (postgres:16), `redis` (redis:7-alpine), `server` (builds ./server), `scraper` (builds ./scraper-service), `admin` (builds ./admin), `nginx` (nginx:alpine with conf mount). Networks, volumes, env_file setup.
+### File: `src/middleware/validate.ts`
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import { ZodSchema } from 'zod';
 
-### nginx.conf
-Routes:
-- `/api/*` -> `server:3001`
-- `/admin/*` -> `admin:80`
-- `/scrape/*` -> `scraper:8000`
-- `/webhook/*` -> `server:3001`
+export const validateBody = <T>(schema: ZodSchema<T>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    const result = schema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ error: 'ValidationError', issues: result.error.errors });
+    req.body = result.data;
+    next();
+  };
+```
 
-### .gitignore
-Comprehensive: node_modules, dist, .env, *.log, .DS_Store, mobile/.expo, ios/, android/, *.keystore, .next, .turbo, python __pycache__, .venv, Thumbs.db
+### File: `src/middleware/error.ts`
+```typescript
+import { ErrorRequestHandler } from 'express';
+import { logger } from '../logger';
 
-### README.md
-Brief project overview, folder structure table, quick-start commands (`docker compose up`).
+export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+  const status = err.status || err.statusCode || 500;
+  logger.error({ err, path: req.path, method: req.method }, 'request error');
+  res.status(status).json({
+    error: err.code || err.name || 'InternalError',
+    message: err.message || 'Something went wrong',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
+};
+```
 
-### docs/architecture.md
-2-3 paragraph description of the system architecture + a simple ASCII diagram.
+### File: `src/sse/bus.ts`
+SSE broadcasting via Redis pub/sub.
+```typescript
+import { Response } from 'express';
+import { pub, sub } from '../redis';
 
-## Execution instructions
-1. Create all folders and files above.
-2. Run `npm install` inside `server/`, `admin/`, `mobile/` in that order to verify package.json is valid. DO NOT worry if some downloads fail due to network — just report.
-3. Run `pip install -r requirements.txt` inside `scraper-service/` (or `py -m pip install` if `pip` isn't on PATH).
-4. After scaffold, run:
-   ```
-   git add .
-   git commit -m "feat: scaffold monorepo structure (server + scraper + admin + mobile)"
-   git push origin master
-   ```
-5. Report: files created, any install failures, and final git commit SHA.
+const clients = new Map<string, Response[]>();
 
-## Important
-- Don't implement business logic yet — keep all files minimal placeholders.
-- The goal is a clean compilable scaffold that we'll fill in subsequent tasks.
-- Use exact versions/dependencies above, don't substitute.
-- Work fully autonomously — do not ask questions, make reasonable choices.
+sub.psubscribe('sse:*');
+sub.on('pmessage', (_pattern, channel, message) => {
+  const topic = channel.replace('sse:', '');
+  (clients.get(topic) || []).forEach(res => {
+    res.write(`event: ${topic}\ndata: ${message}\n\n`);
+  });
+  (clients.get('*') || []).forEach(res => {
+    res.write(`event: ${topic}\ndata: ${message}\n\n`);
+  });
+});
+
+export function attachSSE(res: Response, topics: string[]) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  res.write(`event: connected\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`);
+
+  topics.forEach(t => {
+    const arr = clients.get(t) || [];
+    arr.push(res);
+    clients.set(t, arr);
+  });
+
+  const hb = setInterval(() => res.write(`: heartbeat\n\n`), 20000);
+  res.on('close', () => {
+    clearInterval(hb);
+    topics.forEach(t => {
+      const arr = (clients.get(t) || []).filter(r => r !== res);
+      clients.set(t, arr);
+    });
+  });
+}
+
+export async function emit(topic: string, payload: any) {
+  await pub.publish(`sse:${topic}`, JSON.stringify({ ts: Date.now(), ...payload }));
+}
+```
+
+### File: `src/db/settings.ts`
+(Port from original PDF, unchanged shape)
+```typescript
+import { query } from './client';
+
+export async function getSetting(key: string): Promise<string | null> {
+  const rows = await query('SELECT value FROM app_settings WHERE key=$1', [key]);
+  return rows.length ? rows[0].value : null;
+}
+
+export async function getSettings(keys: string[]): Promise<Record<string, string>> {
+  if (!keys.length) return {};
+  const rows = await query(`SELECT key, value FROM app_settings WHERE key = ANY($1::text[])`, [keys]);
+  return Object.fromEntries(rows.map(r => [r.key, r.value]));
+}
+
+export async function getAllPublicSettings(): Promise<Record<string, string>> {
+  const rows = await query(`SELECT key, value FROM app_settings WHERE is_secret = FALSE`);
+  return Object.fromEntries(rows.map(r => [r.key, r.value]));
+}
+
+export async function setSetting(key: string, value: string, updatedBy?: string): Promise<void> {
+  await query(
+    `INSERT INTO app_settings (key, value, updated_by, updated_at) VALUES ($1,$2,$3,NOW())
+     ON CONFLICT (key) DO UPDATE SET value=$2, updated_by=$3, updated_at=NOW()`,
+    [key, value, updatedBy || null]
+  );
+}
+
+export async function incrSetting(key: string, delta: number): Promise<void> {
+  await query(
+    `INSERT INTO app_settings (key, value, updated_at) VALUES ($1,$2::text,NOW())
+     ON CONFLICT (key) DO UPDATE
+     SET value=(COALESCE(NULLIF(app_settings.value,'')::bigint,0)+$2)::text, updated_at=NOW()`,
+    [key, delta]
+  );
+}
+```
+
+### File: `src/services/audit.ts`
+```typescript
+import { query } from '../db/client';
+
+export async function audit(params: {
+  actorId?: string; actorType?: string; action: string;
+  targetType?: string; targetId?: string;
+  before?: any; after?: any; ip?: string; userAgent?: string;
+}) {
+  await query(
+    `INSERT INTO audit_log (actor_id, actor_type, action, target_type, target_id, before_state, after_state, ip_address, user_agent)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    [params.actorId || null, params.actorType || 'user', params.action,
+     params.targetType || null, params.targetId || null,
+     params.before ? JSON.stringify(params.before) : null,
+     params.after ? JSON.stringify(params.after) : null,
+     params.ip || null, params.userAgent || null]
+  );
+}
+```
+
+### File: `src/services/tokens.ts`
+Complete ledger implementation per research: grant, consume (with reservation pattern), refund, expire.
+```typescript
+import { query, transaction } from '../db/client';
+
+export async function getBalance(userId: string): Promise<number> {
+  const rows = await query(`SELECT COALESCE(SUM(delta),0)::bigint AS balance FROM token_transactions WHERE user_id=$1`, [userId]);
+  return parseInt(rows[0]?.balance || '0');
+}
+
+export async function grantTokens(params: {
+  userId: string; amount: number; source: string; sourceRef?: string;
+  expiresAt?: Date; idempotencyKey?: string;
+}): Promise<string> {
+  return transaction(async (c) => {
+    const key = params.idempotencyKey;
+    if (key) {
+      const dup = await c.query('SELECT id FROM token_grants WHERE idempotency_key=$1', [key]);
+      if (dup.rows.length) return dup.rows[0].id;
+    }
+    const g = await c.query(
+      `INSERT INTO token_grants (user_id, amount, source, source_ref, expires_at, idempotency_key)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [params.userId, params.amount, params.source, params.sourceRef || null, params.expiresAt || null, key || null]
+    );
+    const grantId = g.rows[0].id;
+    await c.query(
+      `INSERT INTO token_transactions (user_id, delta, kind, grant_id, idempotency_key)
+       VALUES ($1,$2,'grant',$3,$4)`,
+      [params.userId, params.amount, grantId, key ? `${key}:grant` : null]
+    );
+    return grantId;
+  });
+}
+
+export async function consumeTokens(params: {
+  userId: string; amount: number; reason: string; jobId?: string; idempotencyKey?: string;
+}): Promise<boolean> {
+  return transaction(async (c) => {
+    await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`tokens:${params.userId}`]);
+    const bal = await c.query(`SELECT COALESCE(SUM(delta),0)::bigint AS b FROM token_transactions WHERE user_id=$1`, [params.userId]);
+    if (parseInt(bal.rows[0].b) < params.amount) return false;
+    await c.query(
+      `INSERT INTO token_transactions (user_id, delta, kind, job_id, reason, idempotency_key)
+       VALUES ($1, -$2, 'consume', $3, $4, $5)`,
+      [params.userId, params.amount, params.jobId || null, params.reason, params.idempotencyKey || null]
+    );
+    return true;
+  });
+}
+
+export async function refundTokens(params: {
+  userId: string; amount: number; reason: string; idempotencyKey?: string;
+}): Promise<void> {
+  await query(
+    `INSERT INTO token_transactions (user_id, delta, kind, reason, idempotency_key)
+     VALUES ($1, $2, 'refund', $3, $4)`,
+    [params.userId, params.amount, params.reason, params.idempotencyKey || null]
+  );
+}
+```
+
+### File: `src/scoring/scoreLead.ts`
+Port exactly from PDF (pg 6-8). Export `scoreLead`, `detectICP`, constants.
+
+### File: `src/index.ts` — rewrite the scaffold index.ts
+```typescript
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import pinoHttp from 'pino-http';
+import { config } from './config';
+import { logger } from './logger';
+import { errorHandler } from './middleware/error';
+import { ipLimit } from './middleware/rateLimit';
+
+const app = express();
+app.set('trust proxy', 1);
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: config.corsOrigins, credentials: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(pinoHttp({ logger }));
+app.use(ipLimit);
+
+app.get('/health', (_req, res) => res.json({
+  status: 'ok', time: new Date().toISOString(), uptime: process.uptime(), version: '0.1.0',
+}));
+
+// Routes mounted in next task
+// app.use('/api/auth', authRouter);
+// app.use('/api/leads', leadsRouter);
+// ... etc
+
+app.use(errorHandler);
+
+const server = app.listen(config.port, () => {
+  logger.info(`Indi-gen API on :${config.port} (env: ${config.nodeEnv})`);
+});
+
+// graceful shutdown
+process.on('SIGTERM', () => { logger.info('SIGTERM, closing'); server.close(() => process.exit(0)); });
+```
+
+### Dependencies to add
+Run: `npm install bcrypt @types/bcrypt pino-http pino-pretty helmet --save`
+
+### Server health check
+Start the server: `npm run dev` in a terminal. It should log "Indi-gen API on :3001" with the pretty formatter. `curl http://localhost:3001/health` should return OK. Kill the server after confirming.
+
+### Tests (basic)
+Create `server/src/__tests__/health.test.ts`:
+```typescript
+import { describe, test, expect } from 'vitest';
+// placeholder — real tests in later task
+describe('smoke', () => { test('true', () => { expect(true).toBe(true); }); });
+```
+Add `vitest` to devDependencies + `test: "vitest run"` to scripts.
+
+### Commit
+```
+git add -A
+git commit -m "feat(server): core middleware, auth/jwt, tokens ledger, SSE bus, scoring"
+git push origin master
+```
+
+Report back: files touched, dev server boot log snippet, final SHA.
+
+Work fully autonomously.
