@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { FilterIcon, TrashIcon, ChevronDownIcon, ChevronRightIcon } from '@/icons';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -118,7 +118,7 @@ export function StepCard({ step, index, expanded, onToggleExpand, onDelete, onUp
           {...listeners}
           aria-label="Drag to reorder"
         >
-          <GripVertical className="h-4 w-4" />
+          <FilterIcon size={16} />
         </button>
 
         <button
@@ -127,8 +127,8 @@ export function StepCard({ step, index, expanded, onToggleExpand, onDelete, onUp
           onClick={onToggleExpand}
         >
           {expanded
-            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            ? <ChevronDownIcon size={14} className="text-muted-foreground shrink-0" />
+            : <ChevronRightIcon size={14} className="text-muted-foreground shrink-0" />
           }
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide shrink-0">
             Step {index + 1}
@@ -144,7 +144,7 @@ export function StepCard({ step, index, expanded, onToggleExpand, onDelete, onUp
           onClick={onDelete}
           aria-label="Delete step"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <TrashIcon size={14} />
         </Button>
       </div>
 

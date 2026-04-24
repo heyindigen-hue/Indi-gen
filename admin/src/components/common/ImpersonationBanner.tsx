@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { XIcon } from '@/icons';
 import { useEffect, useState } from 'react';
 
 const TOKEN_KEY = 'leadhangover_imp_token';
@@ -36,7 +36,7 @@ export function ImpersonationBanner() {
         {impUser.email ? ` (${impUser.email})` : ''}. Actions are logged.
       </span>
       <button onClick={stop} className="flex items-center gap-1 hover:underline font-semibold">
-        <X className="h-3.5 w-3.5" />
+        <XIcon size={14} />
         Stop impersonation
       </button>
     </div>

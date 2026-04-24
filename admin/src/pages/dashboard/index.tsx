@@ -2,21 +2,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  TrendingUp,
-  Users,
-  Target,
-  UserPlus,
-  Zap,
-  DollarSign,
-  CheckCircle2,
-  Tag,
-  Play,
-  RefreshCw,
-  Bell,
-  List,
-  CreditCard,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+  ChartIcon,
+  UsersIcon,
+  LeadIcon,
+  UserIcon,
+  ZapIcon,
+  CashIcon,
+  CheckIcon,
+  TagIcon,
+  BellIcon,
+  FilterIcon,
+  CreditCardIcon,
+  RefreshIcon,
+} from '@/icons';
 import { PageHeader } from '@/components/common/PageHeader';
 import { KpiCard } from '@/components/common/KpiCard';
 import { EventFeed } from '@/components/common/EventFeed';
@@ -26,10 +24,17 @@ import { useLiveEvents } from '@/hooks/useLiveEvents';
 import { useRegisterCommand } from '@/store/commands';
 import { formatINR } from '@/lib/utils';
 
+interface IconProps {
+  size?: number;
+  className?: string;
+  strokeWidth?: number;
+  color?: string;
+}
+
 interface QuickActionProps {
   title: string;
   description: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<IconProps>;
   onClick: () => void;
 }
 
@@ -39,7 +44,7 @@ function QuickAction({ title, description, icon: Icon, onClick }: QuickActionPro
       onClick={onClick}
       className="rounded-lg border border-border bg-card p-4 text-left hover:ring-1 hover:ring-ring/30 transition-all w-full"
     >
-      <Icon className="h-5 w-5 text-primary mb-3" />
+      <Icon size={20} className="text-primary mb-3" />
       <p className="text-sm font-medium text-foreground">{title}</p>
       <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
     </button>
@@ -81,45 +86,45 @@ export default function Dashboard() {
       value: stats ? formatINR(stats.mrr) : '—',
       change: stats ? { value: stats.mrr_wow, label: 'WoW' } : undefined,
       sparkline: stats?.mrr_sparkline,
-      icon: TrendingUp,
+      icon: ChartIcon,
     },
     {
       title: 'Active Users (DAU)',
       value: stats ? stats.dau.toLocaleString() : '—',
       change: stats ? { value: stats.dau_wow, label: '7d' } : undefined,
-      icon: Users,
+      icon: UsersIcon,
     },
     {
       title: 'Leads Today',
       value: stats ? stats.leads_today.toLocaleString() : '—',
-      icon: Target,
+      icon: LeadIcon,
     },
     {
       title: 'New Signups',
       value: stats ? stats.signups_today.toLocaleString() : '—',
       change: stats ? { value: stats.signups_wow, label: 'WoW' } : undefined,
-      icon: UserPlus,
+      icon: UserIcon,
     },
     {
       title: 'Token Burn Today',
       value: stats ? stats.token_burn_today.toLocaleString() : '—',
-      icon: Zap,
+      icon: ZapIcon,
     },
     {
       title: 'LLM Cost Today',
       value: stats ? formatINR(stats.llm_cost_today_inr) : '—',
-      icon: DollarSign,
+      icon: CashIcon,
     },
     {
       title: 'Scrape Success (24h)',
       value: stats ? `${stats.scrape_success_rate.toFixed(1)}%` : '—',
       change: stats ? { value: stats.scrape_success_change } : undefined,
-      icon: CheckCircle2,
+      icon: CheckIcon,
     },
     {
       title: 'Open Tickets',
       value: stats ? stats.open_tickets.toLocaleString() : '—',
-      icon: Tag,
+      icon: TagIcon,
     },
   ];
 
@@ -133,7 +138,7 @@ export default function Dashboard() {
           }}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-md px-3 py-1.5 transition-colors"
         >
-          <RefreshCw className="h-3 w-3" />
+          <RefreshIcon size={12} />
           Refresh
         </button>
       </PageHeader>
@@ -169,25 +174,25 @@ export default function Dashboard() {
           <QuickAction
             title="Run Scrape"
             description="Trigger a new scrape job"
-            icon={Play}
+            icon={ZapIcon}
             onClick={() => navigate('/scrapers')}
           />
           <QuickAction
             title="Send Announcement"
             description="Push message to all users"
-            icon={Bell}
+            icon={BellIcon}
             onClick={() => navigate('/mobile-ui/announcements')}
           />
           <QuickAction
             title="View Queue"
             description="Check scraper job logs"
-            icon={List}
+            icon={FilterIcon}
             onClick={() => navigate('/scrapers/logs')}
           />
           <QuickAction
             title="Billing Overview"
             description="Revenue and subscriptions"
-            icon={CreditCard}
+            icon={CreditCardIcon}
             onClick={() => navigate('/billing')}
           />
         </div>

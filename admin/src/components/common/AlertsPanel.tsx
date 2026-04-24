@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, XCircle, AlertTriangle, Info } from 'lucide-react';
+import { CheckIcon, XIcon, AlertCircleIcon, InfoIcon } from '@/icons';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { relTime } from '@/lib/utils';
@@ -25,9 +25,9 @@ function severityDot(severity: Alert['severity']) {
 }
 
 function severityIcon(severity: Alert['severity']) {
-  if (severity === 'critical') return <XCircle className="h-4 w-4 text-red-500" />;
-  if (severity === 'warning') return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-  return <Info className="h-4 w-4 text-blue-500" />;
+  if (severity === 'critical') return <XIcon size={16} className="text-red-500" />;
+  if (severity === 'warning') return <AlertCircleIcon size={16} className="text-amber-500" />;
+  return <InfoIcon size={16} className="text-blue-500" />;
 }
 
 export function AlertsPanel() {
@@ -72,7 +72,7 @@ export function AlertsPanel() {
           </div>
         ) : grouped.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
-            <CheckCircle className="h-8 w-8 text-green-500/60" />
+            <CheckIcon size={32} className="text-green-500/60" />
             <p className="text-sm">All clear</p>
           </div>
         ) : (

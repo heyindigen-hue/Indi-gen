@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Outlet, NavLink } from 'react-router-dom';
-import { Save, Upload } from 'lucide-react';
+import { CheckIcon, UploadIcon } from '@/icons';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/common/PageHeader';
 import { ManifestVersionDropdown } from '@/components/sdui/ManifestVersionDropdown';
@@ -92,7 +92,7 @@ function VersionPanel() {
           onClick={() => selectedId && publishMutation.mutate(selectedId)}
           disabled={publishMutation.isPending || !selectedId}
         >
-          <Upload className="h-3.5 w-3.5" />
+          <UploadIcon size={14} />
           {publishMutation.isPending ? 'Publishing...' : 'Publish'}
         </Button>
         <Button
@@ -102,7 +102,7 @@ function VersionPanel() {
           onClick={() => saveDraftMutation.mutate()}
           disabled={saveDraftMutation.isPending}
         >
-          <Save className="h-3.5 w-3.5" />
+          <CheckIcon size={14} />
           {saveDraftMutation.isPending ? 'Saving...' : 'Save Draft'}
         </Button>
       </div>

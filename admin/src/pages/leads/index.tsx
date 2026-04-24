@@ -11,18 +11,17 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  ChevronsUpDown,
-  Download,
-  MoreHorizontal,
-  Plus,
-  RefreshCw,
-  Trash2,
-  UserCheck,
-} from 'lucide-react';
+  ChevronDownIcon,
+  ArrowRightIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  DownloadIcon,
+  FilterIcon,
+  PlusIcon,
+  RefreshIcon,
+  TrashIcon,
+  UserIcon,
+} from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
@@ -247,7 +246,7 @@ export default function LeadsPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <MoreHorizontal className="h-4 w-4" />
+                <FilterIcon size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -352,11 +351,11 @@ export default function LeadsPage() {
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => navigate('/leads/add')}>
-              <Plus className="h-4 w-4 mr-1" />
+              <PlusIcon size={16} className="mr-1" />
               Add manual
             </Button>
             <Button variant="outline" size="sm" onClick={() => toast.info('Export started')}>
-              <Download className="h-4 w-4 mr-1" />
+              <DownloadIcon size={16} className="mr-1" />
               Export
             </Button>
           </>
@@ -419,7 +418,7 @@ export default function LeadsPage() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 text-sm gap-1">
               Saved views
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDownIcon size={14} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -459,7 +458,7 @@ export default function LeadsPage() {
               className="h-7 text-xs"
               onClick={() => toast.info('Reassigning...')}
             >
-              <UserCheck className="h-3 w-3 mr-1" />
+              <UserIcon size={12} className="mr-1" />
               Reassign
             </Button>
             <Button
@@ -468,7 +467,7 @@ export default function LeadsPage() {
               className="h-7 text-xs"
               onClick={() => toast.info('Re-enriching...')}
             >
-              <RefreshCw className="h-3 w-3 mr-1" />
+              <RefreshIcon size={12} className="mr-1" />
               Re-enrich
             </Button>
             <Button
@@ -477,7 +476,7 @@ export default function LeadsPage() {
               className="h-7 text-xs text-red-600 hover:text-red-600"
               onClick={() => toast.info('Delete coming soon')}
             >
-              <Trash2 className="h-3 w-3 mr-1" />
+              <TrashIcon size={12} className="mr-1" />
               Delete
             </Button>
           </div>
@@ -510,11 +509,11 @@ export default function LeadsPage() {
                       {header.column.getCanSort() && (
                         <span className="text-muted-foreground">
                           {header.column.getIsSorted() === 'asc' ? (
-                            <ChevronUp className="h-3 w-3" />
+                            <ChevronUpIcon size={12} />
                           ) : header.column.getIsSorted() === 'desc' ? (
-                            <ChevronDown className="h-3 w-3" />
+                            <ChevronDownIcon size={12} />
                           ) : (
-                            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+                            <ArrowRightIcon size={12} className="opacity-40 rotate-90" />
                           )}
                         </span>
                       )}
@@ -577,7 +576,7 @@ export default function LeadsPage() {
             disabled={page === 0}
             onClick={() => setPageParam(page - 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ArrowRightIcon size={16} className="rotate-180" />
           </Button>
           <Button
             variant="outline"
@@ -586,7 +585,7 @@ export default function LeadsPage() {
             disabled={page >= pageCount - 1}
             onClick={() => setPageParam(page + 1)}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRightIcon size={16} />
           </Button>
         </div>
       </div>

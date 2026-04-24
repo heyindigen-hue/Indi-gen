@@ -7,7 +7,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Plus, MoreHorizontal } from 'lucide-react';
+import { PlusIcon, FilterIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
@@ -188,7 +188,7 @@ export default function CouponsPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <MoreHorizontal className="h-4 w-4" />
+                <FilterIcon size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -235,7 +235,7 @@ export default function CouponsPage() {
         subtitle={`${total} coupon${total !== 1 ? 's' : ''}`}
         actions={
           <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" />
+            <PlusIcon size={16} className="mr-1" />
             Create Coupon
           </Button>
         }

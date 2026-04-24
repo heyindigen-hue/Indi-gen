@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowRightIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -74,7 +74,7 @@ export default function AddLeadPage() {
           className="h-8 gap-1 -ml-2"
           onClick={() => navigate('/leads')}
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowRightIcon size={16} className="rotate-180" />
           Back
         </Button>
       </div>
@@ -97,7 +97,7 @@ export default function AddLeadPage() {
             />
             <Button type="submit" disabled={fetchMutation.isPending}>
               {fetchMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                'Fetching...'
               ) : (
                 'Fetch'
               )}
@@ -147,9 +147,7 @@ export default function AddLeadPage() {
 
           <div className="flex gap-2 pt-2 border-t border-border">
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-              {saveMutation.isPending && (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-              )}
+              {saveMutation.isPending && null}
               Save lead
             </Button>
             <Button variant="outline" onClick={() => setPreview(null)}>

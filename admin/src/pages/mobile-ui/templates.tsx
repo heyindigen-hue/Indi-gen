@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Mail, Bell } from 'lucide-react';
+import { MailIcon, BellIcon } from '@/icons';
 import { api } from '@/lib/api';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { TemplateList } from './_templates/TemplateList';
@@ -118,11 +118,11 @@ export default function TemplatesPage() {
       <Tabs defaultValue="email">
         <TabsList className="mb-5">
           <TabsTrigger value="email" className="flex items-center gap-1.5">
-            <Mail className="h-3.5 w-3.5" />
+            <MailIcon size={14} />
             Email
           </TabsTrigger>
           <TabsTrigger value="push" className="flex items-center gap-1.5">
-            <Bell className="h-3.5 w-3.5" />
+            <BellIcon size={14} />
             Push
           </TabsTrigger>
         </TabsList>

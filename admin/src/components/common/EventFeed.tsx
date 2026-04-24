@@ -1,4 +1,4 @@
-import { Database, CreditCard, UserCheck, AlertTriangle, Circle, Pause, Play, Wifi, WifiOff } from 'lucide-react';
+import { ChartIcon, CreditCardIcon, UsersIcon, AlertCircleIcon, SparkleIcon, ZapIcon, GlobeIcon, XIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import { relTime } from '@/lib/utils';
 import type { LiveEvent } from '@/hooks/useLiveEvents';
@@ -23,11 +23,11 @@ const filterMatchers: Record<string, (type: string) => boolean> = {
 };
 
 function eventIcon(type: string) {
-  if (type.startsWith('scrape')) return <Database className="h-3.5 w-3.5 text-blue-400 shrink-0" />;
-  if (type.startsWith('payment')) return <CreditCard className="h-3.5 w-3.5 text-green-400 shrink-0" />;
-  if (type.startsWith('user') || type.startsWith('signup')) return <UserCheck className="h-3.5 w-3.5 text-purple-400 shrink-0" />;
-  if (type.startsWith('error')) return <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0" />;
-  return <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+  if (type.startsWith('scrape')) return <ChartIcon size={14} className="text-blue-400 shrink-0" />;
+  if (type.startsWith('payment')) return <CreditCardIcon size={14} className="text-green-400 shrink-0" />;
+  if (type.startsWith('user') || type.startsWith('signup')) return <UsersIcon size={14} className="text-purple-400 shrink-0" />;
+  if (type.startsWith('error')) return <AlertCircleIcon size={14} className="text-red-400 shrink-0" />;
+  return <SparkleIcon size={14} className="text-muted-foreground shrink-0" />;
 }
 
 function typeBadgeClass(type: string) {
@@ -49,9 +49,9 @@ export function EventFeed({ events, filter, onFilterChange, paused, onTogglePaus
           <span className="text-sm font-medium text-foreground">Live Events</span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             {connected ? (
-              <Wifi className="h-3 w-3 text-green-500" />
+              <GlobeIcon size={12} className="text-green-500" />
             ) : (
-              <WifiOff className="h-3 w-3 text-muted-foreground" />
+              <XIcon size={12} className="text-muted-foreground" />
             )}
             {connected ? 'live' : 'disconnected'}
           </span>
@@ -60,7 +60,7 @@ export function EventFeed({ events, filter, onFilterChange, paused, onTogglePaus
           onClick={onTogglePause}
           className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted"
         >
-          {paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+          {paused ? <ZapIcon size={12} /> : <SparkleIcon size={12} />}
           {paused ? 'Resume' : 'Pause'}
         </button>
       </div>

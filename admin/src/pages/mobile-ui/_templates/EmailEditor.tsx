@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import TextareaAutosize from 'react-textarea-autosize';
-import { Send } from 'lucide-react';
+import { SendIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -124,7 +124,7 @@ export function EmailEditor({ template, open, onClose }: EmailEditorProps) {
 
         <SheetFooter className="pt-4 flex-row gap-2 justify-end">
           <Button variant="ghost" size="sm" onClick={handleTestSend}>
-            <Send className="h-3.5 w-3.5 mr-1.5" />
+            <SendIcon size={14} className="mr-1.5" />
             Test send
           </Button>
           <Button

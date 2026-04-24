@@ -1,15 +1,21 @@
-import type { LucideIcon } from 'lucide-react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpIcon, ArrowRightIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MiniAreaChart } from '@/components/charts/MiniAreaChart';
+
+interface IconProps {
+  size?: number;
+  className?: string;
+  strokeWidth?: number;
+  color?: string;
+}
 
 interface KpiCardProps {
   title: string;
   value: string | number;
   change?: { value: number; label?: string };
   sparkline?: number[];
-  icon?: LucideIcon;
+  icon?: React.ComponentType<IconProps>;
   loading?: boolean;
 }
 
@@ -36,7 +42,7 @@ export function KpiCard({ title, value, change, sparkline, icon: Icon, loading }
     >
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-muted-foreground">{title}</p>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+        {Icon && <Icon size={16} className="text-muted-foreground" />}
       </div>
 
       <p className="text-2xl font-semibold tracking-tight text-foreground mb-1">{value}</p>
@@ -50,8 +56,8 @@ export function KpiCard({ title, value, change, sparkline, icon: Icon, loading }
             !isPositive && !isNegative && 'text-muted-foreground',
           )}
         >
-          {isPositive && <TrendingUp className="h-3 w-3" />}
-          {isNegative && <TrendingDown className="h-3 w-3" />}
+          {isPositive && <ArrowUpIcon size={12} />}
+          {isNegative && <ArrowRightIcon size={12} className="rotate-90" />}
           <span>
             {isPositive ? '+' : ''}
             {change.value.toFixed(1)}%

@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Upload } from 'lucide-react';
+import { UploadIcon } from '@/icons';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -331,7 +331,7 @@ export default function MobileUiThemePage() {
             onClick={() => applyMutation.mutate()}
             disabled={applyMutation.isPending}
           >
-            <Upload className="h-4 w-4" />
+            <UploadIcon size={16} />
             {applyMutation.isPending ? 'Applying...' : 'Apply to active manifest'}
           </Button>
         </div>

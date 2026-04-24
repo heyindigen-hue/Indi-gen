@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { CheckCircle, XCircle, ChevronLeft, ChevronRight, Copy, RefreshCw } from 'lucide-react';
+import { CheckIcon, XIcon, ArrowRightIcon, ChevronRightIcon, LinkIcon, RefreshIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, relTime } from '@/lib/utils';
@@ -253,9 +253,9 @@ export default function WebhooksPage() {
                       <div className="flex items-center justify-between gap-2 mb-0.5">
                         <ProviderBadge provider={event.provider} />
                         {event.signature_valid ? (
-                          <CheckCircle className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                          <CheckIcon size={14} className="text-green-500 shrink-0" />
                         ) : (
-                          <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                          <XIcon size={14} className="text-red-500 shrink-0" />
                         )}
                       </div>
                       <p className="text-xs font-medium truncate">{event.event_type}</p>
@@ -280,7 +280,7 @@ export default function WebhooksPage() {
                 disabled={page === 0}
                 onClick={() => setPage((p) => p - 1)}
               >
-                <ChevronLeft className="h-3 w-3" />
+                <ArrowRightIcon size={12} className="rotate-180" />
               </Button>
               <Button
                 variant="outline"
@@ -289,7 +289,7 @@ export default function WebhooksPage() {
                 disabled={page >= pageCount - 1}
                 onClick={() => setPage((p) => p + 1)}
               >
-                <ChevronRight className="h-3 w-3" />
+                <ChevronRightIcon size={12} />
               </Button>
             </div>
           </div>
@@ -310,12 +310,12 @@ export default function WebhooksPage() {
                   <span className="font-semibold text-sm">{selectedEvent.event_type}</span>
                   {selectedEvent.signature_valid ? (
                     <span className="flex items-center gap-1 text-xs text-green-600">
-                      <CheckCircle className="h-3.5 w-3.5" />
+                      <CheckIcon size={14} />
                       Valid signature
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-xs text-red-500">
-                      <XCircle className="h-3.5 w-3.5" />
+                      <XIcon size={14} />
                       Invalid signature
                     </span>
                   )}
@@ -328,7 +328,7 @@ export default function WebhooksPage() {
               {/* Actions */}
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleCopyCurl}>
-                  <Copy className="h-3.5 w-3.5 mr-1.5" />
+                  <LinkIcon size={14} className="mr-1.5" />
                   Copy as cURL
                 </Button>
                 <Button
@@ -337,9 +337,10 @@ export default function WebhooksPage() {
                   disabled={replayMutation.isPending}
                   onClick={() => replayMutation.mutate(selectedEvent.id)}
                 >
-                  <RefreshCw
+                  <RefreshIcon
+                    size={14}
                     className={cn(
-                      'h-3.5 w-3.5 mr-1.5',
+                      'mr-1.5',
                       replayMutation.isPending && 'animate-spin',
                     )}
                   />

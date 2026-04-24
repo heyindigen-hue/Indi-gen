@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Edit3, RotateCcw, Save, Clock } from 'lucide-react';
+import { EditIcon, RefreshIcon, CheckIcon, ClockIcon } from '@/icons';
 import TextareaAutosize from 'react-textarea-autosize';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -158,7 +158,7 @@ export default function PromptsPage() {
         description="Manage AI prompts and version history"
         actions={
           <Button size="sm" onClick={() => saveMutation.mutate()} disabled={!hasEdits || saveMutation.isPending}>
-            <Save className="h-3.5 w-3.5 mr-1.5" />
+            <CheckIcon size={14} className="mr-1.5" />
             {saveMutation.isPending ? 'Saving...' : 'Save as new version'}
           </Button>
         }
@@ -185,7 +185,7 @@ export default function PromptsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground truncate">{p.name}</span>
-                    <Edit3 className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-1" />
+                    <EditIcon size={14} className="text-muted-foreground shrink-0 ml-1" />
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
                     {p.version_count} version{p.version_count !== 1 ? 's' : ''}
@@ -239,7 +239,7 @@ export default function PromptsPage() {
               {/* Version history */}
               <div className="rounded-lg border border-border bg-card p-4 flex-1 overflow-y-auto">
                 <h4 className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
+                  <ClockIcon size={14} />
                   Version history
                 </h4>
                 {loadingVersions ? (
@@ -275,7 +275,7 @@ export default function PromptsPage() {
                             }}
                             disabled={rollbackMutation.isPending}
                           >
-                            <RotateCcw className="h-3 w-3 mr-1" />
+                            <RefreshIcon size={12} className="mr-1" />
                             Rollback
                           </Button>
                         </div>

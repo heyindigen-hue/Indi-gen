@@ -9,15 +9,7 @@ import {
   type SortingState,
   getSortedRowModel,
 } from '@tanstack/react-table';
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Users,
-  Clock,
-  AlertCircle,
-  XCircle,
-} from 'lucide-react';
+import { ArrowRightIcon, ChevronRightIcon, FilterIcon, UsersIcon, ClockIcon, AlertCircleIcon, XIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, formatINR, relTime } from '@/lib/utils';
@@ -175,7 +167,7 @@ export default function SubscriptionsPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <MoreHorizontal className="h-4 w-4" />
+                <FilterIcon size={16} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -240,25 +232,25 @@ export default function SubscriptionsPage() {
         <KpiCard
           title="Active"
           value={stats?.active ?? (isLoading ? '—' : 0)}
-          icon={Users}
+          icon={UsersIcon}
           loading={isLoading && !stats}
         />
         <KpiCard
           title="Trials ending 7d"
           value={stats?.trial_ending_7d ?? (isLoading ? '—' : 0)}
-          icon={Clock}
+          icon={ClockIcon}
           loading={isLoading && !stats}
         />
         <KpiCard
           title="Past due"
           value={stats?.past_due ?? (isLoading ? '—' : 0)}
-          icon={AlertCircle}
+          icon={AlertCircleIcon}
           loading={isLoading && !stats}
         />
         <KpiCard
           title="Cancelled this month"
           value={stats?.cancelled_this_month ?? (isLoading ? '—' : 0)}
-          icon={XCircle}
+          icon={XIcon}
           loading={isLoading && !stats}
         />
       </div>
@@ -348,7 +340,7 @@ export default function SubscriptionsPage() {
             disabled={page === 0}
             onClick={() => setPageParam(page - 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ArrowRightIcon size={16} className="rotate-180" />
           </Button>
           <Button
             variant="outline"
@@ -357,7 +349,7 @@ export default function SubscriptionsPage() {
             disabled={page >= pageCount - 1}
             onClick={() => setPageParam(page + 1)}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRightIcon size={16} />
           </Button>
         </div>
       </div>

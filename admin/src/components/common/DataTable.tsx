@@ -1,5 +1,5 @@
 import { flexRender, type Table as ReactTable } from '@tanstack/react-table';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRightIcon, ChevronRightIcon } from '@/icons';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -104,7 +104,7 @@ export function DataTable<TData>({
               disabled={page === 0}
               onClick={() => onPageChange(page - 1)}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ArrowRightIcon size={16} className="rotate-180" />
             </Button>
             <Button
               variant="outline"
@@ -113,7 +113,7 @@ export function DataTable<TData>({
               disabled={page >= pageCount - 1}
               onClick={() => onPageChange(page + 1)}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRightIcon size={16} />
             </Button>
           </div>
         </div>

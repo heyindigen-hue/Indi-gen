@@ -7,7 +7,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { AlertTriangle, Check, X } from 'lucide-react';
+import { AlertCircleIcon, CheckIcon, XIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, formatINR, relTime } from '@/lib/utils';
@@ -105,7 +105,7 @@ export default function RefundsPage() {
                 title="Requires second admin approval"
                 className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
               >
-                <AlertTriangle className="h-3 w-3" />
+                <AlertCircleIcon size={12} />
                 2FA
               </span>
             )}
@@ -150,7 +150,7 @@ export default function RefundsPage() {
                   setDialog({ request: req, action: 'approve', open: true });
                 }}
               >
-                <Check className="h-3 w-3 mr-1" />
+                <CheckIcon size={12} className="mr-1" />
                 Approve
               </Button>
               <Button
@@ -162,7 +162,7 @@ export default function RefundsPage() {
                   setDialog({ request: req, action: 'reject', open: true });
                 }}
               >
-                <X className="h-3 w-3 mr-1" />
+                <XIcon size={12} className="mr-1" />
                 Reject
               </Button>
             </div>

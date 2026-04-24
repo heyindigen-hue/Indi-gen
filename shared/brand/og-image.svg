@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,600&amp;family=Inter:wght@400;500&amp;display=swap');
+    </style>
+    <!-- Subtle grain texture filter -->
+    <filter id="grain" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feBlend in="SourceGraphic" mode="multiply" result="blend"/>
+      <feComposite in="blend" in2="SourceGraphic" operator="in"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#FF4716"/>
+
+  <!-- Subtle texture overlay -->
+  <rect width="1200" height="630" fill="url(#grain)" opacity="0.04"/>
+
+  <!-- Decorative circle (soft) -->
+  <circle cx="200" cy="315" r="280" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="80"/>
+  <circle cx="200" cy="315" r="180" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="60"/>
+
+  <!-- 8-petal flower logo at left -->
+  <g transform="translate(200, 315) scale(6)">
+    <!-- Petal 0deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round"/>
+    <!-- Petal 45deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round" transform="rotate(45)"/>
+    <!-- Petal 90deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round" transform="rotate(90)"/>
+    <!-- Petal 135deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round" transform="rotate(135)"/>
+    <!-- Petal 180deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round" transform="rotate(180)"/>
+    <!-- Petal 225deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round" transform="rotate(225)"/>
+    <!-- Petal 270deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round" transform="rotate(270)"/>
+    <!-- Petal 315deg -->
+    <path d="M0 0C-1.5-2-1.5-5 0-6.5C1.5-5 1.5-2 0 0" fill="none" stroke="rgba(250,247,242,0.95)" stroke-width="1.6" stroke-linecap="round" transform="rotate(315)"/>
+  </g>
+
+  <!-- Vertical divider -->
+  <line x1="420" y1="180" x2="420" y2="450" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+
+  <!-- Brand name - large italic serif -->
+  <text x="480" y="300" font-family="Fraunces, Georgia, serif" font-style="italic" font-weight="600" font-size="88" fill="#FAF7F2" letter-spacing="-2">LeadHangover</text>
+
+  <!-- Tagline -->
+  <text x="482" y="360" font-family="Inter, system-ui, sans-serif" font-weight="400" font-size="28" fill="rgba(250,247,242,0.75)" letter-spacing="0.3">Wake up to better leads.</text>
+
+  <!-- Small brand mark bottom right -->
+  <text x="1140" y="600" font-family="Inter, system-ui, sans-serif" font-size="14" fill="rgba(250,247,242,0.4)" text-anchor="end">leadhangover.com</text>
+</svg>

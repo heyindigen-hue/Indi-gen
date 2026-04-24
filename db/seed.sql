@@ -163,3 +163,49 @@ UPDATE app_settings SET value='/brand/logo-dark-256.png' WHERE key='brand_logo_d
 UPDATE app_settings SET value='/brand/favicon.png' WHERE key='brand_favicon_url';
 UPDATE app_settings SET value='/brand/icon-1024.png' WHERE key='brand_og_image_url';
 UPDATE app_settings SET value='support@leadhangover.com' WHERE key='brand_support_email';
+
+-- UI Manifest v2 (light theme default) ────────────────────────────────────
+UPDATE ui_manifests SET is_default = FALSE, enabled = FALSE WHERE platform = 'mobile';
+
+INSERT INTO ui_manifests (platform, name, version, manifest, is_default, enabled, published_at)
+SELECT 'mobile', 'default', 2, '{
+  "brand": {
+    "name": "LeadHangover",
+    "tagline": "Wake up to better leads",
+    "primary": "#FF4716",
+    "logo_url": "/brand/logo.png"
+  },
+  "theme": {
+    "palette": "warm-light",
+    "mode": "light",
+    "font": "Fraunces",
+    "body_font": "Inter Tight",
+    "radius": 16,
+    "density": "comfortable"
+  },
+  "tabs": [
+    {"key": "index", "label": "Home", "icon": "home"},
+    {"key": "explore", "label": "Explore", "icon": "search"},
+    {"key": "outreach", "label": "Outreach", "icon": "send"},
+    {"key": "insights", "label": "Insights", "icon": "chart"},
+    {"key": "settings", "label": "Settings", "icon": "settings"}
+  ],
+  "home_widgets": [
+    {"type": "token_balance", "priority": 1},
+    {"type": "lead_swipe_stack", "priority": 2},
+    {"type": "quick_filters", "priority": 3},
+    {"type": "recent_leads_carousel", "priority": 4},
+    {"type": "action_buttons", "priority": 5}
+  ],
+  "features": {
+    "swipe_stack": true,
+    "webview_browser": true,
+    "voice_notes": false,
+    "maintenance": false,
+    "animations": true,
+    "dark_mode_toggle": true
+  }
+}'::jsonb, TRUE, TRUE, NOW()
+WHERE NOT EXISTS (
+  SELECT 1 FROM ui_manifests WHERE platform = 'mobile' AND version = 2
+);

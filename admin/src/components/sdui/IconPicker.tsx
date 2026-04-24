@@ -1,28 +1,54 @@
 import { useState } from 'react';
 import {
-  Home, Search, Bell, User, Settings, Star, Heart, Bookmark,
-  Mail, Phone, Camera, Map, MapPin, Calendar, Clock, Edit,
-  Trash2, Plus, Minus, Check, X, ChevronRight, ChevronDown,
-  ArrowLeft, ArrowRight, Share, Download, Upload, Link,
-  Zap, Target, TrendingUp, BarChart2, PieChart, Grid,
-  List, Filter, Tag, Flag, Lock, Unlock, Eye, EyeOff,
-} from 'lucide-react';
+  HomeIcon, SearchIcon, BellIcon, UserIcon, SettingsIcon, StarIcon, BookmarkIcon,
+  MailIcon, CalendarIcon, ClockIcon, EditIcon,
+  TrashIcon, PlusIcon, XIcon, ChevronRightIcon, ChevronDownIcon,
+  ArrowRightIcon, DownloadIcon, UploadIcon, LinkIcon,
+  ZapIcon, LeadIcon, ChartIcon, FilterIcon, TagIcon, ShieldIcon, EyeIcon,
+} from '@/icons';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
+
+interface IconProps {
+  size?: number;
+  className?: string;
+  strokeWidth?: number;
+  color?: string;
+}
 
 interface IconPickerProps {
   value: string;
   onChange: (icon: string) => void;
 }
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  Home, Search, Bell, User, Settings, Star, Heart, Bookmark,
-  Mail, Phone, Camera, Map, MapPin, Calendar, Clock, Edit,
-  Trash2, Plus, Minus, Check, X, ChevronRight, ChevronDown,
-  ArrowLeft, ArrowRight, Share, Download, Upload, Link,
-  Zap, Target, TrendingUp, BarChart2, PieChart, Grid,
-  List, Filter, Tag, Flag, Lock, Unlock, Eye, EyeOff,
+const ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
+  Home: HomeIcon,
+  Search: SearchIcon,
+  Bell: BellIcon,
+  User: UserIcon,
+  Settings: SettingsIcon,
+  Star: StarIcon,
+  Bookmark: BookmarkIcon,
+  Mail: MailIcon,
+  Calendar: CalendarIcon,
+  Clock: ClockIcon,
+  Edit: EditIcon,
+  Trash: TrashIcon,
+  Plus: PlusIcon,
+  X: XIcon,
+  ChevronRight: ChevronRightIcon,
+  ChevronDown: ChevronDownIcon,
+  ArrowRight: ArrowRightIcon,
+  Download: DownloadIcon,
+  Upload: UploadIcon,
+  Link: LinkIcon,
+  Zap: ZapIcon,
+  Lead: LeadIcon,
+  Chart: ChartIcon,
+  Filter: FilterIcon,
+  Tag: TagIcon,
+  Shield: ShieldIcon,
+  Eye: EyeIcon,
 };
 
 const ICON_NAMES = Object.keys(ICON_MAP);

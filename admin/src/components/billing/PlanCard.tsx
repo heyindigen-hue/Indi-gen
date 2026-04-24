@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Edit2, Users } from 'lucide-react';
+import { EditIcon, UsersIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatINR } from '@/lib/utils';
@@ -105,7 +105,7 @@ export function PlanCard({ plan }: PlanCardProps) {
             className="h-8 w-8 p-0"
             onClick={() => setEditing(true)}
           >
-            <Edit2 className="h-3.5 w-3.5" />
+            <EditIcon size={14} />
           </Button>
         </div>
 
@@ -137,7 +137,7 @@ export function PlanCard({ plan }: PlanCardProps) {
 
         <div className="flex items-center justify-between pt-2 border-t border-border mt-auto">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Users className="h-3.5 w-3.5" />
+            <UsersIcon size={14} />
             <span>{plan.subscriber_count.toLocaleString()} subscribers</span>
           </div>
           <Badge variant={plan.enabled ? 'default' : 'secondary'} className="text-xs">

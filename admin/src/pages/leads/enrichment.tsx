@@ -6,7 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { RefreshCw } from 'lucide-react';
+import { RefreshIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { relTime } from '@/lib/utils';
@@ -144,7 +144,7 @@ export default function EnrichmentPage() {
           disabled={retryMutation.isPending}
           onClick={() => retryMutation.mutate(row.original.lead_id)}
         >
-          <RefreshCw className="h-3 w-3 mr-1" />
+          <RefreshIcon size={12} className="mr-1" />
           Retry
         </Button>
       ),
@@ -170,7 +170,7 @@ export default function EnrichmentPage() {
             disabled={retryAllMutation.isPending}
             onClick={() => retryAllMutation.mutate()}
           >
-            <RefreshCw className="h-4 w-4 mr-1" />
+            <RefreshIcon size={16} className="mr-1" />
             Retry all failed
           </Button>
         }

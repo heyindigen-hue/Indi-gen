@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
-import { Zap, DollarSign, Gauge, Timer } from 'lucide-react';
+import { ZapIcon, CashIcon, ChartIcon, ClockIcon } from '@/icons';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/common/PageHeader';
 import { KpiCard } from '@/components/common/KpiCard';
@@ -80,22 +80,22 @@ export default function AiUsagePage() {
             <KpiCard
               title="Total tokens (7d)"
               value={kpis ? (kpis.total_tokens / 1000).toFixed(1) + 'K' : '—'}
-              icon={Zap}
+              icon={ZapIcon}
             />
             <KpiCard
               title="Total cost (7d)"
               value={kpis ? formatINR(kpis.total_cost_inr) : '—'}
-              icon={DollarSign}
+              icon={CashIcon}
             />
             <KpiCard
               title="Cache hit rate"
               value={kpis ? kpis.cache_hit_rate.toFixed(1) + '%' : '—'}
-              icon={Gauge}
+              icon={ChartIcon}
             />
             <KpiCard
               title="Avg latency"
               value={kpis ? kpis.avg_latency_ms.toFixed(0) + ' ms' : '—'}
-              icon={Timer}
+              icon={ClockIcon}
             />
           </>
         )}

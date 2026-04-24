@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Download, Pause, Play, ArrowDownToLine } from 'lucide-react';
+import { DownloadIcon, ChevronDownIcon, ArrowRightIcon, CheckIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -242,12 +242,12 @@ export default function LogsPage() {
           >
             {paused ? (
               <>
-                <Play className="h-3.5 w-3.5 mr-1.5" />
+                <ArrowRightIcon size={14} className="mr-1.5" />
                 Resume
               </>
             ) : (
               <>
-                <Pause className="h-3.5 w-3.5 mr-1.5" />
+                <CheckIcon size={14} className="mr-1.5" />
                 Pause
               </>
             )}
@@ -258,12 +258,12 @@ export default function LogsPage() {
             size="sm"
             onClick={() => setFollowTail((f) => !f)}
           >
-            <ArrowDownToLine className="h-3.5 w-3.5 mr-1.5" />
+            <ChevronDownIcon size={14} className="mr-1.5" />
             Follow
           </Button>
 
           <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-3.5 w-3.5 mr-1.5" />
+            <DownloadIcon size={14} className="mr-1.5" />
             Export ({filteredLogs.length.toLocaleString()})
           </Button>
         </div>

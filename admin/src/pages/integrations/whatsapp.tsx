@@ -7,7 +7,7 @@ import { IntegrationCard } from '@/components/common/IntegrationCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { MessageSquare } from 'lucide-react';
+import { SendIcon } from '@/icons';
 
 const FIELDS = [
   { key: 'whatsapp_phone_id', label: 'Phone Number ID', placeholder: '1234567890' },
@@ -92,7 +92,7 @@ export default function WhatsAppPage() {
           {templates.length > 0 && (
             <div className="rounded-md bg-muted/50 border border-border px-3 py-3">
               <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5" />
+                <SendIcon size={14} />
                 Templates
               </p>
               <div className="space-y-1.5">

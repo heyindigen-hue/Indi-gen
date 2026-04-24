@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Copy, RefreshCw } from 'lucide-react';
+import { LinkIcon, RefreshIcon } from '@/icons';
 import { api } from '@/lib/api';
 import { setSetting, getSettingsByCategory, SettingEntry } from '@/lib/settings';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -93,7 +93,7 @@ export default function CashfreePage() {
         description="Payment gateway integration for subscriptions and billing"
         actions={
           <Button size="sm" variant="outline" onClick={handlePlanSync}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            <RefreshIcon size={14} className="mr-1.5" />
             Sync plans
           </Button>
         }
@@ -124,7 +124,7 @@ export default function CashfreePage() {
                   toast.success('Copied');
                 }}
               >
-                <Copy className="h-3.5 w-3.5" />
+                <LinkIcon size={14} />
               </Button>
             </div>
           </div>

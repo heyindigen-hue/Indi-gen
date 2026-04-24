@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { TrashIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import type { WidgetInstance, WidgetType } from '@/types/sdui';
 
@@ -193,7 +193,7 @@ export function WidgetPreview({ widget, selected, onSelect, onDelete }: WidgetPr
             className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-black/10"
             aria-label="Delete widget"
           >
-            <Trash2 className="h-3 w-3 text-muted-foreground" />
+            <TrashIcon size={12} className="text-muted-foreground" />
           </button>
         )}
       </div>

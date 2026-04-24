@@ -1,4 +1,4 @@
-import { Upload, RotateCcw } from 'lucide-react';
+import { UploadIcon, RefreshIcon } from '@/icons';
 import {
   Select,
   SelectContent,
@@ -73,7 +73,7 @@ export function ManifestVersionDropdown({
           className="h-8 text-xs gap-1.5"
           onClick={() => onPublish(selected.id)}
         >
-          <Upload className="h-3.5 w-3.5" />
+          <UploadIcon size={14} />
           Publish
         </Button>
       )}
@@ -85,7 +85,7 @@ export function ManifestVersionDropdown({
           className="h-8 text-xs gap-1.5"
           onClick={() => onRollback(selected.id)}
         >
-          <RotateCcw className="h-3.5 w-3.5" />
+          <RefreshIcon size={14} />
           Rollback
         </Button>
       )}

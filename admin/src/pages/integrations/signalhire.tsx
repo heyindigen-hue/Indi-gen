@@ -5,7 +5,7 @@ import { setSetting, getSettingsByCategory, SettingEntry } from '@/lib/settings'
 import { PageHeader } from '@/components/common/PageHeader';
 import { IntegrationCard } from '@/components/common/IntegrationCard';
 import { KpiCard } from '@/components/common/KpiCard';
-import { CreditCard } from 'lucide-react';
+import { CreditCardIcon } from '@/icons';
 
 const FIELDS = [
   { key: 'signalhire_api_key', label: 'API Key', secret: true, placeholder: 'sh-...' },
@@ -75,7 +75,7 @@ export default function SignalHirePage() {
             <KpiCard
               title="Credits remaining"
               value={balance.credits.toLocaleString()}
-              icon={CreditCard}
+              icon={CreditCardIcon}
             />
             <KpiCard title="Credits used (month)" value={balance.used.toLocaleString()} />
           </div>

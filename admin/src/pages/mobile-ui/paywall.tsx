@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { GripVertical, Trash2, Plus } from 'lucide-react';
+import { FilterIcon, TrashIcon, PlusIcon } from '@/icons';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,7 +80,7 @@ function BundleRow({ bundle, onChange, onDelete }: BundleRowProps) {
         aria-label="Drag to reorder"
         className="shrink-0 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
       >
-        <GripVertical className="h-4 w-4" />
+        <FilterIcon size={16} />
       </button>
 
       <div className="flex flex-1 flex-wrap gap-2">
@@ -138,7 +138,7 @@ function BundleRow({ bundle, onChange, onDelete }: BundleRowProps) {
         onClick={() => onDelete(bundle.id)}
         className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
       >
-        <Trash2 className="h-4 w-4" />
+        <TrashIcon size={16} />
       </button>
     </div>
   );
@@ -325,7 +325,7 @@ export default function PaywallPage() {
               Bundles
             </p>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs h-7" onClick={handleAddBundle}>
-              <Plus className="h-3.5 w-3.5" />
+              <PlusIcon size={14} />
               Add Bundle
             </Button>
           </div>

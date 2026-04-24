@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/sortable';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Save } from 'lucide-react';
+import { PlusIcon, CheckIcon } from '@/icons';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import type { OnboardingStep } from '@/types/sdui';
@@ -124,7 +124,7 @@ export default function MobileUiOnboardingPage() {
             className="gap-1.5 text-xs"
             onClick={handleAddStep}
           >
-            <Plus className="h-3.5 w-3.5" />
+            <PlusIcon size={14} />
             Add Step
           </Button>
           <Button
@@ -134,7 +134,7 @@ export default function MobileUiOnboardingPage() {
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}
           >
-            <Save className="h-3.5 w-3.5" />
+            <CheckIcon size={14} />
             {saveMutation.isPending ? 'Saving...' : 'Save'}
           </Button>
         </div>

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { ExternalLink, Users } from 'lucide-react';
+import { ExternalLinkIcon, UsersIcon } from '@/icons';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,7 @@ export default function LinkedInPage() {
         description="LinkedIn accounts are managed via the Scrapers module"
         actions={
           <Button size="sm" onClick={() => navigate('/scrapers/accounts')}>
-            <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+            <ExternalLinkIcon size={14} className="mr-1.5" />
             Open Scraper Accounts
           </Button>
         }
@@ -82,7 +82,7 @@ export default function LinkedInPage() {
         {/* Fleet status */}
         <div className="rounded-lg border border-border bg-card p-5">
           <h4 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <UsersIcon size={16} className="text-muted-foreground" />
             Fleet status
           </h4>
           {loadingFleet ? (

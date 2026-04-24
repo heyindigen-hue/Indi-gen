@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ExternalLink, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ExternalLinkIcon, RefreshIcon, CheckIcon, XIcon, AlertCircleIcon } from '@/icons';
 import { cn } from '@/lib/utils';
 import { StatusPill } from './StatusPill';
 import { Button } from '@/components/ui/button';
@@ -114,7 +114,7 @@ export function IntegrationCard({
             rel="noopener noreferrer"
             className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
           >
-            Docs <ExternalLink className="h-3 w-3" />
+            Docs <ExternalLinkIcon size={12} />
           </a>
         )}
       </div>
@@ -176,7 +176,7 @@ export function IntegrationCard({
           </Button>
           {onTest && (
             <Button size="sm" variant="outline" onClick={handleTest} disabled={testing}>
-              <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', testing && 'animate-spin')} />
+              <RefreshIcon size={14} className={cn('mr-1.5', testing && 'animate-spin')} />
               {testing ? 'Testing...' : 'Test connection'}
             </Button>
           )}
@@ -188,9 +188,9 @@ export function IntegrationCard({
               )}
             >
               {testResult.ok ? (
-                <CheckCircle className="h-3.5 w-3.5" />
+                <CheckIcon size={14} />
               ) : (
-                <XCircle className="h-3.5 w-3.5" />
+                <XIcon size={14} />
               )}
               {testResult.message}
             </span>
@@ -201,7 +201,7 @@ export function IntegrationCard({
         {events && events.length > 0 && (
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-              <AlertCircle className="h-3.5 w-3.5" />
+              <AlertCircleIcon size={14} />
               Recent events
             </p>
             <div className="rounded-md border border-border divide-y divide-border max-h-56 overflow-y-auto">

@@ -1,246 +1,299 @@
-You are WORKER Claude on PC2. Major rebrand: change the app name from "Indi-gen" to "LeadHangover" everywhere + swap brand assets to a new orange flower logo.
+You are WORKER Claude on PC2. The R1 rebrand is done (LeadHangover name + orange primary). Now do the BIG design overhaul: light theme default, custom icon system, animated splash, smooth motion.
 
-## Brand Direction
+## Design Aesthetic Direction
 
-**Name:** LeadHangover
-**Tagline:** "Wake up to better leads"
-**Primary color (brand orange):** `#FF4716` (hex)
-**Secondary (cream, for logo on dark):** `#F5E6D3`
-**Dark theme stays** — only swap the accent from indigo `#7170FF` to brand orange `#FF4716`
-**Display font:** Fraunces (serif italic for headlines — matches the brand aesthetic the user provided)
-**UI font:** Inter (unchanged)
+**Aesthetic:** Editorial Warm — think "Airbnb × Substack × cult D2C brand"
+- Warm off-white backgrounds (like Substack/Linear light)
+- Serif italic display type (Fraunces) paired with crisp sans body (Inter Tight)
+- Orange `#FF4716` as the dominant accent, used confidently not timidly
+- Soft-rounded corners (radius 14-16px default, 24px on big cards)
+- Subtle warm shadows (`rgba(255, 71, 22, 0.08)` tint, never pure black shadows)
+- Grain/noise overlay on hero sections for depth
+- Custom icons matching the flower-petal aesthetic (rounded ends, organic curves)
+- NO generic lucide default icons — we build a matching set
+
+**Light theme (new DEFAULT):**
+```
+--bg:          #FAF7F2   (warm off-white, like paper)
+--bg-elevated: #FFFFFF   (pure white for cards that pop)
+--border:      #EEE8DD   (warm cream border)
+--text:        #0B0A08   (near-black, warm)
+--muted:       #6B6558   (warm stone)
+--primary:     #FF4716   (brand orange)
+--primary-fg:  #FFFFFF
+--success:     #3E7C4B
+--warning:     #C88A10
+--destructive: #C8301A
+```
+
+**Dark theme (alt, via toggle):**
+```
+--bg:          #0B0A08   (warm near-black)
+--bg-elevated: #141210   (warm card)
+--border:      #221E19
+--text:        #FAF7F2   (warm off-white text)
+--muted:       #8A8175
+--primary:     #FF5A2E   (slightly brighter for dark contrast)
+--primary-fg:  #0B0A08
+--success:     #4CB782
+--warning:     #F2C94C
+--destructive: #E5484D
+```
+
+**Typography:**
+- Display (headlines, brand): **Fraunces** 600, italic — gives that editorial feel
+- Body UI: **Inter Tight** 400/500/600 (tighter than regular Inter, more modern)
+- Mono (IDs, timestamps): **JetBrains Mono** 400
+
+Install the fonts into admin via Google Fonts CDN, into mobile via `@expo-google-fonts/fraunces` + `@expo-google-fonts/inter-tight`.
 
 ## Your Task
 
-### 1. Create SVG logo file: `shared/brand/logo.svg`
-An 8-petal abstract flower/asterisk shape, slightly rotated. Each petal is an ellipse arranged in a radial pattern. Cream color on transparent/orange. Here's the SVG to use verbatim:
+### Part 1 — Custom Icon System (the crown jewel)
 
+Create `shared/brand/icons/` containing SVG icons that MATCH the flower logo aesthetic: rounded ends, organic curves, 3px stroke on 24px viewbox, slightly thicker than default Lucide.
+
+Design icons with these properties:
+- `viewBox="0 0 24 24"` always
+- `stroke-width: 2.25`, `stroke-linecap: round`, `stroke-linejoin: round`
+- No fills except when intentional
+- Curve preference over straight lines (channel the petal shape)
+
+Create these 24 icons as SVG files in `shared/brand/icons/`:
+1. `home.svg` — house shape with rounded top
+2. `bookmark.svg` — rounded bookmark (for Saved)
+3. `send.svg` — paper plane with curved trail
+4. `chart.svg` — simple 3-bar chart with rounded tops
+5. `settings.svg` — 6-tooth gear with rounded teeth
+6. `search.svg` — magnifier with rounded handle
+7. `user.svg` — person silhouette
+8. `users.svg` — 2 overlapping persons
+9. `lead.svg` — flower petal (ties to logo)
+10. `scraper.svg` — spider-esque radiating lines
+11. `ai.svg` — sparkle with 4 petals (flower echo)
+12. `cash.svg` — rupee symbol ₹ in circle
+13. `tag.svg` — rounded tag
+14. `filter.svg` — 3-stack funnel
+15. `plus.svg` — + with rounded ends
+16. `check.svg` — checkmark with rounded curves
+17. `x.svg` — × with rounded strokes
+18. `arrow-up.svg` — curved up arrow
+19. `arrow-right.svg` — curved right arrow
+20. `chevron-down.svg` — soft chevron
+21. `copy.svg` — two overlapping rounded rects
+22. `edit.svg` — pencil with rounded tip
+23. `trash.svg` — rounded trash with lid curve
+24. `sparkle.svg` — tiny 4-pointed star (AI indicator)
+
+Each SVG file should be ~300-800 bytes of handcrafted SVG path data. Example for `lead.svg`:
 ```xml
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
-  <g transform="translate(100 100)">
-    <g fill="#F5E6D3">
-      <ellipse cx="0" cy="-55" rx="14" ry="42" />
-      <ellipse cx="0" cy="-55" rx="14" ry="42" transform="rotate(45)" />
-      <ellipse cx="0" cy="-55" rx="14" ry="42" transform="rotate(90)" />
-      <ellipse cx="0" cy="-55" rx="14" ry="42" transform="rotate(135)" />
-      <ellipse cx="0" cy="-55" rx="14" ry="42" transform="rotate(180)" />
-      <ellipse cx="0" cy="-55" rx="14" ry="42" transform="rotate(225)" />
-      <ellipse cx="0" cy="-55" rx="14" ry="42" transform="rotate(270)" />
-      <ellipse cx="0" cy="-55" rx="14" ry="42" transform="rotate(315)" />
-      <circle cx="0" cy="0" r="10" fill="#FF4716" />
-    </g>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 3 C14 6, 16 8, 16 11 C16 13.5, 14 15, 12 15 C10 15, 8 13.5, 8 11 C8 8, 10 6, 12 3 Z"/>
+  <path d="M12 15 L12 21"/>
+  <path d="M8 19 L16 19"/>
 </svg>
 ```
 
-Also create:
-- `shared/brand/logo-dark.svg` — same but with `#F5E6D3` petals (for dark backgrounds — the default)
-- `shared/brand/logo-light.svg` — same shape but petals are `#FF4716` (for light backgrounds)
-- `shared/brand/logo-mark.svg` — just the petals on transparent (square 512x512)
-- `shared/brand/logo-orange-bg.svg` — cream petals on solid orange `#FF4716` full-bleed square (for app icon / social OG)
-
-### 2. Generate PNG assets from the SVGs
-
-Use `sharp` or `puppeteer` to render the PNGs. Easy approach: write a small Node script.
-
-```
-cd C:\Users\Indigen-Server-2\Desktop\Indi-gen
-npm install -D sharp
-node shared/brand/generate-pngs.js
+Then create `shared/brand/icons/index.ts`:
+```typescript
+// Runtime icon registry — mobile + admin both import from here
+export { default as HomeIcon } from './home.svg?react'; // for admin (Vite SVGR)
+// For mobile, we'll expose raw SVG strings
 ```
 
-Create `shared/brand/generate-pngs.js`:
-```javascript
-const sharp = require('sharp');
-const fs = require('fs');
-const path = require('path');
+Actually — keep it simple with two consumer-ready formats:
 
-const dir = path.join(__dirname);
-const outs = [
-  { src: 'logo-orange-bg.svg', out: 'icon-512.png', size: 512 },
-  { src: 'logo-orange-bg.svg', out: 'icon-1024.png', size: 1024 },
-  { src: 'logo-orange-bg.svg', out: 'adaptive-icon.png', size: 1024 },
-  { src: 'logo-dark.svg', out: 'logo-dark-256.png', size: 256 },
-  { src: 'logo-light.svg', out: 'logo-light-256.png', size: 256 },
-  { src: 'logo-orange-bg.svg', out: 'splash.png', size: 2048 },
-  { src: 'logo-mark.svg', out: 'favicon.png', size: 64 },
-];
-(async () => {
-  for (const o of outs) {
-    await sharp(path.join(dir, o.src)).resize(o.size, o.size).png().toFile(path.join(dir, o.out));
-    console.log('wrote', o.out);
-  }
-})();
+**For admin (React + Vite):**
+Create `admin/src/icons/` — a TSX file per icon that returns a React component. Use `vite-plugin-svgr` or just hand-write them as TSX.
+
+Install: `npm install -D vite-plugin-svgr`
+
+In `admin/vite.config.ts` add `svgr()` plugin. Then icons import as:
+```typescript
+import HomeIcon from '@/icons/home.svg?react';
+<HomeIcon className="size-5" />
 ```
 
-Run it, verify PNGs are created.
+**For mobile (React Native):**
+Install: `npx expo install react-native-svg`
+Create `mobile/components/icons/` — TSX files using `react-native-svg`:
+```tsx
+import Svg, { Path } from 'react-native-svg';
+export function LeadIcon({ size = 24, color = 'currentColor' }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 3 C14 6, 16 8, 16 11 C16 13.5, 14 15, 12 15 C10 15, 8 13.5, 8 11 C8 8, 10 6, 12 3 Z" />
+      <Path d="M12 15 L12 21" />
+      <Path d="M8 19 L16 19" />
+    </Svg>
+  );
+}
+```
 
-### 3. Update server theme accent
+Generate all 24 icons for both admin and mobile. The exact SVG path data should be visually matching the LeadHangover flower aesthetic — petal curves, rounded ends, organic shapes.
 
-In `server/src/index.ts` nothing to change.
+Create `mobile/components/icons/index.ts` exporting all icon components.
 
-In `db/seed.sql`, update seed settings:
+**Replace ALL lucide-react / lucide-react-native imports** across admin and mobile with our custom icons. Do a grep + replace for:
+- `from 'lucide-react'` → `from '@/icons'`
+- `from 'lucide-react-native'` → `from '@/components/icons'`
+
+Map old lucide names to our new ones:
+- `Home, House` → `HomeIcon`
+- `Bookmark` → `BookmarkIcon`
+- `Send` → `SendIcon`
+- `Settings, Cog` → `SettingsIcon`
+- `Search` → `SearchIcon`
+- `ChartLine, BarChart, BarChart2, BarChart3` → `ChartIcon`
+- `User` → `UserIcon`
+- `Users` → `UsersIcon`
+- `Plus` → `PlusIcon`
+- `Check` → `CheckIcon`
+- `X, XIcon` → `XIcon`
+- `ChevronDown` → `ChevronDownIcon`
+- `Copy` → `CopyIcon`
+- `Edit, Pencil` → `EditIcon`
+- `Trash, Trash2` → `TrashIcon`
+- `Sparkle, Sparkles` → `SparkleIcon`
+- Any other lucide icon: use the closest of our 24 OR add a new custom icon
+
+Uninstall lucide at the end:
+```
+cd admin && npm uninstall lucide-react
+cd mobile && npm uninstall lucide-react-native
+```
+
+### Part 2 — Light theme as DEFAULT + theme toggle
+
+**Admin (`admin/src/index.css`):**
+- Make the light theme the default (no need to force `html.dark`)
+- Update light vars to use the warm palette above
+- Keep `:root.dark` for dark mode
+- Add `[data-theme="dark"]` as alternative selector
+- Remove the forced `html.dark` in index.html
+
+**Add theme toggle component** `admin/src/components/common/ThemeToggle.tsx`:
+- Sun icon (light) / Moon icon (dark) — design custom ones if not in our 24
+- Smooth crossfade transition (200ms)
+- Persists preference in localStorage
+- Defaults to "light" if no preference
+
+Mount the toggle in TopBar.
+
+**Mobile (`mobile/lib/theme.ts`):**
+Rewrite with both palettes exported. Add a ThemeMode type = 'light' | 'dark' | 'system'.
+
+**Mobile `ThemeProvider`** — add:
+- Read mode from MMKV `theme_mode` key (default 'light')
+- Respect `useColorScheme()` if mode is 'system'
+- Expose `setMode(mode)` via context
+- Re-render tree on change
+
+**Add theme toggle row in `mobile/app/(tabs)/settings.tsx`** — Light / Dark / System radio group.
+
+### Part 3 — Animated logo splash screen
+
+**Mobile (`mobile/app/_layout.tsx`)**:
+Replace `SplashScreen.hideAsync()` with a custom animated splash component that:
+
+1. Holds the native splash until our animated one is ready (`SplashScreen.preventAutoHideAsync()`)
+2. Renders the flower logo on `#FAF7F2` (matches light theme bg)
+3. Animates:
+   - All 8 petals start at `opacity: 0, scale: 0, rotation: -90deg`
+   - Staggered reveal: each petal animates in over 200ms with 40ms stagger
+   - After all petals visible (~600ms), whole logo does a subtle breathing pulse (scale 1 → 1.03 → 1)
+   - After 1.8s total, fades out and reveals the app
+
+Use `react-native-reanimated` v3:
+```tsx
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, withSequence, withRepeat, Easing } from 'react-native-reanimated';
+```
+
+Each petal is a `<Path>` inside a `<Svg>` with its own Reanimated shared value. Orchestrate the timing.
+
+File: `mobile/components/AnimatedSplash.tsx` — renders the 8-petal flower animating in. Include this in root layout, show while `!fontsLoaded || isManifestLoading`, hide after min 1.8s.
+
+**Admin (`admin/src/components/AnimatedSplash.tsx`)**:
+Same concept but using Framer Motion:
+```tsx
+import { motion } from 'framer-motion';
+```
+Mount at root of App.tsx, shown during initial auth check or first manifest fetch.
+
+Install: `npm install framer-motion` (may already be there).
+
+### Part 4 — Motion across the app
+
+**Admin:**
+- Wrap page transitions in Framer Motion `<motion.div initial={{opacity:0, y:8}} animate={{opacity:1, y:0}} transition={{duration:0.25}}>`
+- Sidebar items: slight indent on hover (`hover:pl-4 transition-all`)
+- Button press: scale 0.96 via Tailwind `active:scale-95`
+- Card enter: staggered fade-up in lists (motion.div with custom delay index)
+- Toast enter via sonner (already animates)
+- Modal backdrop blur + fade-in
+
+**Mobile:**
+- All list enters: Reanimated `entering={FadeInUp.delay(i*30).duration(300)}`
+- Button press haptic + scale 0.97 (already done via Button.tsx)
+- Screen transitions: Expo Router default stack animation — override with slide-from-right (iOS) / fade-through (Android)
+- Card press: brief pulse using `Pressable` + Reanimated shared value
+- Tab switch: fade transition
+
+Add `entering={}` / `exiting={}` from `react-native-reanimated` where natural.
+
+### Part 5 — Update the Mobile UI Builder widget previews
+
+Since we have custom icons + updated theme, update `admin/src/components/sdui/WidgetPreview.tsx` to use our custom icons + warm palette so the iPhone-frame preview actually matches what the mobile renders.
+
+Also update `admin/src/components/sdui/DeviceFrame.tsx` — subtle improvements:
+- Softer shadow matching warm palette
+- Status bar with real clock (just a `<span>` with time formatted)
+- Dynamic Island for iPhone frame
+
+### Part 6 — Update default UI manifest in DB
+
+Update `db/seed.sql` to push a new manifest version 2 that reflects the light theme default:
+
+Add this at the end of seed.sql (after the existing manifest insert):
 ```sql
-UPDATE app_settings SET value='LeadHangover' WHERE key='brand_name';
-UPDATE app_settings SET value='Wake up to better leads' WHERE key='brand_tagline';
-UPDATE app_settings SET value='#FF4716' WHERE key='brand_primary_color';
-UPDATE app_settings SET value='/brand/logo-light-256.png' WHERE key='brand_logo_light_url';
-UPDATE app_settings SET value='/brand/logo-dark-256.png' WHERE key='brand_logo_dark_url';
-UPDATE app_settings SET value='/brand/favicon.png' WHERE key='brand_favicon_url';
-UPDATE app_settings SET value='/brand/icon-1024.png' WHERE key='brand_og_image_url';
-UPDATE app_settings SET value='support@leadhangover.com' WHERE key='brand_support_email';
+INSERT INTO ui_manifests (platform, name, version, manifest, is_default, enabled, published_at) VALUES
+('mobile', 'default', 2, '{
+  "brand": {"name":"LeadHangover","tagline":"Wake up to better leads","primary":"#FF4716"},
+  "theme": {"palette":"warm-light","mode":"light","font":"Fraunces","radius":16,"density":"comfortable"},
+  "tabs": [...same as v1...],
+  "home_widgets": [...same as v1...],
+  "onboarding_steps": [...same as v1 but with warmer copy...],
+  "paywall": {...},
+  "features": {"swipe_stack":true,"webview_browser":true,"voice_notes":false,"maintenance":false,"animations":true}
+}', TRUE, TRUE, NOW())
+ON CONFLICT DO NOTHING;
+
+UPDATE ui_manifests SET enabled = FALSE WHERE platform='mobile' AND version < 2;
 ```
 
-(Add the UPDATE statements at the end of the seed file so re-runs pick up the new brand.)
+### Part 7 — Hero OG image
 
-Also update the default UI manifest insert — change:
-- `"brand":{"name":"Indi-gen",...}` → `"name":"LeadHangover","tagline":"Wake up to better leads","primary":"#FF4716"`
-- `"ai_context_pitch"` setting: update "Indigen Services" → "LeadHangover"
+Create `shared/brand/og-image.svg` (1200x630, for social sharing):
+- Orange background
+- Flower logo centered-left
+- "LeadHangover" in big Fraunces italic cream text
+- "Wake up to better leads" subtitle
+- Saved as both SVG and PNG (via the sharp script, add new output)
 
-### 4. Rename across package.jsons
-- `server/package.json`: name = `leadhangover-server`
-- `admin/package.json`: name = `leadhangover-admin`
-- `mobile/package.json`: name = `leadhangover-mobile`
-- `scraper-service/app/main.py` FastAPI title: `"LeadHangover Scraper Service"`
-
-### 5. Mobile app rebrand (big one)
-
-**`mobile/app.json`**:
-```json
-{
-  "expo": {
-    "name": "LeadHangover",
-    "slug": "leadhangover",
-    "scheme": "leadhangover",
-    "owner": "...",
-    "icon": "./assets/icon.png",
-    "splash": { "image": "./assets/splash.png", "backgroundColor": "#FF4716", "resizeMode": "contain" },
-    "android": {
-      "package": "com.leadhangover.app",
-      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#FF4716" }
-    },
-    "ios": {
-      "bundleIdentifier": "com.leadhangover.app"
-    },
-    ...
-  }
-}
+### Verify + commit
+```
+cd C:\Users\Indigen-Server-2\Desktop\Indi-gen\admin && npx tsc --noEmit
+cd C:\Users\Indigen-Server-2\Desktop\Indi-gen\mobile && npx tsc --noEmit
+cd C:\Users\Indigen-Server-2\Desktop\Indi-gen && git add -A && git commit -m "feat(design): light theme default + animated splash + 24 custom icons matching flower aesthetic + motion throughout" && git push origin master
 ```
 
-Copy PNG assets:
-- `shared/brand/icon-1024.png` → `mobile/assets/icon.png`
-- `shared/brand/splash.png` → `mobile/assets/splash.png`
-- `shared/brand/adaptive-icon.png` → `mobile/assets/adaptive-icon.png`
-- `shared/brand/favicon.png` → `mobile/assets/favicon.png`
+Report: files, tsc results, SHA.
 
-**`mobile/constants/defaultManifest.json`** — update brand subtree:
-```json
-"brand": {"name":"LeadHangover","tagline":"Wake up to better leads","primary":"#FF4716","logo_light":"","logo_dark":""}
-```
-
-Also update `mobile/lib/theme.ts` palette "graphite":
-```typescript
-graphite: {
-  bg: '#08090B', card: '#111113', border: '#1F1F23',
-  text: '#F7F8F8', muted: '#8A8F98',
-  primary: '#FF4716',       // was #7170FF — rebrand to LeadHangover orange
-  primaryFg: '#FFFFFF',
-  success: '#4CB782', warning: '#F2C94C', destructive: '#E5484D',
-},
-```
-
-### 6. Admin panel rebrand
-
-**`admin/index.html`**:
-- `<title>LeadHangover Admin</title>`
-- Add `<link rel="icon" href="/brand/favicon.png">`
-
-**`admin/src/index.css`**:
-- Update `--primary: 240 100% 72%` (indigo) → `--primary: 13 100% 54%` (orange HSL for #FF4716)
-- Update `--ring` to match
-- Light mode primary: `--primary: 13 100% 48%`
-
-**`admin/src/components/layout/Sidebar.tsx`**:
-- Replace any "Indi-gen" text with "LeadHangover"
-- Logo: `<img src="/brand/logo-dark-256.png" alt="LeadHangover" />` in the header area
-
-**`admin/src/pages/Login.tsx`**:
-- Heading: "LeadHangover" (display this in Fraunces italic serif if the font loads)
-
-Copy brand assets to `admin/public/brand/`:
-```
-cp shared/brand/logo-dark-256.png admin/public/brand/
-cp shared/brand/logo-light-256.png admin/public/brand/
-cp shared/brand/favicon.png admin/public/brand/
-cp shared/brand/icon-512.png admin/public/brand/
-```
-
-Also add Fraunces font to `admin/index.html`:
-```html
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&display=swap" rel="stylesheet">
-```
-
-Update `admin/tailwind.config.js` fontFamily:
-```js
-fontFamily: {
-  sans: ['Inter', 'system-ui', 'sans-serif'],
-  mono: ['Geist Mono', 'ui-monospace'],
-  display: ['Fraunces', 'serif'],
-}
-```
-
-Use `font-display italic` in key hero text (Login title, brand header in sidebar).
-
-### 7. Server brand route
-
-Make sure `server/src/routes/sdui.ts` serves the brand assets — if there's a `/api/public/brand` endpoint, it should return:
-```json
-{
-  "name": "LeadHangover",
-  "tagline": "Wake up to better leads",
-  "primary": "#FF4716",
-  "logo_light_url": "https://leadgen.indigenservices.com/brand/logo-light-256.png",
-  "logo_dark_url": "https://leadgen.indigenservices.com/brand/logo-dark-256.png",
-  "favicon_url": "https://leadgen.indigenservices.com/brand/favicon.png"
-}
-```
-
-Add a static route in `server/src/index.ts`:
-```typescript
-import path from 'path';
-app.use('/brand', express.static(path.resolve(__dirname, '../../shared/brand')));
-```
-
-### 8. README.md — update name + description
-Change title from "Indi-gen" to "LeadHangover", update description to match tagline.
-
-### 9. docker-compose.yml — rename containers
-Change `indigen-*` container names to `leadhangover-*`.
-
-### 10. Grep sweep for any remaining "Indi-gen" or "indigen"
-```bash
-cd C:\Users\Indigen-Server-2\Desktop\Indi-gen
-grep -riIn "indi-gen\|indigen" --include="*.ts" --include="*.tsx" --include="*.json" --include="*.md" --include="*.yml" --include="*.conf" . | grep -v node_modules | grep -v dist | grep -v ".next"
-```
-Review each hit and replace with LeadHangover (or leadhangover lowercase for package names).
-
-IMPORTANT exceptions — keep as-is:
-- `indigenservices5@gmail.com` (user's email, don't change)
-- GitHub remote URL `heyindigen-hue/Indi-gen` (keep — that's the repo name)
-- Path `C:\Users\Indigen-Server-2\Desktop\Indi-gen` (filesystem path, don't rename dir)
-- Any comment referencing "Indigen Services" as the company name (that's the company, LeadHangover is the product — both can coexist)
-
-### 11. Commit
-```
-git add -A
-git commit -m "rebrand: Indi-gen → LeadHangover (orange flower logo, brand palette, assets across all surfaces)"
-git push origin master
-```
-
-Report: files touched, grep results, SHA.
-
-## Guardrails
-- Do NOT rename the folder `Indi-gen` (too invasive, git history ties to it).
-- Do NOT break package-lock.json by renaming too aggressively.
-- Do NOT run expo start / dev servers.
-- Do NOT fail on sharp install on Windows — if it fails, skip PNG generation, just commit the SVGs and note the PNGs need to be generated later.
+## Hard constraints
+- Do NOT reintroduce lucide anywhere (uninstall + replace)
+- Do NOT use generic stock icons
+- Do NOT start expo/vite dev servers
+- Keep dark theme as an OPTION, but LIGHT is now default
+- All icons must visually match the flower logo aesthetic (rounded, organic)
+- Every transition must be <300ms (perceived instant)
+- Splash animation total ≤2s (iOS HIG limit)

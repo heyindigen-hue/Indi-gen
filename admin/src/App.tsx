@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
+import { AnimatedSplash } from '@/components/AnimatedSplash';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/dashboard';
 import UsersPage from '@/pages/users/index';
@@ -82,107 +84,116 @@ function NotFound() {
 }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1800);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={
-          <RequireAuth>
-            <AppShell />
-          </RequireAuth>
-        }
-      >
-        <Route index element={<Dashboard />} />
-
-        {/* Users */}
-        <Route path="users" element={<UsersPage />} />
-        <Route path="users/invites" element={<InvitesPage />} />
-        <Route path="users/waitlist" element={<WaitlistPage />} />
-        <Route path="users/:id" element={<UserDetailPage />} />
-        <Route path="users/verification" element={<PlaceholderPage title="User Verification" />} />
-        <Route path="users/activity" element={<PlaceholderPage title="User Activity" />} />
-        <Route path="users/roles" element={<PlaceholderPage title="Roles & Permissions" />} />
-
-        {/* Leads */}
-        <Route path="leads" element={<LeadsPage />} />
-        <Route path="leads/enrichment" element={<EnrichmentPage />} />
-        <Route path="leads/add" element={<AddLeadPage />} />
-        <Route path="leads/scoring" element={<PlaceholderPage title="Lead Scoring" />} />
-        <Route path="leads/export" element={<PlaceholderPage title="Lead Export" />} />
-
-        {/* Scrapers */}
-        <Route path="scrapers" element={<ScrapersPage />} />
-        <Route path="scrapers/runs" element={<ScraperRunsPage />} />
-        <Route path="scrapers/accounts" element={<ScraperAccountsPage />} />
-        <Route path="scrapers/schedules" element={<ScraperSchedulesPage />} />
-        <Route path="scrapers/sources" element={<PlaceholderPage title="Scraper Sources" />} />
-        <Route path="scrapers/logs" element={<PlaceholderPage title="Scraper Logs" />} />
-
-        {/* AI */}
-        <Route path="ai" element={<PlaceholderPage title="AI Models" description="Manage AI configuration" />} />
-        <Route path="ai/prompts" element={<PromptsPage />} />
-        <Route path="ai/context" element={<AiContextPage />} />
-        <Route path="ai/usage" element={<AiUsagePage />} />
-
-        {/* Integrations */}
+    <>
+      <AnimatedSplash show={showSplash} />
+      <Routes>
+        <Route path="/login" element={<Login />} />
         <Route
-          path="integrations"
-          element={<PlaceholderPage title="Integrations" description="Manage third-party integrations" />}
-        />
-        <Route path="integrations/cashfree" element={<CashfreePage />} />
-        <Route path="integrations/anthropic" element={<AnthropicPage />} />
-        <Route path="integrations/signalhire" element={<SignalHirePage />} />
-        <Route path="integrations/linkedin" element={<LinkedInPage />} />
-        <Route path="integrations/proxies" element={<ProxiesPage />} />
-        <Route path="integrations/email" element={<EmailPage />} />
-        <Route path="integrations/whatsapp" element={<WhatsAppPage />} />
+          path="/"
+          element={
+            <RequireAuth>
+              <AppShell />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<Dashboard />} />
 
-        {/* Billing */}
-        <Route path="billing" element={<PlaceholderPage title="Billing" description="Revenue and subscriptions" />} />
-        <Route path="billing/plans" element={<PlansPage />} />
-        <Route path="billing/subscriptions" element={<SubscriptionsPage />} />
-        <Route path="billing/invoices" element={<InvoicesPage />} />
-        <Route path="billing/refunds" element={<RefundsPage />} />
-        <Route path="billing/coupons" element={<CouponsPage />} />
+          {/* Users */}
+          <Route path="users" element={<UsersPage />} />
+          <Route path="users/invites" element={<InvitesPage />} />
+          <Route path="users/waitlist" element={<WaitlistPage />} />
+          <Route path="users/:id" element={<UserDetailPage />} />
+          <Route path="users/verification" element={<PlaceholderPage title="User Verification" />} />
+          <Route path="users/activity" element={<PlaceholderPage title="User Activity" />} />
+          <Route path="users/roles" element={<PlaceholderPage title="Roles & Permissions" />} />
 
-        {/* Mobile UI */}
-        <Route path="mobile-ui" element={<MobileUiLayout />}>
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<MobileUiHomePage />} />
-          <Route path="tabs" element={<MobileUiTabsPage />} />
-          <Route path="onboarding" element={<MobileUiOnboardingPage />} />
-          <Route path="paywall" element={<MobileUiPaywallPage />} />
-          <Route path="theme" element={<MobileUiThemePage />} />
-          <Route path="strings" element={<MobileUiStringsPage />} />
-          <Route path="templates" element={<MobileUiTemplatesPage />} />
+          {/* Leads */}
+          <Route path="leads" element={<LeadsPage />} />
+          <Route path="leads/enrichment" element={<EnrichmentPage />} />
+          <Route path="leads/add" element={<AddLeadPage />} />
+          <Route path="leads/scoring" element={<PlaceholderPage title="Lead Scoring" />} />
+          <Route path="leads/export" element={<PlaceholderPage title="Lead Export" />} />
+
+          {/* Scrapers */}
+          <Route path="scrapers" element={<ScrapersPage />} />
+          <Route path="scrapers/runs" element={<ScraperRunsPage />} />
+          <Route path="scrapers/accounts" element={<ScraperAccountsPage />} />
+          <Route path="scrapers/schedules" element={<ScraperSchedulesPage />} />
+          <Route path="scrapers/sources" element={<PlaceholderPage title="Scraper Sources" />} />
+          <Route path="scrapers/logs" element={<PlaceholderPage title="Scraper Logs" />} />
+
+          {/* AI */}
+          <Route path="ai" element={<PlaceholderPage title="AI Models" description="Manage AI configuration" />} />
+          <Route path="ai/prompts" element={<PromptsPage />} />
+          <Route path="ai/context" element={<AiContextPage />} />
+          <Route path="ai/usage" element={<AiUsagePage />} />
+
+          {/* Integrations */}
+          <Route
+            path="integrations"
+            element={<PlaceholderPage title="Integrations" description="Manage third-party integrations" />}
+          />
+          <Route path="integrations/cashfree" element={<CashfreePage />} />
+          <Route path="integrations/anthropic" element={<AnthropicPage />} />
+          <Route path="integrations/signalhire" element={<SignalHirePage />} />
+          <Route path="integrations/linkedin" element={<LinkedInPage />} />
+          <Route path="integrations/proxies" element={<ProxiesPage />} />
+          <Route path="integrations/email" element={<EmailPage />} />
+          <Route path="integrations/whatsapp" element={<WhatsAppPage />} />
+
+          {/* Billing */}
+          <Route path="billing" element={<PlaceholderPage title="Billing" description="Revenue and subscriptions" />} />
+          <Route path="billing/plans" element={<PlansPage />} />
+          <Route path="billing/subscriptions" element={<SubscriptionsPage />} />
+          <Route path="billing/invoices" element={<InvoicesPage />} />
+          <Route path="billing/refunds" element={<RefundsPage />} />
+          <Route path="billing/coupons" element={<CouponsPage />} />
+
+          {/* Mobile UI */}
+          <Route path="mobile-ui" element={<MobileUiLayout />}>
+            <Route index element={<Navigate to="home" replace />} />
+            <Route path="home" element={<MobileUiHomePage />} />
+            <Route path="tabs" element={<MobileUiTabsPage />} />
+            <Route path="onboarding" element={<MobileUiOnboardingPage />} />
+            <Route path="paywall" element={<MobileUiPaywallPage />} />
+            <Route path="theme" element={<MobileUiThemePage />} />
+            <Route path="strings" element={<MobileUiStringsPage />} />
+            <Route path="templates" element={<MobileUiTemplatesPage />} />
+          </Route>
+
+          {/* Settings */}
+          <Route path="settings" element={<PlaceholderPage title="Settings" description="Platform configuration" />} />
+          <Route path="settings/brand" element={<BrandPage />} />
+          <Route path="settings/company" element={<CompanyPage />} />
+          <Route path="settings/legal" element={<LegalPage />} />
+          <Route path="settings/templates" element={<SettingsTemplatesPage />} />
+          <Route path="settings/flags" element={<FlagsPage />} />
+          <Route path="settings/maintenance" element={<MaintenancePage />} />
+
+          {/* Security */}
+          <Route path="security" element={<PlaceholderPage title="Security" description="Platform security overview" />} />
+          <Route path="security/admins" element={<AdminsPage />} />
+          <Route path="security/sessions" element={<SessionsPage />} />
+          <Route path="security/api-keys" element={<ApiKeysPage />} />
+          <Route path="security/audit" element={<AuditPage />} />
+          <Route path="security/dpdp" element={<DpdpPage />} />
+
+          {/* Platform */}
+          <Route path="platform" element={<PlaceholderPage title="Platform" description="Infrastructure overview" />} />
+          <Route path="platform/logs" element={<LogsPage />} />
+          <Route path="platform/errors" element={<ErrorsPage />} />
+          <Route path="platform/webhooks" element={<WebhooksPage />} />
         </Route>
 
-        {/* Settings */}
-        <Route path="settings" element={<PlaceholderPage title="Settings" description="Platform configuration" />} />
-        <Route path="settings/brand" element={<BrandPage />} />
-        <Route path="settings/company" element={<CompanyPage />} />
-        <Route path="settings/legal" element={<LegalPage />} />
-        <Route path="settings/templates" element={<SettingsTemplatesPage />} />
-        <Route path="settings/flags" element={<FlagsPage />} />
-        <Route path="settings/maintenance" element={<MaintenancePage />} />
-
-        {/* Security */}
-        <Route path="security" element={<PlaceholderPage title="Security" description="Platform security overview" />} />
-        <Route path="security/admins" element={<AdminsPage />} />
-        <Route path="security/sessions" element={<SessionsPage />} />
-        <Route path="security/api-keys" element={<ApiKeysPage />} />
-        <Route path="security/audit" element={<AuditPage />} />
-        <Route path="security/dpdp" element={<DpdpPage />} />
-
-        {/* Platform */}
-        <Route path="platform" element={<PlaceholderPage title="Platform" description="Infrastructure overview" />} />
-        <Route path="platform/logs" element={<LogsPage />} />
-        <Route path="platform/errors" element={<ErrorsPage />} />
-        <Route path="platform/webhooks" element={<WebhooksPage />} />
-      </Route>
-
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }

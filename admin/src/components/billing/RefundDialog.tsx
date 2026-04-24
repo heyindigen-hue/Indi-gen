@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertCircleIcon } from '@/icons';
 import { formatINR, relTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -70,7 +70,7 @@ export function RefundDialog({
         <div className="space-y-4 py-1">
           {highValue && (
             <div className="flex items-start gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-300">
-              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <AlertCircleIcon size={16} className="shrink-0 mt-0.5" />
               <span>
                 Amount exceeds &#8377;5,000 — this refund requires second admin approval.
               </span>

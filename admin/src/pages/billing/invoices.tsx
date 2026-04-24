@@ -10,17 +10,16 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  ChevronsUpDown,
-  Download,
-  Eye,
-  TrendingUp,
-  IndianRupee,
-  Receipt,
-} from 'lucide-react';
+  ChevronDownIcon,
+  ArrowRightIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  DownloadIcon,
+  EyeIcon,
+  ChartIcon,
+  CashIcon,
+  CheckIcon,
+} from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { cn, formatINR, relTime } from '@/lib/utils';
@@ -168,7 +167,7 @@ export default function InvoicesPage() {
                 openSheet(row.original.id);
               }}
             >
-              <Eye className="h-3.5 w-3.5" />
+              <EyeIcon size={14} />
             </Button>
             <Button
               variant="ghost"
@@ -182,7 +181,7 @@ export default function InvoicesPage() {
                   .catch(() => toast.error('Failed to get PDF'));
               }}
             >
-              <Download className="h-3.5 w-3.5" />
+              <DownloadIcon size={14} />
             </Button>
           </div>
         ),
@@ -243,19 +242,19 @@ export default function InvoicesPage() {
         <KpiCard
           title="Revenue this month"
           value={stats ? formatINR(stats.revenue_this_month) : '—'}
-          icon={IndianRupee}
+          icon={CashIcon}
           loading={isLoading && !stats}
         />
         <KpiCard
           title="Revenue YTD"
           value={stats ? formatINR(stats.revenue_ytd) : '—'}
-          icon={TrendingUp}
+          icon={ChartIcon}
           loading={isLoading && !stats}
         />
         <KpiCard
           title="Paid"
           value={stats?.paid_count ?? (isLoading ? '—' : 0)}
-          icon={Receipt}
+          icon={CheckIcon}
           loading={isLoading && !stats}
         />
         <KpiCard
@@ -282,7 +281,7 @@ export default function InvoicesPage() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 gap-1">
               {status ? `Status: ${status}` : 'All statuses'}
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDownIcon size={14} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -316,11 +315,11 @@ export default function InvoicesPage() {
                       {header.column.getCanSort() && (
                         <span className="text-muted-foreground">
                           {header.column.getIsSorted() === 'asc' ? (
-                            <ChevronUp className="h-3 w-3" />
+                            <ChevronUpIcon size={12} />
                           ) : header.column.getIsSorted() === 'desc' ? (
-                            <ChevronDown className="h-3 w-3" />
+                            <ChevronDownIcon size={12} />
                           ) : (
-                            <ChevronsUpDown className="h-3 w-3 opacity-40" />
+                            <ArrowRightIcon size={12} className="opacity-40 rotate-90" />
                           )}
                         </span>
                       )}
@@ -382,7 +381,7 @@ export default function InvoicesPage() {
             disabled={page === 0}
             onClick={() => setPageParam(page - 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ArrowRightIcon size={16} className="rotate-180" />
           </Button>
           <Button
             variant="outline"
@@ -391,7 +390,7 @@ export default function InvoicesPage() {
             disabled={page >= pageCount - 1}
             onClick={() => setPageParam(page + 1)}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRightIcon size={16} />
           </Button>
         </div>
       </div>

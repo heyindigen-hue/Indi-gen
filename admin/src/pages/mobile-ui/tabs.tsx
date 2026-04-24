@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -15,19 +15,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { GripVertical, Trash2, Plus, AlertTriangle } from 'lucide-react';
 import {
-  Home,
-  Search,
-  Bell,
-  User,
-  Circle,
-  Settings,
-  Star,
-  Heart,
-  Bookmark,
-  Map,
-} from 'lucide-react';
+  FilterIcon, TrashIcon, PlusIcon, AlertCircleIcon,
+  HomeIcon, SearchIcon, BellIcon, UserIcon, SparkleIcon,
+  SettingsIcon, StarIcon, BookmarkIcon,
+} from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { IconPicker } from '@/components/sdui/IconPicker';
@@ -37,7 +29,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { TabItem } from '@/types/sdui';
-import type { LucideIcon } from 'lucide-react';
+
+interface IconProps { size?: number; className?: string; strokeWidth?: number; color?: string; }
 
 const MAX_TABS = 5;
 
@@ -48,12 +41,14 @@ const DEFAULT_TABS: TabItem[] = [
   { id: '4', icon: 'User',   label: 'Profile', route: '/profile', enabled: true, order: 3 },
 ];
 
-const PREVIEW_ICON_MAP: Record<string, LucideIcon> = {
-  Home, Search, Bell, User, Circle, Settings, Star, Heart, Bookmark, Map,
+const PREVIEW_ICON_MAP: Record<string, React.ComponentType<IconProps>> = {
+  Home: HomeIcon, Search: SearchIcon, Bell: BellIcon, User: UserIcon,
+  Circle: SparkleIcon, Settings: SettingsIcon, Star: StarIcon,
+  Heart: StarIcon, Bookmark: BookmarkIcon, Map: FilterIcon,
 };
 
 function PreviewIcon({ name }: { name: string }) {
-  const Icon = PREVIEW_ICON_MAP[name] ?? Circle;
+  const Icon = PREVIEW_ICON_MAP[name] ?? SparkleIcon;
   return <Icon size={20} />;
 }
 
@@ -97,7 +92,7 @@ function TabRow({ tab, onChangeIcon, onChangeLabel, onToggleEnabled, onDelete }:
         aria-label="Drag to reorder"
         tabIndex={0}
       >
-        <GripVertical size={16} />
+        <FilterIcon size={16} />
       </button>
 
       {/* Icon picker */}
@@ -133,7 +128,7 @@ function TabRow({ tab, onChangeIcon, onChangeLabel, onToggleEnabled, onDelete }:
         className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
         aria-label={`Delete ${tab.label}`}
       >
-        <Trash2 size={15} />
+        <TrashIcon size={15} />
       </button>
     </div>
   );
@@ -173,7 +168,7 @@ function PreviewStrip({ tabs: allTabs }: PreviewStripProps) {
                 </>
               ) : (
                 <>
-                  <Circle size={20} />
+                  <SparkleIcon size={20} />
                   <span className="text-[10px] text-muted-foreground leading-none">—</span>
                 </>
               )}
@@ -276,7 +271,7 @@ export default function MobileUiTabsPage() {
           </Badge>
           {atMax && (
             <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-              <AlertTriangle size={11} />
+              <AlertCircleIcon size={11} />
               Max tabs reached
             </Badge>
           )}
@@ -289,7 +284,7 @@ export default function MobileUiTabsPage() {
             disabled={atMax}
             className="gap-1.5 text-xs"
           >
-            <Plus size={13} />
+            <PlusIcon size={13} />
             Add Tab
           </Button>
           <Button

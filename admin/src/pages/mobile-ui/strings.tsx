@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Plus, Upload, Wand2 } from 'lucide-react';
+import { SearchIcon, PlusIcon, UploadIcon, SparkleIcon } from '@/icons';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { Input } from '@/components/ui/input';
@@ -345,7 +345,7 @@ export default function StringsPage() {
               className="h-7 text-xs gap-1 px-2"
               onClick={() => setShowAddLocale(true)}
             >
-              <Plus size={12} />
+              <PlusIcon size={12} />
               Add locale
             </Button>
           )}
@@ -354,7 +354,7 @@ export default function StringsPage() {
 
           {/* Search */}
           <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <SearchIcon size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -371,7 +371,7 @@ export default function StringsPage() {
             className="h-7 text-xs gap-1.5"
             onClick={() => setShowCsvImport(true)}
           >
-            <Upload size={12} />
+            <UploadIcon size={12} />
             Bulk import CSV
           </Button>
           <Button
@@ -380,7 +380,7 @@ export default function StringsPage() {
             className="h-7 text-xs gap-1.5"
             onClick={handleAddKey}
           >
-            <Plus size={12} />
+            <PlusIcon size={12} />
             Add Key
           </Button>
           <Button
@@ -439,7 +439,7 @@ export default function StringsPage() {
                     className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                     onClick={() => handleAiTranslate(key)}
                   >
-                    <Wand2 size={11} />
+                    <SparkleIcon size={11} />
                     AI
                   </Button>
                 </div>

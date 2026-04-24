@@ -5,7 +5,7 @@ import { setSetting, getSettingsByCategory, SettingEntry } from '@/lib/settings'
 import { PageHeader } from '@/components/common/PageHeader';
 import { IntegrationCard } from '@/components/common/IntegrationCard';
 import { KpiCard } from '@/components/common/KpiCard';
-import { Zap, DollarSign } from 'lucide-react';
+import { ZapIcon, CashIcon } from '@/icons';
 import { formatINR } from '@/lib/utils';
 
 const FIELDS = [
@@ -94,12 +94,12 @@ export default function AnthropicPage() {
               <KpiCard
                 title="Tokens this month"
                 value={monthlyUsage ? (monthlyUsage.tokens / 1000).toFixed(1) + 'K' : '—'}
-                icon={Zap}
+                icon={ZapIcon}
               />
               <KpiCard
                 title="Cost this month"
                 value={monthlyUsage ? formatINR(monthlyUsage.cost_inr) : '—'}
-                icon={DollarSign}
+                icon={CashIcon}
               />
             </>
           )}
