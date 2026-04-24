@@ -28,6 +28,14 @@ import LinkedInPage from '@/pages/integrations/linkedin';
 import ProxiesPage from '@/pages/integrations/proxies';
 import EmailPage from '@/pages/integrations/email';
 import WhatsAppPage from '@/pages/integrations/whatsapp';
+import MobileUiLayout from '@/pages/mobile-ui/layout';
+import MobileUiHomePage from '@/pages/mobile-ui/home';
+import MobileUiTabsPage from '@/pages/mobile-ui/tabs';
+import MobileUiOnboardingPage from '@/pages/mobile-ui/onboarding';
+import MobileUiPaywallPage from '@/pages/mobile-ui/paywall';
+import MobileUiThemePage from '@/pages/mobile-ui/theme';
+import MobileUiStringsPage from '@/pages/mobile-ui/strings';
+import MobileUiTemplatesPage from '@/pages/mobile-ui/templates';
 import { useAuth } from '@/store/auth';
 import { PageHeader } from '@/components/common/PageHeader';
 
@@ -125,15 +133,16 @@ export default function App() {
         <Route path="billing/coupons" element={<CouponsPage />} />
 
         {/* Mobile UI */}
-        <Route
-          path="mobile-ui"
-          element={<PlaceholderPage title="Mobile UI" description="SDUI screen management" />}
-        />
-        <Route path="mobile-ui/navigation" element={<PlaceholderPage title="Navigation" />} />
-        <Route path="mobile-ui/components" element={<PlaceholderPage title="Components" />} />
-        <Route path="mobile-ui/themes" element={<PlaceholderPage title="Themes" />} />
-        <Route path="mobile-ui/assets" element={<PlaceholderPage title="Assets" />} />
-        <Route path="mobile-ui/announcements" element={<PlaceholderPage title="Announcements" />} />
+        <Route path="mobile-ui" element={<MobileUiLayout />}>
+          <Route index element={<Navigate to="home" replace />} />
+          <Route path="home" element={<MobileUiHomePage />} />
+          <Route path="tabs" element={<MobileUiTabsPage />} />
+          <Route path="onboarding" element={<MobileUiOnboardingPage />} />
+          <Route path="paywall" element={<MobileUiPaywallPage />} />
+          <Route path="theme" element={<MobileUiThemePage />} />
+          <Route path="strings" element={<MobileUiStringsPage />} />
+          <Route path="templates" element={<MobileUiTemplatesPage />} />
+        </Route>
 
         {/* Settings */}
         <Route path="settings" element={<PlaceholderPage title="Settings" description="Platform configuration" />} />
