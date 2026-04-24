@@ -22,7 +22,7 @@
     {
       "type": "AnnouncementBanner",
       "props": {
-        "message": "Welcome to Indi-gen! Start exploring leads.",
+        "message": "Welcome to LeadHangover! Start exploring leads.",
         "dismissible": true
       }
     },
@@ -58,46 +58,44 @@
   "onboarding_steps": [
     {
       "id": "welcome",
-      "title": "Welcome to Indi-gen",
+      "title": "Welcome to LeadHangover",
       "description": "AI-powered lead generation at your fingertips.",
-      "image": null
+      "input_type": "none"
     },
     {
-      "id": "leads",
-      "title": "Discover Leads",
-      "description": "Browse and filter high-quality leads curated for your business.",
-      "image": null
+      "id": "phrases",
+      "title": "What leads are you looking for?",
+      "description": "Select topics to personalize your feed.",
+      "input_type": "chip_select",
+      "options": ["SaaS founders", "E-commerce owners", "Startup CTOs", "Marketing managers", "Small business owners", "Freelancers"],
+      "field": "phrases"
     },
     {
-      "id": "outreach",
-      "title": "Automate Outreach",
-      "description": "Send personalized messages at scale with our AI outreach engine.",
-      "image": null
+      "id": "done",
+      "title": "Finding your first leads...",
+      "description": "We're scanning the web for leads that match your interests.",
+      "input_type": "done"
     }
   ],
   "paywall": {
-    "title": "Unlock Full Access",
-    "subtitle": "Choose a plan that fits your needs",
-    "bundles": [
-      {
-        "id": "starter",
-        "name": "Starter",
-        "price": "₹999/mo",
-        "features": ["100 leads/month", "Basic outreach", "Email support"]
-      },
-      {
-        "id": "pro",
-        "name": "Pro",
-        "price": "₹2,999/mo",
-        "features": ["500 leads/month", "AI outreach", "Priority support", "Analytics"]
-      },
-      {
-        "id": "enterprise",
-        "name": "Enterprise",
-        "price": "Custom",
-        "features": ["Unlimited leads", "Dedicated account manager", "Custom integrations"]
-      }
+    "title": "Get more leads",
+    "subtitle": "Top up tokens or subscribe for unlimited access",
+    "token_bundles": [
+      { "id": "tokens_100", "tokens": 100, "amount": 499, "label": "₹499", "badge": null },
+      { "id": "tokens_500", "tokens": 500, "amount": 1999, "label": "₹1,999", "badge": "POP" },
+      { "id": "tokens_2000", "tokens": 2000, "amount": 5999, "label": "₹5,999", "badge": "SAVE" }
+    ],
+    "subscription_plans": [
+      { "id": "plan_starter", "name": "Starter", "price": "₹999/mo", "badge": null, "popular": false },
+      { "id": "plan_pro", "name": "Pro", "price": "₹2,999/mo", "badge": "★", "popular": true }
     ]
+  },
+  "settings": {
+    "legal": {
+      "terms": "https://indigenservices.com/terms",
+      "privacy": "https://indigenservices.com/privacy",
+      "dpdp": "https://indigenservices.com/dpdp"
+    }
   },
   "feature_flags": {
     "show_swipe_stack": false,

@@ -1,299 +1,142 @@
-You are WORKER Claude on PC2. The R1 rebrand is done (LeadHangover name + orange primary). Now do the BIG design overhaul: light theme default, custom icon system, animated splash, smooth motion.
+You are WORKER Claude on PC2. Core mobile screens done. Build Paywall, Onboarding, and WebView-LinkedIn features.
 
-## Design Aesthetic Direction
-
-**Aesthetic:** Editorial Warm — think "Airbnb × Substack × cult D2C brand"
-- Warm off-white backgrounds (like Substack/Linear light)
-- Serif italic display type (Fraunces) paired with crisp sans body (Inter Tight)
-- Orange `#FF4716` as the dominant accent, used confidently not timidly
-- Soft-rounded corners (radius 14-16px default, 24px on big cards)
-- Subtle warm shadows (`rgba(255, 71, 22, 0.08)` tint, never pure black shadows)
-- Grain/noise overlay on hero sections for depth
-- Custom icons matching the flower-petal aesthetic (rounded ends, organic curves)
-- NO generic lucide default icons — we build a matching set
-
-**Light theme (new DEFAULT):**
-```
---bg:          #FAF7F2   (warm off-white, like paper)
---bg-elevated: #FFFFFF   (pure white for cards that pop)
---border:      #EEE8DD   (warm cream border)
---text:        #0B0A08   (near-black, warm)
---muted:       #6B6558   (warm stone)
---primary:     #FF4716   (brand orange)
---primary-fg:  #FFFFFF
---success:     #3E7C4B
---warning:     #C88A10
---destructive: #C8301A
-```
-
-**Dark theme (alt, via toggle):**
-```
---bg:          #0B0A08   (warm near-black)
---bg-elevated: #141210   (warm card)
---border:      #221E19
---text:        #FAF7F2   (warm off-white text)
---muted:       #8A8175
---primary:     #FF5A2E   (slightly brighter for dark contrast)
---primary-fg:  #0B0A08
---success:     #4CB782
---warning:     #F2C94C
---destructive: #E5484D
-```
-
-**Typography:**
-- Display (headlines, brand): **Fraunces** 600, italic — gives that editorial feel
-- Body UI: **Inter Tight** 400/500/600 (tighter than regular Inter, more modern)
-- Mono (IDs, timestamps): **JetBrains Mono** 400
-
-Install the fonts into admin via Google Fonts CDN, into mobile via `@expo-google-fonts/fraunces` + `@expo-google-fonts/inter-tight`.
+## Context
+- `C:\Users\Indigen-Server-2\Desktop\Indi-gen\mobile`
+- Backend: `POST /api/billing/checkout/topup`, `POST /api/billing/checkout/subscribe`, `GET /api/billing/plans`
+- Cashfree React Native SDK for payments
 
 ## Your Task
 
-### Part 1 — Custom Icon System (the crown jewel)
-
-Create `shared/brand/icons/` containing SVG icons that MATCH the flower logo aesthetic: rounded ends, organic curves, 3px stroke on 24px viewbox, slightly thicker than default Lucide.
-
-Design icons with these properties:
-- `viewBox="0 0 24 24"` always
-- `stroke-width: 2.25`, `stroke-linecap: round`, `stroke-linejoin: round`
-- No fills except when intentional
-- Curve preference over straight lines (channel the petal shape)
-
-Create these 24 icons as SVG files in `shared/brand/icons/`:
-1. `home.svg` — house shape with rounded top
-2. `bookmark.svg` — rounded bookmark (for Saved)
-3. `send.svg` — paper plane with curved trail
-4. `chart.svg` — simple 3-bar chart with rounded tops
-5. `settings.svg` — 6-tooth gear with rounded teeth
-6. `search.svg` — magnifier with rounded handle
-7. `user.svg` — person silhouette
-8. `users.svg` — 2 overlapping persons
-9. `lead.svg` — flower petal (ties to logo)
-10. `scraper.svg` — spider-esque radiating lines
-11. `ai.svg` — sparkle with 4 petals (flower echo)
-12. `cash.svg` — rupee symbol ₹ in circle
-13. `tag.svg` — rounded tag
-14. `filter.svg` — 3-stack funnel
-15. `plus.svg` — + with rounded ends
-16. `check.svg` — checkmark with rounded curves
-17. `x.svg` — × with rounded strokes
-18. `arrow-up.svg` — curved up arrow
-19. `arrow-right.svg` — curved right arrow
-20. `chevron-down.svg` — soft chevron
-21. `copy.svg` — two overlapping rounded rects
-22. `edit.svg` — pencil with rounded tip
-23. `trash.svg` — rounded trash with lid curve
-24. `sparkle.svg` — tiny 4-pointed star (AI indicator)
-
-Each SVG file should be ~300-800 bytes of handcrafted SVG path data. Example for `lead.svg`:
-```xml
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M12 3 C14 6, 16 8, 16 11 C16 13.5, 14 15, 12 15 C10 15, 8 13.5, 8 11 C8 8, 10 6, 12 3 Z"/>
-  <path d="M12 15 L12 21"/>
-  <path d="M8 19 L16 19"/>
-</svg>
+### 1. Install Cashfree SDK
+```
+npx expo install react-native-cashfree-pg-sdk
 ```
 
-Then create `shared/brand/icons/index.ts`:
+### 2. `mobile/app/paywall.tsx` — Token bundles + subscription tiers
+Modal presentation. Bottom sheet style (90% snap).
+
+Layout:
+```
+┌─────────────────────────────────┐
+│  ✕                              │
+│  [Token icon]                   │
+│  Get more leads                 │
+│  Subtitle from manifest          │
+├─────────────────────────────────┤
+│  TOKEN BUNDLES                   │
+│  ┌──┐ ┌──┐ ┌──┐                 │
+│  │100│ │500│ │2000│             │
+│  │₹499│ │₹1999│ │₹5999│          │
+│  │    │ │ POP│ │ SAVE│          │
+│  └──┘ └──┘ └──┘                 │
+│  [Buy 500 tokens] (primary CTA)  │
+├─────────────────────────────────┤
+│  OR SUBSCRIBE                    │
+│  [Starter] [Pro ★]               │
+├─────────────────────────────────┤
+│  Terms · Privacy · Restore       │
+└─────────────────────────────────┘
+```
+
+- Read `paywall` config from manifest
+- Bundle cards: selectable, highlighted when selected
+- Primary CTA changes based on selection: "Buy N tokens" or "Subscribe"
+- Uses Cashfree drop-in checkout
+
+### 3. Cashfree integration — `mobile/lib/payments.ts`
 ```typescript
-// Runtime icon registry — mobile + admin both import from here
-export { default as HomeIcon } from './home.svg?react'; // for admin (Vite SVGR)
-// For mobile, we'll expose raw SVG strings
-```
+import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
+import { CFSession, CFEnvironment, CFDropCheckoutPayment, CFThemeBuilder, CFPaymentComponentBuilder, CFPaymentComponent } from 'cashfree-pg-api-contract';
+import { api } from './api';
 
-Actually — keep it simple with two consumer-ready formats:
+export async function startTokenTopup(bundleId: string) {
+  // 1. Create order on backend
+  const { data: order } = await api.post('/billing/checkout/topup', { bundle_id: bundleId });
+  // order shape: { order_id, order_token, amount, currency }
 
-**For admin (React + Vite):**
-Create `admin/src/icons/` — a TSX file per icon that returns a React component. Use `vite-plugin-svgr` or just hand-write them as TSX.
-
-Install: `npm install -D vite-plugin-svgr`
-
-In `admin/vite.config.ts` add `svgr()` plugin. Then icons import as:
-```typescript
-import HomeIcon from '@/icons/home.svg?react';
-<HomeIcon className="size-5" />
-```
-
-**For mobile (React Native):**
-Install: `npx expo install react-native-svg`
-Create `mobile/components/icons/` — TSX files using `react-native-svg`:
-```tsx
-import Svg, { Path } from 'react-native-svg';
-export function LeadIcon({ size = 24, color = 'currentColor' }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 3 C14 6, 16 8, 16 11 C16 13.5, 14 15, 12 15 C10 15, 8 13.5, 8 11 C8 8, 10 6, 12 3 Z" />
-      <Path d="M12 15 L12 21" />
-      <Path d="M8 19 L16 19" />
-    </Svg>
+  // 2. Build session
+  const session = new CFSession(
+    order.order_token,
+    order.order_id,
+    CFEnvironment.SANDBOX, // switch to PRODUCTION for live
   );
+
+  const theme = new CFThemeBuilder()
+    .setBackgroundColor('#08090B')
+    .setPrimaryTextColor('#F7F8F8')
+    .setNavigationBarBackgroundColor('#111113')
+    .setNavigationBarTextColor('#F7F8F8')
+    .setButtonBackgroundColor('#7170FF')
+    .setButtonTextColor('#FFFFFF')
+    .build();
+
+  const paymentComponents = new CFPaymentComponentBuilder()
+    .add(CFPaymentComponent.CFPaymentModes.UPI)
+    .add(CFPaymentComponent.CFPaymentModes.CARD)
+    .add(CFPaymentComponent.CFPaymentModes.NB)
+    .add(CFPaymentComponent.CFPaymentModes.WALLET)
+    .build();
+
+  const dropPayment = new CFDropCheckoutPayment(session, paymentComponents, theme);
+
+  CFPaymentGatewayService.setCallback({
+    onVerify(orderId) { console.log('Payment verified', orderId); },
+    onError(error, orderId) { console.log('Payment error', error, orderId); },
+  });
+
+  CFPaymentGatewayService.doPayment(dropPayment);
+}
+
+export async function startSubscription(planId: string) {
+  const { data } = await api.post('/billing/checkout/subscribe', { plan_id: planId });
+  // Open authorization_link in webview or browser
+  return data;
 }
 ```
 
-Generate all 24 icons for both admin and mobile. The exact SVG path data should be visually matching the LeadHangover flower aesthetic — petal curves, rounded ends, organic shapes.
+### 4. `mobile/app/onboarding.tsx` — Multi-step onboarding
+Read `onboarding_steps` from manifest, render one step at a time with:
+- Progress dots at top (active/inactive)
+- Title + body + optional input (chip-select/text/skip/animated)
+- Swipe-left gesture to go back, Next button to advance
+- Last step ("done") triggers first scrape then redirects to (tabs)
 
-Create `mobile/components/icons/index.ts` exporting all icon components.
+Gestures: use `Gesture.Pan()` for swipe-back with threshold.
 
-**Replace ALL lucide-react / lucide-react-native imports** across admin and mobile with our custom icons. Do a grep + replace for:
-- `from 'lucide-react'` → `from '@/icons'`
-- `from 'lucide-react-native'` → `from '@/components/icons'`
+### 5. `mobile/app/webview-linkedin.tsx` — In-app LinkedIn browser
+- WebView (`react-native-webview`) pointed at `https://linkedin.com`
+- Floating action button "Add this lead" (always visible)
+- When pressed, inject JS into WebView to extract: URL, name, headline, company, latest post content
+- Show confirmation sheet with extracted data + Save button
+- Save calls POST `/api/leads/manual`
 
-Map old lucide names to our new ones:
-- `Home, House` → `HomeIcon`
-- `Bookmark` → `BookmarkIcon`
-- `Send` → `SendIcon`
-- `Settings, Cog` → `SettingsIcon`
-- `Search` → `SearchIcon`
-- `ChartLine, BarChart, BarChart2, BarChart3` → `ChartIcon`
-- `User` → `UserIcon`
-- `Users` → `UsersIcon`
-- `Plus` → `PlusIcon`
-- `Check` → `CheckIcon`
-- `X, XIcon` → `XIcon`
-- `ChevronDown` → `ChevronDownIcon`
-- `Copy` → `CopyIcon`
-- `Edit, Pencil` → `EditIcon`
-- `Trash, Trash2` → `TrashIcon`
-- `Sparkle, Sparkles` → `SparkleIcon`
-- Any other lucide icon: use the closest of our 24 OR add a new custom icon
+Install: `npx expo install react-native-webview`
 
-Uninstall lucide at the end:
+### 6. Settings expansion — `mobile/app/(tabs)/settings.tsx`
+- Account card (avatar, name, email, plan, edit profile)
+- Billing row → /paywall
+- Tokens row showing balance + history
+- Preferences: Notifications toggle, Haptics toggle, Theme switcher (if manifest permits)
+- Legal: ToS, Privacy, DPDP (opens WebView to settings.legal URLs from manifest)
+- **DANGER** section:
+  - "Export my data" (calls GET /api/me/data-export, shares JSON file)
+  - "Delete my account" (DPDP erasure — opens confirm flow, POST /api/me/erasure-request)
+- Support: email + version footer
+
+### 7. Onboarding first-scrape flow
+After final onboarding step, trigger a kickoff scrape in the background:
+```ts
+await api.post('/scrape', { phrases: selectedPhrases, limit: 25 });
 ```
-cd admin && npm uninstall lucide-react
-cd mobile && npm uninstall lucide-react-native
+While scraping, show a full-screen loader with progress animation. Poll `/scrape/jobs/:id` every 3s. When complete, navigate to Home tab which now shows real leads.
+
+### 8. Verify + commit
 ```
-
-### Part 2 — Light theme as DEFAULT + theme toggle
-
-**Admin (`admin/src/index.css`):**
-- Make the light theme the default (no need to force `html.dark`)
-- Update light vars to use the warm palette above
-- Keep `:root.dark` for dark mode
-- Add `[data-theme="dark"]` as alternative selector
-- Remove the forced `html.dark` in index.html
-
-**Add theme toggle component** `admin/src/components/common/ThemeToggle.tsx`:
-- Sun icon (light) / Moon icon (dark) — design custom ones if not in our 24
-- Smooth crossfade transition (200ms)
-- Persists preference in localStorage
-- Defaults to "light" if no preference
-
-Mount the toggle in TopBar.
-
-**Mobile (`mobile/lib/theme.ts`):**
-Rewrite with both palettes exported. Add a ThemeMode type = 'light' | 'dark' | 'system'.
-
-**Mobile `ThemeProvider`** — add:
-- Read mode from MMKV `theme_mode` key (default 'light')
-- Respect `useColorScheme()` if mode is 'system'
-- Expose `setMode(mode)` via context
-- Re-render tree on change
-
-**Add theme toggle row in `mobile/app/(tabs)/settings.tsx`** — Light / Dark / System radio group.
-
-### Part 3 — Animated logo splash screen
-
-**Mobile (`mobile/app/_layout.tsx`)**:
-Replace `SplashScreen.hideAsync()` with a custom animated splash component that:
-
-1. Holds the native splash until our animated one is ready (`SplashScreen.preventAutoHideAsync()`)
-2. Renders the flower logo on `#FAF7F2` (matches light theme bg)
-3. Animates:
-   - All 8 petals start at `opacity: 0, scale: 0, rotation: -90deg`
-   - Staggered reveal: each petal animates in over 200ms with 40ms stagger
-   - After all petals visible (~600ms), whole logo does a subtle breathing pulse (scale 1 → 1.03 → 1)
-   - After 1.8s total, fades out and reveals the app
-
-Use `react-native-reanimated` v3:
-```tsx
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay, withSequence, withRepeat, Easing } from 'react-native-reanimated';
+cd C:\Users\Indigen-Server-2\Desktop\Indi-gen\mobile
+npx tsc --noEmit
+git add -A
+git commit -m "feat(mobile): paywall w/ Cashfree, onboarding flow, LinkedIn WebView, settings w/ DPDP"
+git push origin master
 ```
 
-Each petal is a `<Path>` inside a `<Svg>` with its own Reanimated shared value. Orchestrate the timing.
-
-File: `mobile/components/AnimatedSplash.tsx` — renders the 8-petal flower animating in. Include this in root layout, show while `!fontsLoaded || isManifestLoading`, hide after min 1.8s.
-
-**Admin (`admin/src/components/AnimatedSplash.tsx`)**:
-Same concept but using Framer Motion:
-```tsx
-import { motion } from 'framer-motion';
-```
-Mount at root of App.tsx, shown during initial auth check or first manifest fetch.
-
-Install: `npm install framer-motion` (may already be there).
-
-### Part 4 — Motion across the app
-
-**Admin:**
-- Wrap page transitions in Framer Motion `<motion.div initial={{opacity:0, y:8}} animate={{opacity:1, y:0}} transition={{duration:0.25}}>`
-- Sidebar items: slight indent on hover (`hover:pl-4 transition-all`)
-- Button press: scale 0.96 via Tailwind `active:scale-95`
-- Card enter: staggered fade-up in lists (motion.div with custom delay index)
-- Toast enter via sonner (already animates)
-- Modal backdrop blur + fade-in
-
-**Mobile:**
-- All list enters: Reanimated `entering={FadeInUp.delay(i*30).duration(300)}`
-- Button press haptic + scale 0.97 (already done via Button.tsx)
-- Screen transitions: Expo Router default stack animation — override with slide-from-right (iOS) / fade-through (Android)
-- Card press: brief pulse using `Pressable` + Reanimated shared value
-- Tab switch: fade transition
-
-Add `entering={}` / `exiting={}` from `react-native-reanimated` where natural.
-
-### Part 5 — Update the Mobile UI Builder widget previews
-
-Since we have custom icons + updated theme, update `admin/src/components/sdui/WidgetPreview.tsx` to use our custom icons + warm palette so the iPhone-frame preview actually matches what the mobile renders.
-
-Also update `admin/src/components/sdui/DeviceFrame.tsx` — subtle improvements:
-- Softer shadow matching warm palette
-- Status bar with real clock (just a `<span>` with time formatted)
-- Dynamic Island for iPhone frame
-
-### Part 6 — Update default UI manifest in DB
-
-Update `db/seed.sql` to push a new manifest version 2 that reflects the light theme default:
-
-Add this at the end of seed.sql (after the existing manifest insert):
-```sql
-INSERT INTO ui_manifests (platform, name, version, manifest, is_default, enabled, published_at) VALUES
-('mobile', 'default', 2, '{
-  "brand": {"name":"LeadHangover","tagline":"Wake up to better leads","primary":"#FF4716"},
-  "theme": {"palette":"warm-light","mode":"light","font":"Fraunces","radius":16,"density":"comfortable"},
-  "tabs": [...same as v1...],
-  "home_widgets": [...same as v1...],
-  "onboarding_steps": [...same as v1 but with warmer copy...],
-  "paywall": {...},
-  "features": {"swipe_stack":true,"webview_browser":true,"voice_notes":false,"maintenance":false,"animations":true}
-}', TRUE, TRUE, NOW())
-ON CONFLICT DO NOTHING;
-
-UPDATE ui_manifests SET enabled = FALSE WHERE platform='mobile' AND version < 2;
-```
-
-### Part 7 — Hero OG image
-
-Create `shared/brand/og-image.svg` (1200x630, for social sharing):
-- Orange background
-- Flower logo centered-left
-- "LeadHangover" in big Fraunces italic cream text
-- "Wake up to better leads" subtitle
-- Saved as both SVG and PNG (via the sharp script, add new output)
-
-### Verify + commit
-```
-cd C:\Users\Indigen-Server-2\Desktop\Indi-gen\admin && npx tsc --noEmit
-cd C:\Users\Indigen-Server-2\Desktop\Indi-gen\mobile && npx tsc --noEmit
-cd C:\Users\Indigen-Server-2\Desktop\Indi-gen && git add -A && git commit -m "feat(design): light theme default + animated splash + 24 custom icons matching flower aesthetic + motion throughout" && git push origin master
-```
-
-Report: files, tsc results, SHA.
-
-## Hard constraints
-- Do NOT reintroduce lucide anywhere (uninstall + replace)
-- Do NOT use generic stock icons
-- Do NOT start expo/vite dev servers
-- Keep dark theme as an OPTION, but LIGHT is now default
-- All icons must visually match the flower logo aesthetic (rounded, organic)
-- Every transition must be <300ms (perceived instant)
-- Splash animation total ≤2s (iOS HIG limit)
+Autonomous. No expo start.

@@ -8,6 +8,8 @@ import {
   Alert,
   Linking,
   StyleSheet,
+  ActivityIndicator,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -32,21 +34,27 @@ import {
   MoonIcon,
   SparkleIcon,
   CheckIcon,
+  ArrowUpIcon,
+  EditIcon,
+  CashIcon,
+  ChartIcon,
+  LinkIcon,
 } from '../../components/icons';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 import { useAuth } from '../../store/auth';
+import { useManifest } from '../../lib/useManifest';
 
 const APP_VERSION: string = require('../../package.json').version;
 
-type SectionProps = { title: string; children: React.ReactNode };
+type SectionProps = { title: string; children: React.ReactNode; titleColor?: string };
 
-function Section({ title, children }: SectionProps) {
+function Section({ title, children, titleColor }: SectionProps) {
   const { palette } = useTheme();
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: palette.muted }]}>{title}</Text>
-      <View style={[styles.sectionCard, { backgroundColor: palette.card, borderColor: palette.border }]}>
+      <Text style={[styles.sectionTitle, { color: titleColor ?? palette.muted }]}>{title}</Text>
+      <View style={[styles.sectionCard, { backgroundColor: palette.card, borderColor: titleColor ? titleColor + '40' : palette.border }]}>
         {children}
       </View>
     </View>
@@ -62,9 +70,10 @@ type RowProps = {
   labelColor?: string;
   isLast?: boolean;
   right?: React.ReactNode;
+  loading?: boolean;
 };
 
-function Row({ icon, label, value, onPress, showChevron = false, labelColor, isLast = false, right }: RowProps) {
+function Row({ icon, label, value, onPress, showChevron = false, labelColor, isLast = false, right, loading }: RowProps) {
   const { palette } = useTheme();
   return (
     <Pressable
@@ -78,7 +87,9 @@ function Row({ icon, label, value, onPress, showChevron = false, labelColor, isL
     >
       <View style={styles.rowIcon}>{icon}</View>
       <Text style={[styles.rowLabel, { color: labelColor ?? palette.text }]}>{label}</Text>
-      {value ? (
+      {loading ? (
+        <ActivityIndicator size="small" color={palette.muted} style={{ marginRight: 8 }} />
+      ) : value ? (
         <Text style={[styles.rowValue, { color: palette.muted }]} numberOfLines={1}>
           {value}
         </Text>
@@ -128,15 +139,24 @@ export default function SettingsScreen() {
   const { palette, radius, mode, setMode } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  const { data: manifest } = useManifest();
 
   const [notificationsOn, setNotificationsOn] = useState(true);
   const [hapticsOn, setHapticsOn] = useState(true);
+  const [exportingData, setExportingData] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const { data: tokenData } = useQuery({
     queryKey: ['billing', 'tokens'],
     queryFn: () => api.get('/billing/tokens/balance').then((r) => r.data),
     staleTime: 5 * 60 * 1000,
   });
+
+  const legal = manifest?.settings?.legal ?? {
+    terms: 'https://indigenservices.com/terms',
+    privacy: 'https://indigenservices.com/privacy',
+    dpdp: 'https://indigenservices.com/dpdp',
+  };
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -152,23 +172,70 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleDeleteAccount = () => {
+  const handleExportData = () => {
     Alert.alert(
-      'Delete Account?',
-      'This action is irreversible. All your data will be permanently deleted per DPDP regulations.',
+      'Export my data',
+      'We will prepare a copy of all your data as a JSON file.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: 'Export',
           onPress: async () => {
+            setExportingData(true);
             try {
-              await api.delete('/account');
+              const { data } = await api.get('/me/data-export');
+              const json = JSON.stringify(data, null, 2);
+              await Share.share({
+                title: 'LeadHangover data export',
+                message: json,
+              });
             } catch {
-              // proceed with logout regardless
+              Alert.alert('Export failed', 'Could not export your data. Please try again.');
+            } finally {
+              setExportingData(false);
             }
-            await logout();
-            router.replace('/login' as any);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleErasureRequest = () => {
+    Alert.alert(
+      'Delete Account?',
+      'Per DPDP regulations, all your personal data will be permanently erased. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete my account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Confirm deletion',
+              'Type "DELETE" to confirm. Your account and all data will be erased within 30 days as per DPDP Act 2023.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Confirm',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setDeletingAccount(true);
+                    try {
+                      await api.post('/me/erasure-request');
+                    } catch {
+                      // proceed with logout even if request fails
+                    }
+                    try {
+                      await api.delete('/account');
+                    } catch {
+                      // ignore
+                    }
+                    await logout();
+                    router.replace('/login' as any);
+                  },
+                },
+              ]
+            );
           },
         },
       ]
@@ -176,6 +243,10 @@ export default function SettingsScreen() {
   };
 
   const openUrl = (url: string) => {
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const openLegalWebView = (url: string) => {
     Linking.openURL(url).catch(() => {});
   };
 
@@ -189,44 +260,60 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Account ── */}
         <Section title="Account">
           <Row
             icon={<UserIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Name"
             value={user?.name ?? '—'}
-            isLast={false}
           />
           <Row
             icon={<MailIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Email"
             value={user?.email ?? '—'}
-            isLast={false}
           />
           <Row
             icon={<CreditCardIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Plan"
-            value="Free Plan"
-            isLast={false}
+            value={tokenData?.plan ?? 'Free Plan'}
+          />
+          <Row
+            icon={<EditIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            label="Edit Profile"
+            onPress={() => {}}
+            showChevron
           />
           <Row
             icon={<LogOutIcon size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
             label="Sign Out"
             labelColor={palette.destructive}
             onPress={handleSignOut}
-            showChevron={false}
             isLast
           />
         </Section>
 
+        {/* ── Billing ── */}
         <Section title="Billing">
           <Row
             icon={<ZapIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Token Balance"
             value={`${tokenData?.balance ?? 0} tokens`}
-            isLast={false}
+          />
+          <Row
+            icon={<ChartIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            label="Token History"
+            onPress={() => {}}
+            showChevron
+          />
+          <Row
+            icon={<ArrowUpIcon size={iconSize} color={palette.primary} strokeWidth={1.5} />}
+            label="Top Up Tokens"
+            labelColor={palette.primary}
+            onPress={() => router.push('/paywall' as any)}
+            showChevron
           />
           <Row
             icon={<StarIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
@@ -237,13 +324,13 @@ export default function SettingsScreen() {
           />
         </Section>
 
+        {/* ── Preferences ── */}
         <Section title="Preferences">
           <ToggleRow
             icon={<BellIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Push Notifications"
             value={notificationsOn}
             onChange={setNotificationsOn}
-            isLast={false}
           />
           <ToggleRow
             icon={<VibrateIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
@@ -254,6 +341,7 @@ export default function SettingsScreen() {
           />
         </Section>
 
+        {/* ── Appearance ── */}
         <Section title="Appearance">
           {(['light', 'dark', 'system'] as const).map((m, i, arr) => (
             <Pressable
@@ -277,46 +365,42 @@ export default function SettingsScreen() {
           ))}
         </Section>
 
-        <Section title="Branding">
-          <Row
-            icon={<StarIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
-            label="White Label"
-            value="Contact sales to enable"
-            isLast
-          />
-        </Section>
-
+        {/* ── Legal ── */}
         <Section title="Legal">
           <Row
             icon={<FileTextIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Terms of Service"
-            onPress={() => openUrl('https://indigenservices.com/terms')}
+            onPress={() => openLegalWebView(legal.terms)}
             showChevron
-            isLast={false}
           />
           <Row
             icon={<ShieldIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Privacy Policy"
-            onPress={() => openUrl('https://indigenservices.com/privacy')}
+            onPress={() => openLegalWebView(legal.privacy)}
             showChevron
-            isLast={false}
           />
           <Row
             icon={<BookIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="DPDP Compliance"
-            onPress={() => openUrl('https://indigenservices.com/dpdp')}
+            onPress={() => openLegalWebView(legal.dpdp)}
             showChevron
             isLast
           />
         </Section>
 
+        {/* ── Support ── */}
         <Section title="Support">
           <Row
             icon={<HelpCircleIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
             label="Get Help"
             onPress={() => openUrl('mailto:support@indigenservices.com')}
             showChevron
-            isLast={false}
+          />
+          <Row
+            icon={<LinkIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
+            label="LinkedIn Browser"
+            onPress={() => router.push('/webview-linkedin' as any)}
+            showChevron
           />
           <Row
             icon={<InfoIcon size={iconSize} color={iconColor} strokeWidth={1.5} />}
@@ -326,25 +410,25 @@ export default function SettingsScreen() {
           />
         </Section>
 
-        <View
-          style={[
-            styles.dangerSection,
-            { borderColor: palette.destructive + '40', borderRadius: radius },
-          ]}
-        >
-          <Text style={[styles.sectionTitle, { color: palette.destructive }]}>Danger Zone</Text>
-          <View style={[styles.sectionCard, { backgroundColor: palette.card, borderColor: palette.destructive + '40' }]}>
-            <Row
-              icon={<TrashIcon size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
-              label="Delete Account"
-              labelColor={palette.destructive}
-              onPress={handleDeleteAccount}
-              isLast
-            />
-          </View>
-        </View>
-
-        <View style={{ height: 40 }} />
+        {/* ── Danger Zone ── */}
+        <Section title="Danger Zone" titleColor={palette.destructive}>
+          <Row
+            icon={<CashIcon size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
+            label="Export my data"
+            labelColor={palette.destructive}
+            onPress={handleExportData}
+            showChevron={!exportingData}
+            loading={exportingData}
+          />
+          <Row
+            icon={<TrashIcon size={iconSize} color={palette.destructive} strokeWidth={1.5} />}
+            label="Delete Account"
+            labelColor={palette.destructive}
+            onPress={deletingAccount ? undefined : handleErasureRequest}
+            loading={deletingAccount}
+            isLast
+          />
+        </Section>
       </ScrollView>
     </View>
   );
@@ -408,10 +492,5 @@ const styles = StyleSheet.create({
     maxWidth: 160,
     textAlign: 'right',
     marginRight: 8,
-  },
-  dangerSection: {
-    marginTop: 24,
-    borderWidth: 1,
-    padding: 0,
   },
 });
