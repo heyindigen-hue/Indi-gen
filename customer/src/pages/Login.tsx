@@ -87,6 +87,14 @@ export default function Login() {
         </>
       }
     >
+      <div className="flex justify-center mb-4 text-xs" style={{ color: BRAND.ash, fontFamily: BRAND.mono }}>
+        <Link to="/login" style={{ textDecoration: 'underline', color: BRAND.ash }}>
+          Sign in with phone
+        </Link>
+        <span className="mx-2" aria-hidden="true">·</span>
+        <span style={{ color: BRAND.ink, fontWeight: 600 }}>Email</span>
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <Field label="Email" error={errors.email?.message}>
           <input

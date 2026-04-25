@@ -68,7 +68,7 @@ function AppContent({ bootState }: { bootState: BootState }) {
 
   useEffect(() => {
     if (bootState === 'loading') return;
-    if (bootState === 'unauth') router.replace('/(auth)/login');
+    if (bootState === 'unauth') router.replace('/(auth)/phone');
     else if (bootState === 'onboarding') router.replace('/onboarding');
     // 'auth' → (tabs) is already the default route shown by the Stack
   }, [bootState]);

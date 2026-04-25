@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -258,6 +258,12 @@ export default function Login() {
                   Wake up to better leads
                 </p>
               </div>
+            </div>
+
+            <div className="flex justify-center gap-2 text-xs text-muted-foreground mb-4">
+              <Link to="/login" className="underline">Sign in with phone</Link>
+              <span aria-hidden="true">·</span>
+              <span className="text-foreground font-semibold">Email</span>
             </div>
 
             {/* Form */}

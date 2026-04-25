@@ -147,6 +147,15 @@ export default function LoginScreen() {
             : <Text style={{ color: palette.primaryFg, fontSize: 15, fontWeight: '600', fontFamily: 'Inter_600SemiBold' }}>Sign in</Text>
           }
         </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.replace('/(auth)/phone')}
+          style={{ marginTop: 24, alignItems: 'center' }}
+        >
+          <Text style={{ color: palette.muted, fontSize: 13, fontFamily: 'Inter_500Medium' }}>
+            Sign in with phone instead
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );

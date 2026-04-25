@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { AnimatedSplash } from '@/components/AnimatedSplash';
 import Login from '@/pages/Login';
+import PhoneLogin from '@/pages/PhoneLogin';
 import Dashboard from '@/pages/dashboard';
 import UsersPage from '@/pages/users/index';
 import UserDetailPage from '@/pages/users/[id]';
@@ -96,7 +97,8 @@ export default function App() {
     <>
       <AnimatedSplash show={showSplash} />
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<PhoneLogin />} />
+        <Route path="/login/email" element={<Login />} />
         <Route
           path="/"
           element={

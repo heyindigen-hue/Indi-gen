@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import Login from '@/pages/Login';
+import PhoneLogin from '@/pages/PhoneLogin';
 import Signup from '@/pages/Signup';
 import Onboarding from '@/pages/Onboarding';
 import Home from '@/pages/Home';
@@ -67,7 +68,8 @@ function NotFound() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<PhoneLogin />} />
+      <Route path="/login/email" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route
         path="/onboarding"
