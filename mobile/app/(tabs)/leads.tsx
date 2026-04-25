@@ -101,7 +101,7 @@ export default function LeadsTab() {
   );
 
   const params = useMemo(() => {
-    const p: Record<string, string | number> = { limit: PAGE };
+    const p: Record<string, string | number> = { limit: PAGE, platform: 'linkedin' };
     if (statusFilter !== 'all') p.status = statusFilter;
     if (icpFilter !== 'all') p.icp_type = icpFilter;
     return p;
@@ -280,6 +280,10 @@ export default function LeadsTab() {
           onEndReached={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
+          removeClippedSubviews
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
           ListFooterComponent={
             isFetchingNextPage ? (
               <View style={styles.footerLoader}>

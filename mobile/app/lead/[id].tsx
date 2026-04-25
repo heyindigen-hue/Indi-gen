@@ -1,216 +1,442 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  TextInput,
   Pressable,
   ActivityIndicator,
   RefreshControl,
   Linking,
   StyleSheet,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { BlurView } from 'expo-blur';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import * as Clipboard from 'expo-clipboard';
+import { useTheme } from '../../lib/themeContext';
+import { useLead, useLeadDrafts, useUpdateLeadStatus, useEnrichLead, Lead, LeadContact } from '../../lib/useLeads';
+import { haptic } from '../../lib/haptics';
+import { Avatar } from '../../components/ui/Avatar';
 import {
   ChevronLeftIcon,
-  XIcon,
-  SparkleIcon,
-  SearchIcon,
-  UsersIcon,
   MailIcon,
   PhoneIcon,
   LinkIcon,
-  PenLineIcon,
-  FileTextIcon,
+  CopyIcon,
+  SparkleIcon,
+  CheckIcon,
 } from '../../components/icons';
 
-import { useTheme } from '../../lib/themeContext';
-import { api } from '../../lib/api';
-import { haptic } from '../../lib/haptics';
-import { Avatar } from '../../components/ui/Avatar';
-import { ScoreBadge } from '../../components/ui/ScoreBadge';
-import { Chip } from '../../components/ui/Chip';
-import { Button } from '../../components/ui/Button';
-import DraftEditor from '../../components/lead/DraftEditor';
-import ContactRow from '../../components/lead/ContactRow';
-import TimelineAccordion from '../../components/lead/TimelineAccordion';
+type Channel = 'whatsapp' | 'email' | 'linkedin';
 
-type Lead = {
-  id: string;
-  name: string;
-  headline?: string;
-  company?: string;
-  connections?: string;
-  score?: number;
-  icp?: string;
-  tags?: string[];
-  avatar?: string;
-  email?: string;
-  phone?: string;
-  linkedinUrl?: string;
-  postPreview?: string;
-  status?: string;
-  notes?: string;
-  signedAt?: string;
-};
-
-function formatSignedDate(iso: string): string {
-  try {
-    const date = new Date(iso);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch {
-    return iso;
-  }
+function pickContact(contacts: LeadContact[] = [], type: string): LeadContact | undefined {
+  const verified = contacts.find((c) => c.type === type && c.rating === 'verified');
+  return verified ?? contacts.find((c) => c.type === type);
 }
 
-function buildSubtitle(lead: Lead): string {
-  const parts: string[] = [];
-  if (lead.headline) parts.push(lead.headline);
-  const companyPart = [lead.company, lead.connections ? `${lead.connections} conns` : undefined]
-    .filter(Boolean)
-    .join(' · ');
-  if (companyPart) parts.push(companyPart);
-  return parts.join(' | ');
+function formatPhoneForWhatsapp(phone: string): string {
+  return phone.replace(/[^\d]/g, '');
 }
 
-// --- Sub-components ---
-
-type SectionHeaderProps = {
-  icon: React.ReactNode;
-  title: string;
-};
-
-function SectionHeader({ icon, title }: SectionHeaderProps) {
-  const { palette } = useTheme();
-  return (
-    <View style={styles.sectionHeader}>
-      <View style={{ opacity: 0.6 }}>{icon}</View>
-      <Text style={[styles.sectionTitle, { color: palette.text }]}>{title}</Text>
-    </View>
-  );
-}
-
-type HeroProps = {
-  lead: Lead;
-};
-
-function HeroSection({ lead }: HeroProps) {
+export default function LeadDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { palette, radius } = useTheme();
-  const subtitle = buildSubtitle(lead);
+  const insets = useSafeAreaInsets();
+  const qc = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeChannel, setActiveChannel] = useState<Channel>('whatsapp');
 
-  return (
-    <View style={styles.hero}>
-      <Avatar uri={lead.avatar} name={lead.name} size={72} />
-      <Text style={[styles.heroName, { color: palette.text }]}>{lead.name}</Text>
-      {subtitle ? (
-        <Text style={[styles.heroSubtitle, { color: palette.muted }]} numberOfLines={2}>
-          {subtitle}
-        </Text>
-      ) : null}
-      <View style={styles.chipRow}>
-        {lead.score !== undefined ? <ScoreBadge score={lead.score} /> : null}
-        {lead.icp ? <Chip label={lead.icp} active /> : null}
-        {lead.tags?.map((tag) => (
-          <Chip key={tag} label={tag} />
-        ))}
+  const { data: lead, isLoading } = useLead(id);
+  const draftsQuery = useLeadDrafts(id, lead?.drafts_cache as any);
+  const statusMut = useUpdateLeadStatus();
+  const enrichMut = useEnrichLead();
+
+  const onRefresh = useCallback(async () => {
+    if (!id) return;
+    setRefreshing(true);
+    await qc.invalidateQueries({ queryKey: ['lead', id] });
+    setRefreshing(false);
+  }, [id, qc]);
+
+  const email = useMemo(() => pickContact(lead?.contacts, 'email'), [lead?.contacts]);
+  const phone = useMemo(() => pickContact(lead?.contacts, 'phone'), [lead?.contacts]);
+  const linkedin = useMemo(() => pickContact(lead?.contacts, 'linkedin'), [lead?.contacts]);
+  const linkedinUrl = linkedin?.value ?? lead?.linkedin_url ?? null;
+
+  const drafts = draftsQuery.data;
+  const draftsLoading = draftsQuery.isFetching && !drafts;
+
+  const onCopy = useCallback(async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    haptic.success();
+  }, []);
+
+  const onMarkContacted = useCallback(() => {
+    if (!id) return;
+    statusMut.mutate({ id, status: 'Contacted' });
+    haptic.success();
+    router.back();
+  }, [id, statusMut]);
+
+  const onSave = useCallback(() => {
+    if (!id) return;
+    statusMut.mutate({ id, status: 'Saved' });
+    haptic.success();
+    router.back();
+  }, [id, statusMut]);
+
+  const onSendChannel = useCallback(
+    async (channel: Channel) => {
+      const text = channel === 'whatsapp' ? drafts?.whatsapp : channel === 'email' ? drafts?.email : drafts?.linkedin;
+      if (text) await Clipboard.setStringAsync(text);
+      haptic.medium();
+
+      if (channel === 'whatsapp' && phone?.value) {
+        const num = formatPhoneForWhatsapp(phone.value);
+        const msg = encodeURIComponent(text || '');
+        Linking.openURL(`whatsapp://send?phone=${num}&text=${msg}`).catch(() =>
+          Linking.openURL(`https://wa.me/${num}?text=${msg}`)
+        );
+      } else if (channel === 'email' && email?.value) {
+        const subject = encodeURIComponent('Quick note');
+        const body = encodeURIComponent(text || '');
+        Linking.openURL(`mailto:${email.value}?subject=${subject}&body=${body}`);
+      } else if (channel === 'linkedin' && linkedinUrl) {
+        Linking.openURL(linkedinUrl);
+      } else {
+        // No destination — fall back to share sheet so the draft isn't lost.
+        Share.share({ message: text || '' }).catch(() => {});
+      }
+    },
+    [drafts, phone, email, linkedinUrl]
+  );
+
+  if (isLoading) {
+    return (
+      <View style={[styles.center, { backgroundColor: palette.bg }]}>
+        <ActivityIndicator color={palette.primary} />
       </View>
-    </View>
-  );
-}
-
-type QuickStatsProps = {
-  lead: Lead;
-};
-
-function QuickStatsRow({ lead }: QuickStatsProps) {
-  const { palette, radius } = useTheme();
-
-  const stats: { label: string; color?: string }[] = [];
-  if (lead.signedAt) {
-    stats.push({ label: `Signed ${formatSignedDate(lead.signedAt)}`, color: palette.success });
+    );
   }
-  if (lead.status) {
-    stats.push({ label: `Status: ${lead.status}` });
-  }
-  if (lead.score !== undefined) {
-    stats.push({ label: `Score: ${lead.score}/10` });
-  }
-  if (lead.connections) {
-    stats.push({ label: `${lead.connections} connections` });
+  if (!lead) {
+    return (
+      <View style={[styles.center, { backgroundColor: palette.bg }]}>
+        <Text style={{ color: palette.muted }}>Lead not found.</Text>
+      </View>
+    );
   }
 
-  if (stats.length === 0) return null;
+  const score = lead.score ?? 0;
+  const scoreColor = score >= 8 ? palette.success : score >= 6 ? palette.warning : palette.muted;
+  const photo = lead.profile_data?.profile_photo_url;
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.statsRow}
-    >
-      {stats.map((stat, idx) => (
-        <View
-          key={idx}
-          style={[
-            styles.statChip,
-            {
-              backgroundColor: (stat.color ?? palette.primary) + '18',
-              borderColor: (stat.color ?? palette.primary) + '40',
-              borderRadius: radius / 2,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.statText,
-              { color: stat.color ?? palette.primary },
-            ]}
-          >
-            {stat.label}
-          </Text>
-        </View>
-      ))}
-    </ScrollView>
-  );
-}
-
-type PostSectionProps = {
-  postPreview: string;
-};
-
-function RecentPostSection({ postPreview }: PostSectionProps) {
-  const { palette, radius } = useTheme();
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <View style={styles.section}>
-      <SectionHeader
-        icon={<SearchIcon size={16} color={palette.muted} />}
-        title="Recent Post"
-      />
+    <View style={{ flex: 1, backgroundColor: palette.bg }}>
+      {/* Sticky header */}
       <View
         style={[
-          styles.postCard,
-          { backgroundColor: palette.card, borderColor: palette.border, borderRadius: radius },
+          styles.header,
+          {
+            paddingTop: insets.top + 6,
+            backgroundColor: palette.bg,
+            borderBottomColor: palette.border,
+          },
         ]}
       >
-        <Text
-          style={[styles.postText, { color: palette.text }]}
-          numberOfLines={expanded ? undefined : 3}
-        >
-          {postPreview}
-        </Text>
         <Pressable
           onPress={() => {
             haptic.light();
-            setExpanded((prev) => !prev);
+            router.back();
           }}
-          style={styles.readMoreBtn}
+          hitSlop={12}
+          style={styles.headerBtn}
         >
-          <Text style={[styles.readMoreText, { color: palette.primary }]}>
-            {expanded ? 'Show less ↑' : 'Read more ↓'}
+          <ChevronLeftIcon size={22} color={palette.text} />
+        </Pressable>
+        <Text
+          style={[styles.headerTitle, { color: palette.text, fontFamily: 'Fraunces_600SemiBold' }]}
+          numberOfLines={1}
+        >
+          {lead.name || 'Lead'}
+        </Text>
+        <View style={styles.headerBtn} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 110 + insets.bottom }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={palette.primary} />
+        }
+      >
+        {/* HERO */}
+        <View style={styles.hero}>
+          <Avatar uri={photo} name={lead.name} size={88} />
+          <Text
+            style={[styles.heroName, { color: palette.text, fontFamily: 'Fraunces_600SemiBold' }]}
+            numberOfLines={2}
+          >
+            {lead.name || 'Unknown lead'}
+          </Text>
+          {!!lead.headline && (
+            <Text style={[styles.heroHeadline, { color: palette.muted }]} numberOfLines={3}>
+              {lead.headline}
+            </Text>
+          )}
+          {!!lead.company && (
+            <View
+              style={[
+                styles.companyChip,
+                { backgroundColor: palette.primary + '12', borderColor: palette.primary + '40' },
+              ]}
+            >
+              <Text style={{ color: palette.primary, fontSize: 12, fontFamily: 'Inter_600SemiBold' }}>
+                {lead.company}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Score + intent */}
+        <View style={styles.scoreRow}>
+          <View
+            style={[
+              styles.scoreCircle,
+              { borderColor: scoreColor, backgroundColor: scoreColor + '14' },
+            ]}
+          >
+            <Text style={[styles.scoreNum, { color: scoreColor }]}>{score.toFixed(0)}</Text>
+            <Text style={[styles.scoreOf, { color: scoreColor }]}>/10</Text>
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text
+              style={{
+                color: palette.text,
+                fontSize: 13,
+                fontFamily: 'Inter_600SemiBold',
+                textTransform: 'uppercase',
+                letterSpacing: 0.6,
+              }}
+            >
+              Match score
+            </Text>
+            {lead.intent_label ? (
+              <Text style={{ color: palette.muted, fontSize: 13, marginTop: 4, lineHeight: 18 }}>
+                Intent: <Text style={{ color: palette.text }}>{lead.intent_label.replace(/_/g, ' ')}</Text>
+                {lead.intent_confidence != null && (
+                  <Text style={{ color: palette.muted }}> · {Math.round((lead.intent_confidence ?? 0) * 100)}% confident</Text>
+                )}
+              </Text>
+            ) : null}
+            {lead.notes ? (
+              <Text style={{ color: palette.muted, fontSize: 13, marginTop: 4, lineHeight: 18 }} numberOfLines={3}>
+                {lead.notes}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Verified contact section — the hero of this screen */}
+        <SectionTitle palette={palette}>Verified contact</SectionTitle>
+        <View style={[styles.contactBox, { backgroundColor: palette.card, borderColor: palette.border, borderRadius: radius }]}>
+          {email || phone || linkedinUrl ? (
+            <>
+              {email && (
+                <ContactRow
+                  icon={<MailIcon size={18} color={palette.muted} />}
+                  label="Email"
+                  value={email.value}
+                  verified={email.rating === 'verified'}
+                  onPress={() => Linking.openURL(`mailto:${email.value}`)}
+                  onCopy={() => onCopy(email.value)}
+                />
+              )}
+              {phone && (
+                <ContactRow
+                  icon={<PhoneIcon size={18} color={palette.muted} />}
+                  label="Phone"
+                  value={phone.value}
+                  verified={phone.rating === 'verified'}
+                  onPress={() =>
+                    Linking.openURL(`whatsapp://send?phone=${formatPhoneForWhatsapp(phone.value)}`).catch(() =>
+                      Linking.openURL(`tel:${phone.value}`)
+                    )
+                  }
+                  onCopy={() => onCopy(phone.value)}
+                  ctaLabel={phone ? 'WA' : undefined}
+                />
+              )}
+              {linkedinUrl && (
+                <ContactRow
+                  icon={<LinkIcon size={18} color={palette.muted} />}
+                  label="LinkedIn"
+                  value={linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\//, '')}
+                  verified={false}
+                  onPress={() => Linking.openURL(linkedinUrl)}
+                  onCopy={() => onCopy(linkedinUrl)}
+                />
+              )}
+            </>
+          ) : (
+            <View style={{ alignItems: 'flex-start' }}>
+              <Text style={{ color: palette.text, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>
+                No verified contacts yet.
+              </Text>
+              <Text style={{ color: palette.muted, fontSize: 13, marginTop: 4, lineHeight: 19 }}>
+                Spend 1 token to enrich this lead via SignalHire and unlock email + phone.
+              </Text>
+              <Pressable
+                onPress={() => {
+                  if (!id) return;
+                  haptic.medium();
+                  enrichMut.mutate(id);
+                }}
+                disabled={enrichMut.isPending || lead.enrichment_status === 'queued'}
+                style={[
+                  styles.enrichBtn,
+                  {
+                    backgroundColor: palette.primary,
+                    opacity: enrichMut.isPending || lead.enrichment_status === 'queued' ? 0.6 : 1,
+                  },
+                ]}
+              >
+                <SparkleIcon size={16} color={palette.primaryFg} />
+                <Text style={{ color: palette.primaryFg, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>
+                  {lead.enrichment_status === 'queued' ? 'Enriching…' : 'Enrich · 1 credit'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+
+        {/* Post text */}
+        {lead.post_text ? (
+          <>
+            <SectionTitle palette={palette}>The post</SectionTitle>
+            <View style={[styles.postBox, { backgroundColor: palette.card, borderColor: palette.border, borderRadius: radius }]}>
+              <Text style={{ color: palette.text, fontSize: 14, lineHeight: 21 }}>{lead.post_text}</Text>
+              {lead.post_url ? (
+                <Pressable
+                  onPress={() => Linking.openURL(lead.post_url!)}
+                  style={{ marginTop: 12 }}
+                  hitSlop={6}
+                >
+                  <Text style={{ color: palette.primary, fontSize: 13, fontFamily: 'Inter_600SemiBold' }}>
+                    Open original ↗
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </>
+        ) : null}
+
+        {/* Drafts */}
+        <SectionTitle palette={palette}>AI drafts</SectionTitle>
+        <View style={styles.channelTabs}>
+          {(['whatsapp', 'email', 'linkedin'] as Channel[]).map((ch) => {
+            const active = ch === activeChannel;
+            return (
+              <Pressable
+                key={ch}
+                onPress={() => {
+                  haptic.light();
+                  setActiveChannel(ch);
+                }}
+                style={[
+                  styles.channelPill,
+                  {
+                    backgroundColor: active ? palette.primary : 'transparent',
+                    borderColor: active ? palette.primary : palette.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: active ? palette.primaryFg : palette.muted,
+                    fontSize: 12,
+                    fontFamily: 'Inter_600SemiBold',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {ch}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={[styles.draftBox, { backgroundColor: palette.card, borderColor: palette.border, borderRadius: radius }]}>
+          {draftsLoading ? (
+            <View style={{ padding: 8 }}>
+              <ActivityIndicator color={palette.primary} />
+              <Text style={{ color: palette.muted, fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+                Drafting…
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={{ color: palette.text, fontSize: 14, lineHeight: 22 }}>
+                {drafts?.[activeChannel] || 'No draft yet — tap below to generate.'}
+              </Text>
+              <View style={styles.draftActions}>
+                <Pressable
+                  onPress={() => {
+                    const text = drafts?.[activeChannel];
+                    if (text) onCopy(text);
+                  }}
+                  style={[styles.draftActionBtn, { borderColor: palette.border }]}
+                  hitSlop={6}
+                >
+                  <CopyIcon size={14} color={palette.muted} />
+                  <Text style={{ color: palette.muted, fontSize: 12, fontFamily: 'Inter_500Medium' }}>Copy</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => onSendChannel(activeChannel)}
+                  style={[styles.draftActionBtn, { backgroundColor: palette.primary, borderWidth: 0 }]}
+                  hitSlop={6}
+                >
+                  <Text style={{ color: palette.primaryFg, fontSize: 12, fontFamily: 'Inter_600SemiBold' }}>
+                    Send via {activeChannel}
+                  </Text>
+                </Pressable>
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Sticky bottom CTAs */}
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            paddingBottom: insets.bottom + 10,
+            borderTopColor: palette.border,
+            backgroundColor: palette.bg,
+          },
+        ]}
+      >
+        <Pressable
+          onPress={onMarkContacted}
+          style={[
+            styles.bottomBtn,
+            { borderColor: palette.text, borderWidth: 1, flex: 1 },
+          ]}
+        >
+          <CheckIcon size={16} color={palette.text} />
+          <Text style={{ color: palette.text, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>
+            Mark contacted
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onSave}
+          style={[
+            styles.bottomBtn,
+            { backgroundColor: palette.primary, flex: 1, borderWidth: 0 },
+          ]}
+        >
+          <Text style={{ color: palette.primaryFg, fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>
+            Save lead
           </Text>
         </Pressable>
       </View>
@@ -218,573 +444,235 @@ function RecentPostSection({ postPreview }: PostSectionProps) {
   );
 }
 
-type ContactsSectionProps = {
-  lead: Lead;
-};
+function SectionTitle({ children, palette }: { children: React.ReactNode; palette: any }) {
+  return (
+    <Text
+      style={{
+        color: palette.muted,
+        fontSize: 11,
+        fontFamily: 'Inter_600SemiBold',
+        textTransform: 'uppercase',
+        letterSpacing: 0.7,
+        marginTop: 26,
+        marginBottom: 10,
+        paddingHorizontal: 18,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
 
-function ContactsSection({ lead }: ContactsSectionProps) {
+function ContactRow({
+  icon,
+  label,
+  value,
+  verified,
+  onPress,
+  onCopy,
+  ctaLabel,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  verified: boolean;
+  onPress: () => void;
+  onCopy: () => void;
+  ctaLabel?: string;
+}) {
   const { palette } = useTheme();
-  const hasAny = lead.email || lead.phone || lead.linkedinUrl;
-  if (!hasAny) return null;
-
   return (
-    <View style={styles.section}>
-      <SectionHeader
-        icon={<UsersIcon size={16} color={palette.muted} />}
-        title="Contacts"
-      />
-      <View style={styles.contactList}>
-        {lead.email ? (
-          <ContactRow
-            icon={<MailIcon size={18} color={palette.muted} />}
-            label="Email"
-            value={lead.email}
-            onPress={() => Linking.openURL(`mailto:${lead.email}`)}
-            onLongPress={() => {}}
-          />
-        ) : null}
-        {lead.phone ? (
-          <ContactRow
-            icon={<PhoneIcon size={18} color={palette.muted} />}
-            label="Phone"
-            value={lead.phone}
-            onPress={() => Linking.openURL(`tel:${lead.phone}`)}
-            onLongPress={() => {}}
-          />
-        ) : null}
-        {lead.linkedinUrl ? (
-          <ContactRow
-            icon={<LinkIcon size={18} color={palette.muted} />}
-            label="LinkedIn"
-            value="View Profile"
-            onPress={() => Linking.openURL(lead.linkedinUrl!)}
-            onLongPress={() => {}}
-          />
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-type NotesSectionProps = {
-  leadId: string;
-  initialNotes: string;
-};
-
-function NotesSection({ leadId, initialNotes }: NotesSectionProps) {
-  const { palette, radius } = useTheme();
-  const [notes, setNotes] = useState(initialNotes);
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const notesMutation = useMutation({
-    mutationFn: (text: string) =>
-      api.post(`/leads/${leadId}/feedback`, { notes: text }),
-  });
-
-  const handleChangeText = useCallback(
-    (text: string) => {
-      setNotes(text);
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => {
-        notesMutation.mutate(text);
-      }, 1500);
-    },
-    [leadId]
-  );
-
-  return (
-    <View style={styles.section}>
-      <SectionHeader
-        icon={<PenLineIcon size={16} color={palette.muted} />}
-        title="Notes"
-      />
-      <TextInput
-        value={notes}
-        onChangeText={handleChangeText}
-        multiline
-        placeholder="Add notes about this lead..."
-        placeholderTextColor={palette.muted}
-        style={[
-          styles.notesInput,
-          {
-            color: palette.text,
-            backgroundColor: palette.card,
-            borderColor: palette.border,
-            borderRadius: radius,
-          },
-        ]}
-        textAlignVertical="top"
-      />
-    </View>
-  );
-}
-
-// ── Proposals Section ──
-
-type MobileProposal = {
-  id: string;
-  status: string;
-  title?: string;
-  pdf_url?: string;
-  sent_at?: string;
-  created_at: string;
-};
-
-type ProposalsSectionProps = {
-  leadId: string;
-};
-
-function ProposalsSection({ leadId }: ProposalsSectionProps) {
-  const { palette, radius } = useTheme();
-
-  const { data: proposals = [], isLoading } = useQuery<MobileProposal[]>({
-    queryKey: ['lead-proposals-mobile', leadId],
-    queryFn: () => api.get(`/admin/leads/${leadId}/proposals`).then((r: any) => r.data),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  if (isLoading) {
-    return <ActivityIndicator size="small" color={palette.primary} />;
-  }
-
-  if (proposals.length === 0) {
-    return (
-      <Text style={{ color: palette.muted, fontSize: 13 }}>
-        No proposals yet. Generate one from the admin panel.
-      </Text>
-    );
-  }
-
-  return (
-    <View style={{ gap: 8 }}>
-      {proposals.map((p) => (
-        <View
-          key={p.id}
-          style={{
-            backgroundColor: palette.card,
-            borderColor: palette.border,
-            borderWidth: StyleSheet.hairlineWidth,
-            borderRadius: radius,
-            padding: 12,
-            gap: 4,
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ color: palette.text, fontSize: 14, fontWeight: '600', flex: 1 }} numberOfLines={1}>
-              {p.title || 'Proposal'}
-            </Text>
-            <View
-              style={{
-                backgroundColor: p.status === 'accepted' ? palette.success + '22' : palette.primary + '18',
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 99,
-                marginLeft: 8,
-              }}
-            >
-              <Text style={{ fontSize: 11, color: p.status === 'accepted' ? palette.success : palette.primary, fontWeight: '600' }}>
-                {p.status}
+    <View style={styles.contactRow}>
+      <View style={{ width: 28, alignItems: 'center' }}>{icon}</View>
+      <View style={{ flex: 1, marginLeft: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={{ color: palette.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Inter_500Medium' }}>
+            {label}
+          </Text>
+          {verified && (
+            <View style={[styles.verifiedTick, { backgroundColor: palette.success + '22' }]}>
+              <Text style={{ color: palette.success, fontSize: 9, fontFamily: 'Inter_700Bold', letterSpacing: 0.4 }}>
+                ✓ VERIFIED
               </Text>
             </View>
-          </View>
-          <Text style={{ color: palette.muted, fontSize: 12 }}>
-            {p.sent_at ? `Sent ${new Date(p.sent_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}` : `Created ${new Date(p.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}`}
-          </Text>
-          {p.pdf_url ? (
-            <Pressable onPress={() => { haptic.light(); Linking.openURL(p.pdf_url!); }}>
-              <Text style={{ color: palette.primary, fontSize: 12, fontWeight: '600' }}>View PDF ↗</Text>
-            </Pressable>
-          ) : null}
+          )}
         </View>
-      ))}
-    </View>
-  );
-}
-
-// --- Sticky Header ---
-
-type StickyHeaderProps = {
-  title: string;
-  topInset: number;
-};
-
-function StickyHeader({ title, topInset }: StickyHeaderProps) {
-  const { palette } = useTheme();
-  return (
-    <BlurView
-      intensity={80}
-      tint="dark"
-      style={[styles.header, { paddingTop: topInset + 8 }]}
-    >
+        <Text
+          style={{ color: palette.text, fontSize: 14, fontFamily: 'Inter_600SemiBold', marginTop: 2 }}
+          numberOfLines={1}
+        >
+          {value}
+        </Text>
+      </View>
       <Pressable
-        onPress={() => {
-          haptic.light();
-          router.back();
-        }}
-        style={styles.headerBtn}
-        hitSlop={8}
+        onPress={onCopy}
+        hitSlop={6}
+        style={[styles.contactBtn, { borderColor: palette.border }]}
       >
-        <ChevronLeftIcon size={22} color={palette.text} />
+        <CopyIcon size={14} color={palette.muted} />
       </Pressable>
-      <Text style={[styles.headerTitle, { color: palette.text }]} numberOfLines={1}>
-        {title}
-      </Text>
       <Pressable
-        onPress={() => {
-          haptic.light();
-          router.back();
-        }}
-        style={styles.headerBtn}
-        hitSlop={8}
+        onPress={onPress}
+        hitSlop={6}
+        style={[styles.contactBtn, { backgroundColor: palette.primary, borderWidth: 0, paddingHorizontal: 12 }]}
       >
-        <XIcon size={20} color={palette.muted} />
+        <Text style={{ color: palette.primaryFg, fontSize: 12, fontFamily: 'Inter_600SemiBold' }}>
+          {ctaLabel || 'Open'}
+        </Text>
       </Pressable>
-    </BlurView>
-  );
-}
-
-// --- Sticky Bottom Bar ---
-
-type BottomBarProps = {
-  leadId: string;
-  bottomInset: number;
-};
-
-function StickyBottomBar({ leadId, bottomInset }: BottomBarProps) {
-  const { palette, radius } = useTheme();
-  const [skipLoading, setSkipLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [sendLoading, setSendLoading] = useState(false);
-
-  const handleSkip = async () => {
-    setSkipLoading(true);
-    try {
-      await api.post(`/leads/${leadId}/status`, { status: 'skipped' });
-      haptic.light();
-      router.back();
-    } finally {
-      setSkipLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    setSaveLoading(true);
-    try {
-      await api.post(`/leads/${leadId}/status`, { status: 'saved' });
-      haptic.success();
-      router.back();
-    } finally {
-      setSaveLoading(false);
-    }
-  };
-
-  const handleSend = async () => {
-    setSendLoading(true);
-    try {
-      await api.post(`/leads/${leadId}/outreach`, { channel: 'whatsapp' });
-      haptic.success();
-    } finally {
-      setSendLoading(false);
-    }
-  };
-
-  return (
-    <BlurView
-      intensity={80}
-      tint="dark"
-      style={[styles.bottomBar, { paddingBottom: bottomInset + 8 }]}
-    >
-      <View style={styles.bottomBarInner}>
-        <Button
-          label="Skip"
-          onPress={handleSkip}
-          variant="ghost"
-          loading={skipLoading}
-          style={styles.skipBtn}
-        />
-        <Button
-          label="Save"
-          onPress={handleSave}
-          variant="secondary"
-          loading={saveLoading}
-          style={styles.saveBtn}
-        />
-        <Button
-          label="SEND →"
-          onPress={handleSend}
-          variant="primary"
-          loading={sendLoading}
-          style={styles.sendBtn}
-        />
-      </View>
-    </BlurView>
-  );
-}
-
-// --- Main Screen ---
-
-export default function LeadDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { palette } = useTheme();
-  const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
-  const [refreshing, setRefreshing] = useState(false);
-
-  const { data: lead, isLoading } = useQuery<Lead>({
-    queryKey: ['lead', id],
-    queryFn: () => api.get(`/leads/${id}`).then((r) => r.data),
-    staleTime: 5 * 60 * 1000,
-    enabled: !!id,
-  });
-
-  const headerHeight = insets.top + 56;
-  const bottomBarHeight = insets.bottom + 72;
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ['lead', id] });
-    setRefreshing(false);
-  }, [queryClient, id]);
-
-  if (isLoading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: palette.bg }]}>
-        <ActivityIndicator size="large" color={palette.primary} />
-      </View>
-    );
-  }
-
-  if (!lead) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: palette.bg }]}>
-        <Text style={[styles.errorText, { color: palette.muted }]}>Lead not found.</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.screen, { backgroundColor: palette.bg }]}>
-      <StickyHeader title={lead.name || 'Lead Detail'} topInset={insets.top} />
-
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: headerHeight + 16, paddingBottom: bottomBarHeight + 16 },
-        ]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={palette.primary}
-            progressViewOffset={headerHeight}
-          />
-        }
-      >
-        <HeroSection lead={lead} />
-
-        <QuickStatsRow lead={lead} />
-
-        {/* AI Drafts */}
-        <View style={styles.section}>
-          <SectionHeader
-            icon={<SparkleIcon size={16} color={palette.muted} />}
-            title="AI Drafts"
-          />
-          <DraftEditor
-            leadId={id!}
-            phone={lead.phone}
-            email={lead.email}
-            linkedinUrl={lead.linkedinUrl}
-          />
-        </View>
-
-        {lead.postPreview ? (
-          <RecentPostSection postPreview={lead.postPreview} />
-        ) : null}
-
-        <ContactsSection lead={lead} />
-
-        {/* Timeline */}
-        <View style={styles.section}>
-          <TimelineAccordion leadId={id!} />
-        </View>
-
-        {/* Proposals */}
-        <View style={styles.section}>
-          <SectionHeader
-            icon={<FileTextIcon size={16} color={palette.muted} />}
-            title="Proposals"
-          />
-          <ProposalsSection leadId={id!} />
-        </View>
-
-        <NotesSection leadId={id!} initialNotes={lead.notes ?? ''} />
-      </ScrollView>
-
-      <StickyBottomBar leadId={id!} bottomInset={insets.bottom} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorText: {
-    fontSize: 15,
-  },
-
-  // Header
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
     paddingBottom: 10,
-    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerBtn: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '700' },
 
-  // Scroll
-  scrollContent: {
-    paddingHorizontal: 16,
-    gap: 20,
-  },
-
-  // Hero
   hero: {
     alignItems: 'center',
-    gap: 8,
-    paddingTop: 4,
-  },
-  heroName: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    maxWidth: 300,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-
-  // Quick stats
-  statsRow: {
-    paddingHorizontal: 0,
-    gap: 8,
-  },
-  statChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  statText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
-  // Section
-  section: {
+    paddingTop: 22,
+    paddingHorizontal: 18,
     gap: 10,
   },
-  sectionHeader: {
+  heroName: {
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 32,
+    marginTop: 8,
+    letterSpacing: -0.5,
+  },
+  heroHeadline: { fontSize: 14, lineHeight: 20, textAlign: 'center', maxWidth: 320 },
+  companyChip: {
+    marginTop: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+
+  scoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    paddingHorizontal: 18,
+    paddingTop: 26,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+  scoreCircle: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    borderWidth: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
   },
+  scoreNum: { fontSize: 28, fontWeight: '800', fontFamily: 'Inter_700Bold' },
+  scoreOf: { fontSize: 13, fontFamily: 'Inter_500Medium', marginLeft: 1, marginBottom: 2, alignSelf: 'flex-end' },
 
-  // Post
-  postCard: {
+  contactBox: {
+    marginHorizontal: 16,
     padding: 14,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 0.5,
+    gap: 14,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  verifiedTick: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  contactBtn: {
+    height: 32,
+    minWidth: 32,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  enrichBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    marginTop: 12,
+  },
+
+  postBox: {
+    marginHorizontal: 16,
+    padding: 14,
+    borderWidth: 0.5,
+  },
+
+  channelTabs: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 10,
+  },
+  channelPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  draftBox: {
+    marginHorizontal: 16,
+    padding: 14,
+    borderWidth: 0.5,
+    gap: 14,
+  },
+  draftActions: {
+    flexDirection: 'row',
     gap: 8,
   },
-  postText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  readMoreBtn: {
-    alignSelf: 'flex-start',
-  },
-  readMoreText: {
-    fontSize: 13,
-    fontWeight: '600',
+  draftActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
   },
 
-  // Contacts
-  contactList: {
-    gap: 8,
-  },
-
-  // Notes
-  notesInput: {
-    minHeight: 80,
-    padding: 12,
-    fontSize: 14,
-    lineHeight: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-
-  // Bottom bar
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    zIndex: 100,
-    paddingTop: 12,
-  },
-  bottomBarInner: {
     flexDirection: 'row',
+    gap: 10,
     paddingHorizontal: 16,
-    gap: 8,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  bottomBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  skipBtn: {
-    flex: 1,
-    paddingVertical: 10,
-  },
-  saveBtn: {
-    flex: 1,
-    paddingVertical: 10,
-  },
-  sendBtn: {
-    flex: 2,
-    paddingVertical: 10,
+    justifyContent: 'center',
+    gap: 6,
+    height: 46,
+    borderRadius: 999,
   },
 });

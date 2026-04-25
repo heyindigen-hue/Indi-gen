@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { audit } from '../services/audit';
 import { grantTokens } from '../services/tokens';
+import { enrichLead, batchEnrich } from '../enrichment/signalHire';
 import axios from 'axios';
 import { config } from '../config';
 
@@ -52,10 +53,17 @@ router.get('/', async (req: any, res) => {
     params.push(parseInt(score_min as string));
     conditions.push(`l.score >= $${params.length}`);
   }
-  // platform filter — the dataset only carries LinkedIn URLs; "linkedin" maps to
-  // rows with a linkedin_url, so the mobile feed never surfaces archived non-LI rows.
+  // platform filter — imported leads carry their original platform in
+  // profile_data.old_platform (linkedin / reddit / google-maps / ...).
+  // For new scrapes (no profile_data), URLs with linkedin.com/in/ count as LinkedIn.
   if (platform === 'linkedin') {
-    conditions.push(`l.linkedin_url IS NOT NULL`);
+    conditions.push(
+      `((l.profile_data->>'old_platform' = 'linkedin') OR ` +
+      `(l.profile_data->>'old_platform' IS NULL AND l.linkedin_url ILIKE '%linkedin.com/in/%'))`
+    );
+  } else if (platform) {
+    params.push(platform);
+    conditions.push(`l.profile_data->>'old_platform' = $${params.length}`);
   }
   if (q) {
     params.push(`%${q}%`);
@@ -132,8 +140,36 @@ router.post('/:id/enrich', async (req: any, res) => {
   );
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
 
+  if (!lead.linkedin_url) {
+    return res.status(400).json({ error: 'Lead has no linkedin_url to enrich' });
+  }
+
   await query(`UPDATE leads SET enrichment_status='queued', updated_at=NOW() WHERE id=$1`, [lead.id]);
+  // Fire-and-forget — SignalHire calls back via /webhook/signalhire when results land
+  enrichLead(lead.id, lead.linkedin_url).catch((err) => {
+    // already logged inside the module
+  });
   res.status(202).json({ queued: true });
+});
+
+// Admin-only: batch enrich top-quality LinkedIn leads
+router.post('/batch-enrich', async (req: any, res) => {
+  const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+  if (!isAdmin) return res.status(403).json({ error: 'Admin only' });
+  const limit = Math.min(parseInt(req.body?.limit ?? '50'), 200);
+  const minScore = parseInt(req.body?.min_score ?? '7');
+  const rows = await query<any>(
+    `SELECT id, linkedin_url FROM leads
+     WHERE enrichment_status NOT IN ('enriched','processing')
+       AND linkedin_url ILIKE '%linkedin.com/in/%'
+       AND score >= $1
+     ORDER BY score DESC, post_date DESC NULLS LAST
+     LIMIT $2`,
+    [minScore, limit]
+  );
+  const ids = rows.map((r: any) => r.id);
+  await batchEnrich(ids).catch(() => {});
+  res.json({ queued: ids.length, lead_ids: ids });
 });
 
 router.post('/:id/outreach', validateBody(outreachSchema), async (req: any, res) => {

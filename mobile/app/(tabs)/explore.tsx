@@ -26,8 +26,17 @@ type SavedLead = {
   headline?: string;
   score?: number;
   icp?: string;
+  icp_type?: string;
   avatar?: string;
+  profile_data?: { profile_photo_url?: string };
   savedAt?: string;
+};
+
+type SavedLeadsResponse = {
+  leads: SavedLead[];
+  total: number;
+  limit: number;
+  offset: number;
 };
 
 function filterLeads(leads: SavedLead[], search: string): SavedLead[] {
@@ -55,7 +64,7 @@ function LeadCard({ lead, palette, radius }: { lead: SavedLead; palette: any; ra
       ]}
     >
       <View style={styles.cardAvatarRow}>
-        <Avatar uri={lead.avatar} name={lead.name} size={48} />
+        <Avatar uri={lead.profile_data?.profile_photo_url ?? lead.avatar} name={lead.name} size={48} />
       </View>
       <Text style={[styles.cardName, { color: palette.text }]} numberOfLines={1}>
         {lead.name}
@@ -67,7 +76,7 @@ function LeadCard({ lead, palette, radius }: { lead: SavedLead; palette: any; ra
       ) : null}
       <View style={styles.cardBadges}>
         {lead.score != null ? <ScoreBadge score={lead.score} /> : null}
-        {lead.icp ? <Chip label={lead.icp} /> : null}
+        {(lead.icp_type ?? lead.icp) ? <Chip label={(lead.icp_type ?? lead.icp) as string} /> : null}
       </View>
     </Pressable>
   );
@@ -99,11 +108,19 @@ export default function ExploreScreen() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
 
-  const { data, isLoading, refetch } = useQuery<SavedLead[]>({
+  const { data, isLoading, refetch } = useQuery<SavedLeadsResponse>({
     queryKey: ['leads', 'saved'],
-    queryFn: () =>
-      api.get('/leads', { params: { status: 'saved' } }).then((r) => r.data),
-    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const res = await api.get('/leads', {
+        params: { status: 'Saved', platform: 'linkedin', limit: 100, sort: 'recent' },
+      });
+      const payload = res.data as any;
+      if (Array.isArray(payload)) {
+        return { leads: payload, total: payload.length, limit: 100, offset: 0 };
+      }
+      return payload as SavedLeadsResponse;
+    },
+    staleTime: 30_000,
   });
 
   useFocusEffect(
@@ -112,7 +129,7 @@ export default function ExploreScreen() {
     }, [qc])
   );
 
-  const allLeads = data ?? [];
+  const allLeads = data?.leads ?? [];
   const filtered = filterLeads(allLeads, search);
   const totalCount = allLeads.length;
   const filteredCount = filtered.length;
