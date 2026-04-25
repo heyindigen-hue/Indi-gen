@@ -36,6 +36,9 @@ const ICON_MAP: Record<string, keyof typeof CustomIcons> = {
   sparkles: 'SparkleIcon',
   tag: 'TagIcon',
   filter: 'FilterIcon',
+  lead: 'LeadIcon',
+  leads: 'LeadIcon',
+  leaf: 'LeadIcon',
 };
 
 function IconFor({ name, color, size }: { name: string; color: string; size: number }) {

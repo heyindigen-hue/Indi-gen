@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { relTime } from '@/lib/utils';
 import { useAuth } from '@/store/auth';
+import { FlowerMark, BRAND } from '@/components/auth/BrandShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -197,8 +198,20 @@ export default function Home() {
               ))}
             </div>
           ) : !recentLeads || recentLeads.length === 0 ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">
-              No leads yet — run a scrape to get started.
+            <div className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center">
+              <FlowerMark size={72} />
+              <p
+                style={{
+                  fontFamily: BRAND.fraunces,
+                  fontStyle: 'italic',
+                  fontSize: 18,
+                  lineHeight: 1.45,
+                  color: BRAND.ash,
+                  maxWidth: 380,
+                }}
+              >
+                Your hunt starts at 3am IST tonight. We&apos;ll email you when leads land.
+              </p>
             </div>
           ) : (
             <Table>

@@ -18,6 +18,7 @@ import {
   InfoIcon,
   TrashIcon,
   LogOutIcon,
+  SunIcon,
 } from '../../components/icons';
 import { ProfileCard } from '../../components/settings/ProfileCard';
 import { SettingsRow } from '../../components/settings/SettingsRow';
@@ -55,6 +56,7 @@ function buildSections(iconColor: string, iconSize: number): Section[] {
     {
       title: 'Preferences',
       items: [
+        { id: 'appearance', label: 'Appearance', icon: <SunIcon size={iconSize} color={iconColor} strokeWidth={1.5} /> },
         { id: 'notifications', label: 'Notifications', icon: <BellIcon size={iconSize} color={iconColor} strokeWidth={1.5} /> },
         { id: 'integrations', label: 'Integrations', icon: <LinkIcon size={iconSize} color={iconColor} strokeWidth={1.5} /> },
         { id: 'branding', label: 'Branding', icon: <StarIcon size={iconSize} color={iconColor} strokeWidth={1.5} />, badge: 'Pro' },

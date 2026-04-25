@@ -4,6 +4,7 @@ import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -53,7 +54,7 @@ const qc = new QueryClient({
 type BootState = 'loading' | 'unauth' | 'onboarding' | 'auth';
 
 function AppContent({ bootState }: { bootState: BootState }) {
-  const { palette } = useTheme();
+  const { palette, effectiveScheme } = useTheme();
   const notifListener = useRef<any>(null);
 
   useEffect(() => {
@@ -73,13 +74,16 @@ function AppContent({ bootState }: { bootState: BootState }) {
   }, [bootState]);
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="lead/[id]" options={{ presentation: 'card' }} />
-      <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="onboarding" />
-    </Stack>
+    <>
+      <StatusBar style={effectiveScheme === 'dark' ? 'light' : 'dark'} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="lead/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="onboarding" />
+      </Stack>
+    </>
   );
 }
 

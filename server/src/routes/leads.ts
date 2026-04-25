@@ -30,7 +30,7 @@ const feedbackSchema = z.object({
 });
 
 router.get('/', async (req: any, res) => {
-  const { status, icp, score_min, q, limit = '50', offset = '0' } = req.query;
+  const { status, icp, icp_type, score_min, q, sort, limit = '50', offset = '0' } = req.query;
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const conditions: string[] = ['1=1'];
   const params: any[] = [];
@@ -44,6 +44,10 @@ router.get('/', async (req: any, res) => {
     conditions.push(`l.status = $${params.length}`);
   }
   if (icp === 'true') conditions.push('l.icp_type IS NOT NULL');
+  if (icp_type) {
+    params.push(icp_type);
+    conditions.push(`l.icp_type = $${params.length}`);
+  }
   if (score_min) {
     params.push(parseInt(score_min as string));
     conditions.push(`l.score >= $${params.length}`);
@@ -54,6 +58,11 @@ router.get('/', async (req: any, res) => {
     conditions.push(`(l.name ILIKE $${idx} OR l.company ILIKE $${idx} OR l.linkedin_url ILIKE $${idx})`);
   }
 
+  const orderBy =
+    sort === 'score'
+      ? 'l.score DESC NULLS LAST, l.created_at DESC'
+      : 'l.created_at DESC';
+
   const where = conditions.join(' AND ');
   params.push(parseInt(limit as string), parseInt(offset as string));
   const limitIdx = params.length - 1;
@@ -63,7 +72,7 @@ router.get('/', async (req: any, res) => {
     `SELECT l.*, COUNT(*) OVER() AS total_count
      FROM leads l
      WHERE ${where}
-     ORDER BY l.created_at DESC
+     ORDER BY ${orderBy}
      LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
     params
   );

@@ -51,6 +51,16 @@ export default {
           DEFAULT: 'hsl(var(--warning))',
           foreground: 'hsl(var(--foreground))',
         },
+        // LAND3 brand tokens — single source of truth shared with mobile/lib/theme.ts
+        cream: '#F7F1E5',
+        paper: '#FBF7EE',
+        ink: '#0E0E0C',
+        ash: '#2A2823',
+        orange: {
+          DEFAULT: '#FF5A1F',
+          dark: '#E64A12',
+        },
+        line: 'rgba(14,14,12,0.10)',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -58,8 +68,8 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter Tight', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['Geist Mono', 'ui-monospace'],
+        sans: ['Manrope', 'Inter Tight', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Geist Mono', 'ui-monospace'],
         display: ['Fraunces', 'serif'],
       },
     },
