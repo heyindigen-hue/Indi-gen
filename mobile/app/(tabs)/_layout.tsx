@@ -1,57 +1,47 @@
 import { Tabs } from 'expo-router';
 import { useManifest } from '../../lib/useManifest';
 import { useTheme } from '../../lib/themeContext';
-import * as Icons from '../../components/icons';
-
-function toPascalCase(s: string): string {
-  return s.split('-').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-}
+import * as CustomIcons from '../../components/icons';
 
 type IconComponent = React.FC<{ color: string; size: number }>;
 
-const ICON_FALLBACK_MAP: Record<string, string> = {
-  Circle: 'SparkleIcon',
-  Home: 'HomeIcon',
-  Search: 'SearchIcon',
-  Bell: 'BellIcon',
-  Settings: 'SettingsIcon',
-  Cog: 'SettingsIcon',
-  User: 'UserIcon',
-  Users: 'UsersIcon',
-  Bookmark: 'BookmarkIcon',
-  Send: 'SendIcon',
-  BarChart: 'ChartIcon',
-  BarChart2: 'ChartIcon',
-  Activity: 'ChartIcon',
-  TrendingUp: 'ChartIcon',
-  Sparkles: 'SparkleIcon',
-  Sparkle: 'SparkleIcon',
-  Zap: 'ZapIcon',
-  Star: 'StarIcon',
-  Mail: 'MailIcon',
-  Tag: 'TagIcon',
-  Filter: 'FilterIcon',
-  Plus: 'PlusIcon',
-  Check: 'CheckIcon',
-  X: 'XIcon',
-  Globe: 'SearchIcon',
-  Target: 'SearchIcon',
-  Inbox: 'BookmarkIcon',
-  MessageSquare: 'SparkleIcon',
-  Wand2: 'SparkleIcon',
+const ICON_MAP: Record<string, keyof typeof CustomIcons> = {
+  home: 'HomeIcon',
+  house: 'HomeIcon',
+  bookmark: 'BookmarkIcon',
+  explore: 'BookmarkIcon',
+  inbox: 'BookmarkIcon',
+  send: 'SendIcon',
+  outreach: 'SendIcon',
+  mail: 'MailIcon',
+  'bar-chart': 'ChartIcon',
+  'bar-chart-2': 'ChartIcon',
+  'chart-line': 'ChartIcon',
+  insights: 'ChartIcon',
+  chart: 'ChartIcon',
+  activity: 'ChartIcon',
+  settings: 'SettingsIcon',
+  cog: 'SettingsIcon',
+  gear: 'SettingsIcon',
+  search: 'SearchIcon',
+  magnifier: 'SearchIcon',
+  bell: 'BellIcon',
+  notifications: 'BellIcon',
+  user: 'UserIcon',
+  profile: 'UserIcon',
+  users: 'UsersIcon',
+  star: 'StarIcon',
+  zap: 'ZapIcon',
+  sparkle: 'SparkleIcon',
+  sparkles: 'SparkleIcon',
+  tag: 'TagIcon',
+  filter: 'FilterIcon',
 };
 
-function resolveIcon(name: string): IconComponent {
-  const pascalName = toPascalCase(name);
-  const withSuffix = pascalName.endsWith('Icon') ? pascalName : `${pascalName}Icon`;
-  const direct = (Icons as any)[withSuffix];
-  if (direct) return direct as IconComponent;
-  const mapped = ICON_FALLBACK_MAP[pascalName];
-  if (mapped) {
-    const fallback = (Icons as any)[mapped];
-    if (fallback) return fallback as IconComponent;
-  }
-  return (Icons as any)['SparkleIcon'] as IconComponent;
+function IconFor({ name, color, size }: { name: string; color: string; size: number }) {
+  const key = ICON_MAP[name?.toLowerCase()] || 'HomeIcon';
+  const Cmp = (CustomIcons as any)[key] as IconComponent | undefined;
+  return Cmp ? <Cmp color={color} size={size} /> : null;
 }
 
 export default function TabsLayout() {
@@ -72,21 +62,18 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: palette.muted,
       }}
     >
-      {tabs.map((t: any) => {
-        const Icon = resolveIcon(t.icon || 'circle');
-        return (
-          <Tabs.Screen
-            key={t.id}
-            name={t.id}
-            options={{
-              title: t.label,
-              tabBarIcon: ({ color, size }: { color: string; size: number }) => (
-                <Icon color={color} size={size} />
-              ),
-            }}
-          />
-        );
-      })}
+      {tabs.map((t: any) => (
+        <Tabs.Screen
+          key={t.id}
+          name={t.id}
+          options={{
+            title: t.label,
+            tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+              <IconFor name={t.icon || 'home'} color={color} size={size} />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }

@@ -7,7 +7,7 @@ const mmkv = new MMKV({ id: 'leadhangover' });
 const storage = {
   getItem: (k: string) => mmkv.getString(k) ?? null,
   setItem: (k: string, v: string) => mmkv.set(k, v),
-  removeItem: (k: string) => mmkv.remove(k),
+  removeItem: (k: string) => mmkv.delete(k),
 };
 
 type User = { id: string; email: string; name: string | null };

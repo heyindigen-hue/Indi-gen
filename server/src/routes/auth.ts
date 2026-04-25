@@ -41,7 +41,8 @@ router.post('/login', authLimit, validateBody(loginSchema), async (req, res) => 
   const jti = await createSession(user.id, req.ip, req.get('user-agent') || undefined);
   await query('UPDATE users SET last_login_at=NOW() WHERE id=$1', [user.id]);
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role, jti }, config.jwtSecret, { expiresIn: '30d' });
-  res.json({ token, user: { id: user.id, email: user.email, role: user.role, name: user.name } });
+  const needsOnboarding = !user.onboarding_completed_at;
+  res.json({ token, needs_onboarding: needsOnboarding, user: { id: user.id, email: user.email, role: user.role, name: user.name, needs_onboarding: needsOnboarding } });
 });
 
 router.post('/signup', authLimit, validateBody(signupSchema), async (req, res) => {
@@ -93,11 +94,11 @@ router.get('/me', async (req: any, res) => {
   try {
     const payload = jwt.verify(header.slice(7), config.jwtSecret) as any;
     const user = await queryOne<any>(
-      `SELECT id, email, name, role, avatar_url, company_name FROM users WHERE id=$1 AND deleted_at IS NULL`,
+      `SELECT id, email, name, role, avatar_url, company_name, onboarding_completed_at FROM users WHERE id=$1 AND deleted_at IS NULL`,
       [payload.id]
     );
     if (!user) return res.status(401).json({ error: 'User not found' });
-    res.json(user);
+    res.json({ ...user, needs_onboarding: !user.onboarding_completed_at });
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }

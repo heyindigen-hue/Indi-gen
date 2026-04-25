@@ -86,8 +86,46 @@
       { "id": "tokens_2000", "tokens": 2000, "amount": 5999, "label": "₹5,999", "badge": "SAVE" }
     ],
     "subscription_plans": [
-      { "id": "plan_starter", "name": "Starter", "price": "₹999/mo", "badge": null, "popular": false },
-      { "id": "plan_pro", "name": "Pro", "price": "₹2,999/mo", "badge": "★", "popular": true }
+      {
+        "id": "free",
+        "name": "Free",
+        "price": "₹0",
+        "price_inr": 0,
+        "tokens": 0,
+        "badge": null,
+        "popular": false,
+        "features": ["10 leads/day", "Basic lead feed", "Mobile app"]
+      },
+      {
+        "id": "plan_starter",
+        "name": "Starter",
+        "price": "₹1,499/mo",
+        "price_inr": 1499,
+        "tokens": 500,
+        "badge": null,
+        "popular": false,
+        "features": ["500 tokens/month", "AI draft messages", "Export leads"]
+      },
+      {
+        "id": "plan_pro",
+        "name": "Pro",
+        "price": "₹4,999/mo",
+        "price_inr": 4999,
+        "tokens": 2500,
+        "badge": "★ Popular",
+        "popular": true,
+        "features": ["2,500 tokens/month", "Unlimited queries", "Analytics dashboard"]
+      },
+      {
+        "id": "plan_enterprise",
+        "name": "Enterprise",
+        "price": "Custom",
+        "price_inr": 0,
+        "tokens": 0,
+        "badge": null,
+        "popular": false,
+        "features": ["Custom tokens", "Dedicated support", "SLA guarantee"]
+      }
     ]
   },
   "settings": {

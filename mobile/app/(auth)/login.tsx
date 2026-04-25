@@ -31,7 +31,12 @@ export default function LoginScreen() {
     try {
       const res = await api.post('/auth/login', { email: data.email, password: data.password });
       await setAuth(res.data.token, res.data.user);
-      router.replace('/(tabs)');
+      const needsOnboarding = res.data.needs_onboarding || res.data.user?.needs_onboarding;
+      if (needsOnboarding) {
+        router.replace('/onboarding');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err: any) {
       setServerError(err?.response?.data?.message || 'Login failed. Please try again.');
     }

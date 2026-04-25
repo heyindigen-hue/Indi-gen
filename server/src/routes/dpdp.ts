@@ -165,6 +165,40 @@ router.post('/breach/:id/report-pdf', async (req: any, res) => {
   res.json({ ok: true, message: 'PDF generation queued (DPB report generation will be implemented in a future task)', breachId: req.params.id });
 });
 
+// Company profile — collected during onboarding
+const companyProfileSchema = z.object({
+  name: z.string().min(1),
+  tagline: z.string().optional(),
+  website: z.string().optional(),
+  description: z.string().optional(),
+  ideal_clients: z.array(z.string()).optional(),
+  industries: z.array(z.string()).optional(),
+  geography: z.array(z.string()).optional(),
+  search_phrases: z.array(z.string()).optional(),
+  budget_signals: z.array(z.string()).optional(),
+  selected_plan: z.string().optional(),
+});
+
+router.post('/company-profile', validateBody(companyProfileSchema), async (req: any, res) => {
+  const { name, search_phrases = [] } = req.body;
+  await query(
+    `UPDATE users SET company_name=$1, company_data=$2, onboarding_completed_at=COALESCE(onboarding_completed_at, NOW()), updated_at=NOW() WHERE id=$3`,
+    [name, JSON.stringify(req.body), req.user.id]
+  );
+  for (const phrase of search_phrases) {
+    if (typeof phrase === 'string' && phrase.trim()) {
+      await query(
+        `INSERT INTO search_phrases (phrase, user_id, enabled)
+         VALUES ($1, $2, TRUE)
+         ON CONFLICT (phrase) DO UPDATE SET user_id=$2, enabled=TRUE`,
+        [phrase.trim(), req.user.id]
+      );
+    }
+  }
+  await audit({ actorId: req.user.id, action: 'onboarding.company_profile_saved', targetType: 'user', targetId: req.user.id });
+  res.json({ ok: true });
+});
+
 // Push notification token registration
 const pushTokenSchema = z.object({
   token: z.string().min(1),

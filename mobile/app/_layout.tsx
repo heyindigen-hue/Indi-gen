@@ -1,7 +1,8 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono';
 import * as SplashScreen from 'expo-splash-screen';
+import * as SecureStore from 'expo-secure-store';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -49,17 +50,27 @@ const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
 
-function AppContent() {
+type BootState = 'loading' | 'unauth' | 'onboarding' | 'auth';
+
+function AppContent({ bootState }: { bootState: BootState }) {
   const { palette } = useTheme();
   const notifListener = useRef<any>(null);
 
   useEffect(() => {
+    if (bootState !== 'auth') return;
     registerPushToken();
     notifListener.current = Notifications.addNotificationReceivedListener(() => {});
     return () => {
       if (notifListener.current) Notifications.removeNotificationSubscription(notifListener.current);
     };
-  }, []);
+  }, [bootState]);
+
+  useEffect(() => {
+    if (bootState === 'loading') return;
+    if (bootState === 'unauth') router.replace('/(auth)/login');
+    else if (bootState === 'onboarding') router.replace('/onboarding');
+    // 'auth' → (tabs) is already the default route shown by the Stack
+  }, [bootState]);
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }}>
@@ -76,6 +87,7 @@ function Content() {
   const { data: manifest, isLoading } = useManifest();
   const [showSplash, setShowSplash] = useState(true);
   const [appReady, setAppReady] = useState(false);
+  const [bootState, setBootState] = useState<BootState>('loading');
 
   const fontMap: Record<string, any> = {
     Inter_400Regular,
@@ -97,6 +109,19 @@ function Content() {
     if (fontsLoaded && !isLoading) {
       SplashScreen.hideAsync();
       setAppReady(true);
+      (async () => {
+        try {
+          const token = await SecureStore.getItemAsync('leadhangover_token');
+          if (!token) {
+            setBootState('unauth');
+            return;
+          }
+          const onboarded = (await SecureStore.getItemAsync('leadhangover_onboarded')) === 'true';
+          setBootState(onboarded ? 'auth' : 'onboarding');
+        } catch {
+          setBootState('unauth');
+        }
+      })();
     }
   }, [fontsLoaded, isLoading]);
 
@@ -105,7 +130,7 @@ function Content() {
   return (
     <ThemeProvider manifest={manifest}>
       {showSplash && <AnimatedSplash onComplete={() => setShowSplash(false)} />}
-      <AppContent />
+      <AppContent bootState={bootState} />
     </ThemeProvider>
   );
 }

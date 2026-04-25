@@ -11,10 +11,12 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { useManifest } from '../lib/useManifest';
 import { useTheme } from '../lib/themeContext';
-import { XIcon, ZapIcon, StarIcon } from '../components/icons';
+import { XIcon, ZapIcon, StarIcon, CheckIcon } from '../components/icons';
 import { startTokenTopup, startSubscription } from '../lib/payments';
+import { api } from '../lib/api';
 
 type TokenBundle = {
   id: string;
@@ -24,17 +26,87 @@ type TokenBundle = {
   badge: string | null;
 };
 
-type SubscriptionPlan = {
+type ApiPlan = {
+  id: string;
+  name: string;
+  description: string | null;
+  price_inr: number;
+  tokens_included: number;
+  features: string[] | null;
+  enabled: boolean;
+};
+
+type ManifestPlan = {
   id: string;
   name: string;
   price: string;
+  price_inr?: number;
+  tokens?: number;
   badge: string | null;
   popular: boolean;
+  features?: string[];
 };
+
+const FALLBACK_PLANS: ManifestPlan[] = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: '₹0',
+    price_inr: 0,
+    tokens: 0,
+    badge: null,
+    popular: false,
+    features: ['10 leads/day', 'Basic lead feed', 'Mobile app'],
+  },
+  {
+    id: 'plan_starter',
+    name: 'Starter',
+    price: '₹1,499/mo',
+    price_inr: 1499,
+    tokens: 500,
+    badge: null,
+    popular: false,
+    features: ['500 tokens/month', 'AI draft messages', 'Export leads', 'Email support'],
+  },
+  {
+    id: 'plan_pro',
+    name: 'Pro',
+    price: '₹4,999/mo',
+    price_inr: 4999,
+    tokens: 2500,
+    badge: '★ Popular',
+    popular: true,
+    features: ['2,500 tokens/month', 'Unlimited queries', 'Priority scraping', 'Analytics dashboard'],
+  },
+  {
+    id: 'plan_enterprise',
+    name: 'Enterprise',
+    price: 'Custom',
+    price_inr: 0,
+    tokens: 0,
+    badge: null,
+    popular: false,
+    features: ['Custom tokens', 'Dedicated support', 'SLA guarantee', 'Custom integrations'],
+  },
+];
 
 type Selection =
   | { type: 'bundle'; item: TokenBundle }
-  | { type: 'plan'; item: SubscriptionPlan };
+  | { type: 'plan'; item: ManifestPlan };
+
+function apiPlanToManifest(p: ApiPlan): ManifestPlan {
+  const feats: string[] = Array.isArray(p.features) ? p.features : [];
+  return {
+    id: p.id,
+    name: p.name,
+    price: p.price_inr === 0 ? '₹0' : `₹${p.price_inr.toLocaleString('en-IN')}/mo`,
+    price_inr: p.price_inr,
+    tokens: p.tokens_included,
+    badge: null,
+    popular: p.name?.toLowerCase().includes('pro'),
+    features: feats,
+  };
+}
 
 export default function PaywallScreen() {
   const { palette, radius } = useTheme();
@@ -43,7 +115,23 @@ export default function PaywallScreen() {
 
   const paywall = manifest?.paywall ?? {};
   const tokenBundles: TokenBundle[] = paywall.token_bundles ?? [];
-  const plans: SubscriptionPlan[] = paywall.subscription_plans ?? [];
+
+  const { data: apiPlans } = useQuery({
+    queryKey: ['billing-plans'],
+    queryFn: async () => {
+      const res = await api.get('/billing/plans');
+      return (res.data as ApiPlan[]).map(apiPlanToManifest);
+    },
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+
+  const plans: ManifestPlan[] =
+    apiPlans && apiPlans.length > 0
+      ? apiPlans
+      : (paywall.subscription_plans ?? []).length > 0
+        ? paywall.subscription_plans
+        : FALLBACK_PLANS;
 
   const defaultBundle = tokenBundles.find((b) => b.badge === 'POP') ?? tokenBundles[1] ?? tokenBundles[0];
   const [selected, setSelected] = useState<Selection | null>(
@@ -54,11 +142,21 @@ export default function PaywallScreen() {
   const ctaLabel = (): string => {
     if (!selected) return 'Select a plan';
     if (selected.type === 'bundle') return `Buy ${selected.item.tokens} tokens`;
+    if (selected.item.id === 'free') return 'Continue with Free';
+    if (selected.item.id === 'plan_enterprise') return 'Contact us';
     return `Subscribe — ${selected.item.price}`;
   };
 
   const handleCta = async () => {
     if (!selected || loading) return;
+    if (selected.type === 'plan' && selected.item.id === 'free') {
+      router.back();
+      return;
+    }
+    if (selected.type === 'plan' && selected.item.id === 'plan_enterprise') {
+      Linking.openURL('mailto:hello@indigenservices.com?subject=Enterprise%20Plan').catch(() => {});
+      return;
+    }
     setLoading(true);
     try {
       if (selected.type === 'bundle') {
@@ -91,15 +189,13 @@ export default function PaywallScreen() {
   const isBundleSelected = (b: TokenBundle) =>
     selected?.type === 'bundle' && selected.item.id === b.id;
 
-  const isPlanSelected = (p: SubscriptionPlan) =>
+  const isPlanSelected = (p: ManifestPlan) =>
     selected?.type === 'plan' && selected.item.id === p.id;
 
   return (
     <View style={[s.root, { backgroundColor: palette.bg, paddingBottom: insets.bottom + 16 }]}>
-      {/* drag handle */}
       <View style={[s.handle, { backgroundColor: palette.border }]} />
 
-      {/* close */}
       <TouchableOpacity style={s.closeBtn} onPress={() => router.back()}>
         <XIcon size={20} color={palette.muted} strokeWidth={1.5} />
       </TouchableOpacity>
@@ -121,57 +217,78 @@ export default function PaywallScreen() {
           ) : null}
         </View>
 
-        {/* ── token bundles ── */}
-        <Text style={[s.sectionLabel, { color: palette.muted }]}>TOKEN BUNDLES</Text>
-        <View style={s.bundleRow}>
-          {tokenBundles.map((b) => {
-            const active = isBundleSelected(b);
+        {/* ── subscription plans ── */}
+        <Text style={[s.sectionLabel, { color: palette.muted }]}>SUBSCRIPTION PLANS</Text>
+        <View style={s.planList}>
+          {plans.map((p) => {
+            const active = isPlanSelected(p);
+            const feats: string[] = Array.isArray(p.features) ? p.features.slice(0, 3) : [];
             return (
               <TouchableOpacity
-                key={b.id}
-                onPress={() => setSelected({ type: 'bundle', item: b })}
+                key={p.id}
+                onPress={() => setSelected({ type: 'plan', item: p })}
                 style={[
-                  s.bundleCard,
+                  s.planCard,
                   {
-                    backgroundColor: active ? palette.primary + '1A' : palette.card,
+                    backgroundColor: active ? palette.primary + '15' : palette.card,
                     borderColor: active ? palette.primary : palette.border,
                     borderRadius: radius,
                   },
                 ]}
                 activeOpacity={0.8}
               >
-                {b.badge ? (
-                  <View style={[s.badge, { backgroundColor: palette.primary }]}>
-                    <Text style={[s.badgeText, { color: palette.primaryFg }]}>{b.badge}</Text>
+                {p.popular && (
+                  <View style={[s.planBadge, { backgroundColor: palette.primary }]}>
+                    <Text style={[s.planBadgeText, { color: palette.primaryFg }]}>
+                      {p.badge ?? '★ Popular'}
+                    </Text>
                   </View>
-                ) : null}
-                <Text style={[s.bundleTokens, { color: palette.text }]}>{b.tokens}</Text>
-                <Text style={[s.bundleTokenLabel, { color: palette.muted }]}>tokens</Text>
-                <Text style={[s.bundlePrice, { color: active ? palette.primary : palette.text }]}>
-                  {b.label}
-                </Text>
+                )}
+                <View style={s.planRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.planName, { color: palette.text }]}>{p.name}</Text>
+                    {feats.length > 0 && (
+                      <View style={{ marginTop: 6, gap: 3 }}>
+                        {feats.map((f, i) => (
+                          <View key={i} style={s.featRow}>
+                            <CheckIcon size={11} color={active ? palette.primary : palette.muted} strokeWidth={2.5} />
+                            <Text style={[s.featText, { color: palette.muted }]}>{f}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                  <View style={s.planPriceCol}>
+                    <Text style={[s.planPrice, { color: active ? palette.primary : palette.text }]}>
+                      {p.price}
+                    </Text>
+                    {active && (
+                      <View style={[s.selectedDot, { backgroundColor: palette.primary }]} />
+                    )}
+                  </View>
+                </View>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* ── subscription ── */}
-        {plans.length > 0 ? (
+        {/* ── token bundles ── */}
+        {tokenBundles.length > 0 && (
           <>
             <View style={s.dividerRow}>
               <View style={[s.dividerLine, { backgroundColor: palette.border }]} />
-              <Text style={[s.dividerText, { color: palette.muted }]}>OR SUBSCRIBE</Text>
+              <Text style={[s.dividerText, { color: palette.muted }]}>OR TOP UP TOKENS</Text>
               <View style={[s.dividerLine, { backgroundColor: palette.border }]} />
             </View>
-            <View style={s.planRow}>
-              {plans.map((p) => {
-                const active = isPlanSelected(p);
+            <View style={s.bundleRow}>
+              {tokenBundles.map((b) => {
+                const active = isBundleSelected(b);
                 return (
                   <TouchableOpacity
-                    key={p.id}
-                    onPress={() => setSelected({ type: 'plan', item: p })}
+                    key={b.id}
+                    onPress={() => setSelected({ type: 'bundle', item: b })}
                     style={[
-                      s.planCard,
+                      s.bundleCard,
                       {
                         backgroundColor: active ? palette.primary + '1A' : palette.card,
                         borderColor: active ? palette.primary : palette.border,
@@ -180,24 +297,22 @@ export default function PaywallScreen() {
                     ]}
                     activeOpacity={0.8}
                   >
-                    {p.popular ? (
+                    {b.badge ? (
                       <View style={[s.badge, { backgroundColor: palette.primary }]}>
-                        <Text style={[s.badgeText, { color: palette.primaryFg }]}>
-                          {p.badge ?? '★'}
-                        </Text>
+                        <Text style={[s.badgeText, { color: palette.primaryFg }]}>{b.badge}</Text>
                       </View>
                     ) : null}
-                    <StarIcon size={20} color={active ? palette.primary : palette.muted} strokeWidth={1.5} />
-                    <Text style={[s.planName, { color: palette.text }]}>{p.name}</Text>
-                    <Text style={[s.planPrice, { color: active ? palette.primary : palette.muted }]}>
-                      {p.price}
+                    <Text style={[s.bundleTokens, { color: palette.text }]}>{b.tokens}</Text>
+                    <Text style={[s.bundleTokenLabel, { color: palette.muted }]}>tokens</Text>
+                    <Text style={[s.bundlePrice, { color: active ? palette.primary : palette.text }]}>
+                      {b.label}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
           </>
-        ) : null}
+        )}
       </ScrollView>
 
       {/* CTA */}
@@ -224,7 +339,6 @@ export default function PaywallScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* footer */}
       <View style={s.footer}>
         <TouchableOpacity onPress={() => Linking.openURL('https://indigenservices.com/terms').catch(() => {})}>
           <Text style={[s.footerLink, { color: palette.muted }]}>Terms</Text>
@@ -270,7 +384,7 @@ const s = StyleSheet.create({
   },
   headerBlock: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   iconCircle: {
     width: 64,
@@ -301,10 +415,82 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 12,
   },
+  planList: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  planCard: {
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    position: 'relative',
+  },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  planName: {
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+  },
+  planPriceCol: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  planPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+  },
+  selectedDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    alignSelf: 'flex-end',
+  },
+  featRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  featText: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+  },
+  planBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  planBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 11,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
+    letterSpacing: 0.5,
+  },
   bundleRow: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   bundleCard: {
     flex: 1,
@@ -343,45 +529,6 @@ const s = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Inter_700Bold',
   },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 10,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    letterSpacing: 0.5,
-  },
-  planRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-  },
-  planCard: {
-    flex: 1,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-    position: 'relative',
-    gap: 6,
-  },
-  planName: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-  },
-  planPrice: {
-    fontSize: 12,
-    fontFamily: 'Inter_400Regular',
-  },
   ctaWrap: {
     paddingTop: 8,
   },
@@ -406,7 +553,5 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
   },
-  footerDot: {
-    fontSize: 12,
-  },
+  footerDot: { fontSize: 12 },
 });

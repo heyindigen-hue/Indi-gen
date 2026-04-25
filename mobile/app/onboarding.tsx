@@ -1,107 +1,116 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   Dimensions,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { useManifest } from '../lib/useManifest';
 import { useTheme } from '../lib/themeContext';
 import { api } from '../lib/api';
+import { ChipInput } from '../components/onboarding/ChipInput';
 import { CheckIcon } from '../components/icons';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const SWIPE_THRESHOLD = SCREEN_W * 0.3;
 
-type Step = {
-  id: string;
-  title: string;
+type CompanyInfo = {
+  name: string;
+  tagline: string;
+  website: string;
   description: string;
-  input_type: 'none' | 'chip_select' | 'done';
-  options?: string[];
-  field?: string;
+  ideal_clients: string[];
+  industries: string[];
+  geography: string[];
+  search_phrases: string[];
+  budget_signals: string[];
+  selected_plan: string;
 };
 
-function ChipSelect({
-  options,
-  selected,
-  onToggle,
-}: {
-  options: string[];
-  selected: string[];
-  onToggle: (opt: string) => void;
-}) {
-  const { palette, radius } = useTheme();
-  return (
-    <View style={cs.wrap}>
-      {options.map((opt) => {
-        const active = selected.includes(opt);
-        return (
-          <TouchableOpacity
-            key={opt}
-            onPress={() => onToggle(opt)}
-            style={[
-              cs.chip,
-              {
-                backgroundColor: active ? palette.primary : palette.card,
-                borderColor: active ? palette.primary : palette.border,
-                borderRadius: radius,
-              },
-            ]}
-            activeOpacity={0.8}
-          >
-            {active ? (
-              <CheckIcon size={13} color={palette.primaryFg} strokeWidth={2} />
-            ) : null}
-            <Text
-              style={[
-                cs.chipText,
-                { color: active ? palette.primaryFg : palette.text },
-              ]}
-            >
-              {opt}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
+const EMPTY_INFO: CompanyInfo = {
+  name: '',
+  tagline: '',
+  website: '',
+  description: '',
+  ideal_clients: [],
+  industries: [],
+  geography: [],
+  search_phrases: [],
+  budget_signals: [],
+  selected_plan: 'free',
+};
+
+const IDEAL_CLIENT_OPTIONS = [
+  'D2C Brand', 'SaaS', 'SME', 'Healthcare', 'Logistics', 'Fintech',
+  'Ecommerce', 'AgriTech', 'EduTech', 'RealEstate', 'Manufacturing', 'Startup',
+];
+
+const GEOGRAPHY_OPTIONS = [
+  'India', 'USA', 'UK', 'Canada', 'Australia',
+  'Maharashtra', 'Karnataka', 'Delhi', 'Tamil Nadu', 'Gujarat',
+  'Telangana', 'West Bengal', 'Rajasthan', 'International',
+];
+
+const SEARCH_PHRASE_SUGGESTIONS = [
+  'looking for developer', 'need to build app', 'hiring shopify dev',
+  'building saas', 'need mobile app', 'looking for agency',
+  'website redesign', 'need tech co-founder', 'MVP development',
+  'React Native developer', 'Flutter developer', 'full stack developer',
+  'digital marketing', 'SEO agency', 'social media management',
+];
+
+const BUDGET_SIGNAL_OPTIONS = [
+  'International clients', '$5K-$10K budget', '$10K-$50K budget',
+  'USD pricing', 'INR pricing', 'Equity + cash', 'Funded startup',
+  'Series A+', 'Bootstrap', 'SME budget',
+];
+
+const PLAN_OPTIONS = [
+  { id: 'free', name: 'Free', price: '₹0', tokens: '10 leads/day', features: 'Basic lead feed' },
+  { id: 'starter', name: 'Starter', price: '₹1,499/mo', tokens: '500 tokens', features: 'AI drafts + export' },
+  { id: 'pro', name: 'Pro', price: '₹4,999/mo', tokens: '2,500 tokens', features: 'Unlimited queries', popular: true },
+  { id: 'enterprise', name: 'Enterprise', price: 'Custom', tokens: 'Unlimited', features: 'Dedicated support' },
+];
+
+type StepId =
+  | 'welcome'
+  | 'company_name'
+  | 'what_you_sell'
+  | 'ideal_client'
+  | 'search_phrases'
+  | 'geography'
+  | 'plan'
+  | 'finding_leads';
+
+interface StepDef {
+  id: StepId;
+  title: string;
+  subtitle: string;
 }
 
-const cs = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderWidth: 1.5,
-  },
-  chipText: {
-    fontSize: 13,
-    fontFamily: 'Inter_400Regular',
-  },
-});
+const STEPS: StepDef[] = [
+  { id: 'welcome', title: 'Wake up to\nbetter leads', subtitle: 'LeadHangover finds people already asking for what you sell — on LinkedIn, Reddit, and beyond.' },
+  { id: 'company_name', title: 'Tell us about\nyour business', subtitle: 'This helps us find leads relevant to what you actually sell.' },
+  { id: 'what_you_sell', title: 'What do you sell?', subtitle: 'Describe your product or service in your own words.' },
+  { id: 'ideal_client', title: 'Who is your\nideal client?', subtitle: "Select all that apply — we'll tune the lead feed to match." },
+  { id: 'search_phrases', title: 'What are they\nsaying online?', subtitle: 'Pick or add phrases your ideal customers use when they need help.' },
+  { id: 'geography', title: 'Which markets\ndo you target?', subtitle: 'Select regions so we focus on the right geography.' },
+  { id: 'plan', title: 'Choose your plan', subtitle: 'Start free — upgrade anytime as you grow.' },
+  { id: 'finding_leads', title: 'Finding your\nfirst leads…', subtitle: 'Scanning the web for people who need exactly what you offer.' },
+];
 
 function ScrapeLoader({ phrases }: { phrases: string[] }) {
   const { palette } = useTheme();
@@ -111,10 +120,15 @@ function ScrapeLoader({ phrases }: { phrases: string[] }) {
   React.useEffect(() => {
     let jobId: string | null = null;
 
+    const finishAndNavigate = async () => {
+      await SecureStore.setItemAsync('leadhangover_onboarded', 'true');
+      router.replace('/(tabs)');
+    };
+
     const kickoff = async () => {
       try {
         const { data } = await api.post('/scrape', {
-          phrases: phrases.length > 0 ? phrases : ['leads'],
+          phrases: phrases.length > 0 ? phrases.slice(0, 3) : ['leads'],
           limit: 25,
         });
         jobId = data?.job_id ?? data?.id ?? null;
@@ -139,9 +153,7 @@ function ScrapeLoader({ phrases }: { phrases: string[] }) {
             clearInterval(timerRef.current!);
             finishAndNavigate();
           } else {
-            setStatusText(
-              progress > 0 ? `Scanning... ${Math.round(progress)}%` : 'Scanning the web...'
-            );
+            setStatusText(progress > 0 ? `Scanning... ${Math.round(progress)}%` : 'Scanning the web...');
           }
         } catch {
           clearInterval(timerRef.current!);
@@ -150,12 +162,8 @@ function ScrapeLoader({ phrases }: { phrases: string[] }) {
       }, 3000);
     };
 
-    const finishAndNavigate = () => router.replace('/(tabs)');
-
     kickoff();
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
   return (
@@ -168,252 +176,397 @@ function ScrapeLoader({ phrases }: { phrases: string[] }) {
 }
 
 const sl = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  status: {
-    fontSize: 15,
-    fontFamily: 'Inter_400Regular',
-    textAlign: 'center',
-  },
+  root: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+  title: { fontSize: 22, fontWeight: '700', fontFamily: 'Inter_700Bold', marginBottom: 10, textAlign: 'center' },
+  status: { fontSize: 15, fontFamily: 'Inter_400Regular', textAlign: 'center' },
 });
 
 export default function OnboardingScreen() {
   const { palette, radius } = useTheme();
   const insets = useSafeAreaInsets();
-  const { data: manifest } = useManifest();
-
-  const steps: Step[] = (manifest?.onboarding_steps ?? []) as Step[];
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [fieldValues, setFieldValues] = useState<Record<string, string[]>>({});
-  const [scraping, setScraping] = useState(false);
+  const [info, setInfo] = useState<CompanyInfo>(EMPTY_INFO);
+  const [saving, setSaving] = useState(false);
 
-  const translateX = useSharedValue(0);
   const opacity = useSharedValue(1);
 
-  const animateToNext = (nextIndex: number) => {
-    opacity.value = withTiming(0, { duration: 160 }, () => {
-      runOnJS(setCurrentIndex)(nextIndex);
-      translateX.value = 0;
+  const animateToStep = useCallback((next: number) => {
+    opacity.value = withTiming(0, { duration: 150 }, () => {
+      runOnJS(setCurrentIndex)(next);
       opacity.value = withTiming(1, { duration: 200 });
     });
+  }, [opacity]);
+
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  const step = STEPS[currentIndex];
+  const isLast = currentIndex === STEPS.length - 1;
+
+  const updateField = <K extends keyof CompanyInfo>(key: K, val: CompanyInfo[K]) => {
+    setInfo((prev) => ({ ...prev, [key]: val }));
   };
 
-  const animateToPrev = (prevIndex: number) => {
-    opacity.value = withTiming(0, { duration: 160 }, () => {
-      runOnJS(setCurrentIndex)(prevIndex);
-      translateX.value = 0;
-      opacity.value = withTiming(1, { duration: 200 });
-    });
+  const toggleChip = (key: keyof CompanyInfo, opt: string) => {
+    const arr = info[key] as string[];
+    updateField(key as any, arr.includes(opt) ? arr.filter((x) => x !== opt) : [...arr, opt]);
   };
 
-  const goNext = () => {
-    if (currentIndex < steps.length - 1) {
-      animateToNext(currentIndex + 1);
-    } else {
-      handleFinish();
+  const canProceed = (): boolean => {
+    if (step.id === 'company_name') return info.name.trim().length > 0;
+    if (step.id === 'what_you_sell') return info.description.trim().length > 0;
+    return true;
+  };
+
+  const handleNext = async () => {
+    if (!canProceed()) return;
+    if (currentIndex < STEPS.length - 1) {
+      if (currentIndex === STEPS.length - 2) {
+        await saveAndProceed();
+      } else {
+        animateToStep(currentIndex + 1);
+      }
     }
+  };
+
+  const saveAndProceed = async () => {
+    setSaving(true);
+    try {
+      await api.post('/me/company-profile', info);
+    } catch {
+      // Non-fatal: save failure should not block onboarding
+    }
+    setSaving(false);
+    animateToStep(currentIndex + 1);
   };
 
   const goPrev = () => {
-    if (currentIndex > 0) animateToPrev(currentIndex - 1);
+    if (currentIndex > 0) animateToStep(currentIndex - 1);
   };
 
-  const handleFinish = () => {
-    const lastStep = steps[steps.length - 1];
-    if (lastStep?.input_type === 'done' || currentIndex === steps.length - 1) {
-      const phrases = (Object.values(fieldValues).flat() as string[]);
-      setScraping(true);
-      setTimeout(() => {}, 0);
-      return;
-    }
-    router.replace('/(tabs)');
-  };
-
-  const toggleChip = (field: string, opt: string) => {
-    setFieldValues((prev) => {
-      const cur = prev[field] ?? [];
-      const next = cur.includes(opt) ? cur.filter((x) => x !== opt) : [...cur, opt];
-      return { ...prev, [field]: next };
-    });
-  };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      if (e.translationX > 0) {
-        translateX.value = e.translationX * 0.3;
-      }
-    })
-    .onEnd((e) => {
-      if (e.translationX > SWIPE_THRESHOLD) {
-        translateX.value = withSpring(0);
-        runOnJS(goPrev)();
-      } else {
-        translateX.value = withSpring(0);
-      }
-    });
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-    opacity: opacity.value,
-  }));
-
-  if (steps.length === 0) {
-    router.replace('/(tabs)');
-    return null;
+  if (step.id === 'finding_leads') {
+    return <ScrapeLoader phrases={info.search_phrases} />;
   }
-
-  if (scraping) {
-    const phrases = Object.values(fieldValues).flat() as string[];
-    return <ScrapeLoader phrases={phrases} />;
-  }
-
-  const step = steps[currentIndex];
-  const isLast = currentIndex === steps.length - 1;
-  const stepPhrases: string[] =
-    step.field ? (fieldValues[step.field] ?? []) : [];
-
-  const stepIcon = ['✦', '⚡', '🚀'][currentIndex] ?? '✦';
 
   return (
-    <View
-      style={[
-        s.root,
-        {
-          backgroundColor: palette.bg,
-          paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + 24,
-        },
-      ]}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: palette.bg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* skip */}
-      <TouchableOpacity
-        onPress={() => router.replace('/(tabs)')}
-        style={s.skipBtn}
+      <View
+        style={[
+          s.root,
+          {
+            backgroundColor: palette.bg,
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 24,
+          },
+        ]}
       >
-        <Text style={[s.skipText, { color: palette.muted }]}>Skip</Text>
-      </TouchableOpacity>
-
-      {/* step content */}
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={[s.content, animStyle]}>
-          <View style={[s.iconCircle, { backgroundColor: palette.primary + '22' }]}>
-            <Text style={s.stepIcon}>{stepIcon}</Text>
+        {/* header row */}
+        <View style={s.headerRow}>
+          {currentIndex > 0 ? (
+            <TouchableOpacity onPress={goPrev} style={s.backBtn}>
+              <Text style={[s.backText, { color: palette.muted }]}>← Back</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 56 }} />
+          )}
+          <View style={s.dotsRow}>
+            {STEPS.slice(0, -1).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  s.dot,
+                  {
+                    width: i === currentIndex ? 20 : 6,
+                    backgroundColor: i <= currentIndex ? palette.primary : palette.border,
+                  },
+                ]}
+              />
+            ))}
           </View>
+          <TouchableOpacity
+            onPress={async () => {
+              await SecureStore.setItemAsync('leadhangover_onboarded', 'true');
+              router.replace('/(tabs)');
+            }}
+            style={s.skipBtn}
+          >
+            <Text style={[s.skipText, { color: palette.muted }]}>Skip</Text>
+          </TouchableOpacity>
+        </View>
 
-          <Text style={[s.title, { color: palette.text }]}>{step.title}</Text>
-          <Text style={[s.description, { color: palette.muted }]}>{step.description}</Text>
+        <ScrollView
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View style={[s.content, animStyle]}>
+            <Text style={[s.title, { color: palette.text }]}>{step.title}</Text>
+            <Text style={[s.subtitle, { color: palette.muted }]}>{step.subtitle}</Text>
 
-          {step.input_type === 'chip_select' && step.options && step.field ? (
-            <ChipSelect
-              options={step.options}
-              selected={stepPhrases}
-              onToggle={(opt) => toggleChip(step.field!, opt)}
-            />
-          ) : null}
-        </Animated.View>
-      </GestureDetector>
+            {/* step-specific inputs */}
+            {step.id === 'welcome' && (
+              <View style={s.welcomeBloom}>
+                <View style={[s.bloomCircle, { backgroundColor: palette.primary + '22' }]}>
+                  <Text style={{ fontSize: 48 }}>✦</Text>
+                </View>
+              </View>
+            )}
 
-      {/* progress dots */}
-      <View style={s.dotsRow}>
-        {steps.map((_, i) => (
-          <View
-            key={i}
-            style={[
-              s.dot,
-              {
-                width: i === currentIndex ? 20 : 6,
-                backgroundColor: i === currentIndex ? palette.primary : palette.border,
-              },
-            ]}
-          />
-        ))}
+            {step.id === 'company_name' && (
+              <View style={s.fieldGroup}>
+                <Text style={[s.fieldLabel, { color: palette.muted }]}>Company name *</Text>
+                <TextInput
+                  style={[s.input, { backgroundColor: palette.card, borderColor: palette.border, color: palette.text, borderRadius: radius / 2 }]}
+                  placeholder="e.g. IndiGen Labs"
+                  placeholderTextColor={palette.muted}
+                  value={info.name}
+                  onChangeText={(v) => updateField('name', v)}
+                />
+                <Text style={[s.fieldLabel, { color: palette.muted, marginTop: 16 }]}>One-line tagline</Text>
+                <TextInput
+                  style={[s.input, { backgroundColor: palette.card, borderColor: palette.border, color: palette.text, borderRadius: radius / 2 }]}
+                  placeholder="e.g. We build mobile apps for D2C brands"
+                  placeholderTextColor={palette.muted}
+                  value={info.tagline}
+                  onChangeText={(v) => updateField('tagline', v)}
+                />
+                <Text style={[s.fieldLabel, { color: palette.muted, marginTop: 16 }]}>Website (optional)</Text>
+                <TextInput
+                  style={[s.input, { backgroundColor: palette.card, borderColor: palette.border, color: palette.text, borderRadius: radius / 2 }]}
+                  placeholder="https://yoursite.com"
+                  placeholderTextColor={palette.muted}
+                  autoCapitalize="none"
+                  keyboardType="url"
+                  value={info.website}
+                  onChangeText={(v) => updateField('website', v)}
+                />
+              </View>
+            )}
+
+            {step.id === 'what_you_sell' && (
+              <View style={s.fieldGroup}>
+                <Text style={[s.fieldLabel, { color: palette.muted }]}>Describe what you sell *</Text>
+                <TextInput
+                  style={[
+                    s.input,
+                    s.textarea,
+                    {
+                      backgroundColor: palette.card,
+                      borderColor: palette.border,
+                      color: palette.text,
+                      borderRadius: radius / 2,
+                    },
+                  ]}
+                  placeholder="We build React Native apps for early-stage startups. Our clients are typically founders who want an MVP in 6-8 weeks."
+                  placeholderTextColor={palette.muted}
+                  multiline
+                  numberOfLines={5}
+                  value={info.description}
+                  onChangeText={(v) => updateField('description', v)}
+                  textAlignVertical="top"
+                />
+              </View>
+            )}
+
+            {step.id === 'ideal_client' && (
+              <ChipInput
+                options={IDEAL_CLIENT_OPTIONS}
+                selected={info.ideal_clients}
+                onToggle={(opt) => toggleChip('ideal_clients', opt)}
+              />
+            )}
+
+            {step.id === 'search_phrases' && (
+              <View style={{ width: '100%' }}>
+                <ChipInput
+                  options={SEARCH_PHRASE_SUGGESTIONS}
+                  selected={info.search_phrases}
+                  onToggle={(opt) => toggleChip('search_phrases', opt)}
+                />
+                {info.search_phrases.length === 0 && (
+                  <Text style={[s.hint, { color: palette.muted }]}>
+                    Select at least 1 phrase to get the best results
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {step.id === 'geography' && (
+              <ChipInput
+                options={GEOGRAPHY_OPTIONS}
+                selected={info.geography}
+                onToggle={(opt) => toggleChip('geography', opt)}
+              />
+            )}
+
+            {step.id === 'plan' && (
+              <View style={s.planGrid}>
+                {PLAN_OPTIONS.map((plan) => {
+                  const active = info.selected_plan === plan.id;
+                  return (
+                    <TouchableOpacity
+                      key={plan.id}
+                      onPress={() => updateField('selected_plan', plan.id)}
+                      style={[
+                        s.planCard,
+                        {
+                          backgroundColor: active ? palette.primary + '15' : palette.card,
+                          borderColor: active ? palette.primary : palette.border,
+                          borderRadius: radius,
+                        },
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      {(plan as any).popular && (
+                        <View style={[s.popularBadge, { backgroundColor: palette.primary }]}>
+                          <Text style={[s.popularText, { color: palette.primaryFg }]}>★ Popular</Text>
+                        </View>
+                      )}
+                      {active && (
+                        <View style={s.checkBadge}>
+                          <CheckIcon size={14} color={palette.primary} strokeWidth={2.5} />
+                        </View>
+                      )}
+                      <Text style={[s.planName, { color: palette.text }]}>{plan.name}</Text>
+                      <Text style={[s.planPrice, { color: active ? palette.primary : palette.muted }]}>
+                        {plan.price}
+                      </Text>
+                      <Text style={[s.planTokens, { color: palette.muted }]}>{plan.tokens}</Text>
+                      <Text style={[s.planFeature, { color: palette.muted }]}>{plan.features}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </Animated.View>
+        </ScrollView>
+
+        <TouchableOpacity
+          onPress={handleNext}
+          disabled={!canProceed() || saving}
+          style={[
+            s.nextBtn,
+            {
+              backgroundColor: canProceed() ? palette.primary : palette.border,
+              borderRadius: radius,
+              opacity: saving ? 0.7 : 1,
+            },
+          ]}
+          activeOpacity={0.88}
+        >
+          {saving ? (
+            <ActivityIndicator color={palette.primaryFg} />
+          ) : (
+            <Text style={[s.nextText, { color: canProceed() ? palette.primaryFg : palette.muted }]}>
+              {isLast ? 'Get started' : currentIndex === STEPS.length - 2 ? 'Find my leads' : 'Continue'}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
-
-      {/* next button */}
-      <TouchableOpacity
-        onPress={goNext}
-        style={[s.nextBtn, { backgroundColor: palette.primary, borderRadius: radius }]}
-        activeOpacity={0.88}
-      >
-        <Text style={[s.nextText, { color: palette.primaryFg }]}>
-          {isLast ? 'Get started' : 'Next'}
-        </Text>
-      </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  root: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  skipBtn: {
-    alignSelf: 'flex-end',
-    padding: 4,
-  },
-  skipText: {
-    fontSize: 14,
-    fontFamily: 'Inter_400Regular',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
+  root: { flex: 1, paddingHorizontal: 24 },
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-  },
-  stepIcon: {
-    fontSize: 32,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
-    textAlign: 'center',
-    marginBottom: 14,
-  },
-  description: {
-    fontSize: 15,
-    fontFamily: 'Inter_400Regular',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
+  backBtn: { padding: 4, width: 56 },
+  backText: { fontSize: 14, fontFamily: 'Inter_400Regular' },
+  skipBtn: { padding: 4, width: 56, alignItems: 'flex-end' },
+  skipText: { fontSize: 14, fontFamily: 'Inter_400Regular' },
   dotsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 28,
-    gap: 6,
+    gap: 5,
   },
-  dot: {
-    height: 6,
-    borderRadius: 3,
+  dot: { height: 5, borderRadius: 2.5 },
+  scrollContent: { flexGrow: 1, paddingBottom: 16 },
+  content: { flex: 1, paddingTop: 24 },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'Inter_700Bold',
+    lineHeight: 36,
+    marginBottom: 12,
   },
-  nextBtn: {
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  nextText: {
+  subtitle: {
     fontSize: 15,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 23,
+    marginBottom: 8,
   },
+  welcomeBloom: {
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  bloomCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fieldGroup: { marginTop: 8, width: '100%' },
+  fieldLabel: { fontSize: 13, fontFamily: 'Inter_500Medium', marginBottom: 6 },
+  input: {
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    fontFamily: 'Inter_400Regular',
+  },
+  textarea: {
+    height: 120,
+    paddingTop: 12,
+  },
+  hint: {
+    fontSize: 12,
+    fontFamily: 'Inter_400Regular',
+    textAlign: 'center',
+    marginTop: 12,
+  },
+  planGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 16,
+  },
+  planCard: {
+    width: (SCREEN_W - 48 - 10) / 2,
+    borderWidth: 1.5,
+    padding: 16,
+    position: 'relative',
+    gap: 4,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  popularText: { fontSize: 9, fontWeight: '700', fontFamily: 'Inter_700Bold' },
+  checkBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  planName: { fontSize: 15, fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
+  planPrice: { fontSize: 13, fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
+  planTokens: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  planFeature: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  nextBtn: {
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  nextText: { fontSize: 15, fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
 });
