@@ -15,7 +15,7 @@ const qc = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={qc}>
-      <BrowserRouter>
+      <BrowserRouter basename="/admin">
         <App />
         <Toaster theme="dark" position="bottom-right" richColors closeButton />
       </BrowserRouter>

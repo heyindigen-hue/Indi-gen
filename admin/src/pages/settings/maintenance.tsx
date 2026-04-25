@@ -46,7 +46,7 @@ export default function MaintenancePage() {
 
   const { data, isLoading } = useQuery<MaintenanceSettings>({
     queryKey: ['settings-maintenance'],
-    queryFn: () => api.get<MaintenanceSettings>('/api/admin/settings/maintenance'),
+    queryFn: () => api.get<MaintenanceSettings>('/admin/settings/maintenance'),
   });
 
   const [form, setForm] = useState<FormState>({
@@ -72,7 +72,7 @@ export default function MaintenancePage() {
 
   const saveMutation = useMutation({
     mutationFn: () =>
-      api.patch('/api/admin/settings/maintenance', {
+      api.patch('/admin/settings/maintenance', {
         banner_message: form.bannerMessage,
         eta: form.eta ? new Date(form.eta).toISOString() : null,
         bypass_ips: form.bypassIps
@@ -91,7 +91,7 @@ export default function MaintenancePage() {
 
   const toggleMutation = useMutation({
     mutationFn: (action: 'enable' | 'disable') =>
-      api.post(`/api/admin/settings/maintenance/${action}`),
+      api.post(`/admin/settings/maintenance/${action}`),
     onSuccess: (_, action) => {
       toast.success(action === 'enable' ? 'Maintenance mode enabled' : 'Maintenance mode disabled');
       qc.invalidateQueries({ queryKey: ['settings-maintenance'] });

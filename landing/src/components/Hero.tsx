@@ -108,6 +108,27 @@ export default function Hero() {
             Wake up to better leads
           </motion.div>
 
+          {/* Brand logo — prominent display */}
+          <motion.div
+            className="mb-6"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#FF4716',
+              borderRadius: '50%',
+              width: 100,
+              height: 100,
+              boxShadow: '0 8px 32px rgba(255,71,22,0.35)',
+            }}>
+              <FlowerMark size={72} animated />
+            </div>
+          </motion.div>
+
           {/* H1 — word-by-word ink-flow reveal (Pattern 1) */}
           <motion.h1
             className="font-display text-[clamp(44px,6vw,72px)] font-semibold italic leading-[1.05] mb-6"
@@ -201,7 +222,7 @@ export default function Hero() {
             animate={{ rotate: 360 }}
             transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
           >
-            <FlowerMark size={360} animated />
+            <FlowerMark size={320} animated />
           </motion.div>
 
           {/* Main illustration */}

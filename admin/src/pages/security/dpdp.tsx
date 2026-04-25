@@ -177,7 +177,7 @@ function ConsentTab() {
 
   const { data: stats, isLoading: statsLoading } = useQuery<ConsentStats>({
     queryKey: ['dpdp-consent-stats'],
-    queryFn: () => api.get<ConsentStats>('/api/admin/dpdp/consent-stats'),
+    queryFn: () => api.get<ConsentStats>('/admin/dpdp/consent-stats'),
   });
 
   const { data: timeline, isLoading: timelineLoading } =
@@ -185,7 +185,7 @@ function ConsentTab() {
       queryKey: ['dpdp-consent-timeline', searchQuery],
       queryFn: () =>
         api.get<ConsentTimelineResponse>(
-          `/api/admin/dpdp/consent-timeline?user=${encodeURIComponent(searchQuery)}`,
+          `/admin/dpdp/consent-timeline?user=${encodeURIComponent(searchQuery)}`,
         ),
       enabled: searchQuery.length > 0,
     });
@@ -330,14 +330,14 @@ function ErasureTab() {
   const { data, isLoading } = useQuery<{ requests: ErasureRequest[] }>({
     queryKey: ['admin-erasure-requests'],
     queryFn: () =>
-      api.get<{ requests: ErasureRequest[] }>('/api/admin/erasure-requests'),
+      api.get<{ requests: ErasureRequest[] }>('/admin/erasure-requests'),
   });
 
   const { data: requestDetail } = useQuery<ErasureRequest>({
     queryKey: ['admin-erasure-request', wizard.requestId],
     queryFn: () =>
       api.get<ErasureRequest>(
-        `/api/admin/erasure-requests/${wizard.requestId}`,
+        `/admin/erasure-requests/${wizard.requestId}`,
       ),
     enabled: wizard.step === 4 && wizard.requestId !== null,
     refetchInterval: wizard.step === 4 ? 5000 : false,
@@ -356,7 +356,7 @@ function ErasureTab() {
       reason: string;
       channel: string;
     }) =>
-      api.post<{ id: string }>('/api/admin/erasure-requests', body),
+      api.post<{ id: string }>('/admin/erasure-requests', body),
     onSuccess: (res) => {
       setWizard((w) => ({ ...w, step: 2, requestId: res.id }));
     },
@@ -365,7 +365,7 @@ function ErasureTab() {
 
   const verifyMutation = useMutation({
     mutationFn: (id: string) =>
-      api.post(`/api/admin/erasure-requests/${id}/verify`, {}),
+      api.post(`/admin/erasure-requests/${id}/verify`, {}),
     onSuccess: () => setWizard((w) => ({ ...w, step: 3 })),
     onError: () => toast.error('Verification failed'),
   });
@@ -373,7 +373,7 @@ function ErasureTab() {
   const previewMutation = useMutation({
     mutationFn: (id: string) =>
       api.post<{ tables: ScopePreviewTable[] }>(
-        `/api/admin/erasure-requests/${id}/preview`,
+        `/admin/erasure-requests/${id}/preview`,
         {},
       ),
     onSuccess: (res) => {
@@ -384,7 +384,7 @@ function ErasureTab() {
 
   const queueMutation = useMutation({
     mutationFn: (id: string) =>
-      api.post(`/api/admin/erasure-requests/${id}/queue`, {}),
+      api.post(`/admin/erasure-requests/${id}/queue`, {}),
     onSuccess: () => {
       setTimeout(() => {
         setWizard((w) => ({ ...w, step: 6 }));
@@ -716,7 +716,7 @@ function ErasureTab() {
                 onClick={() => {
                   if (wizard.requestId) {
                     window.open(
-                      `/api/admin/erasure-requests/${wizard.requestId}/receipt`,
+                      `/admin/erasure-requests/${wizard.requestId}/receipt`,
                       '_blank',
                     );
                   }
@@ -816,19 +816,19 @@ function BreachTab() {
 
   const { data, isLoading } = useQuery<{ breaches: Breach[] }>({
     queryKey: ['admin-breaches'],
-    queryFn: () => api.get<{ breaches: Breach[] }>('/api/admin/breaches'),
+    queryFn: () => api.get<{ breaches: Breach[] }>('/admin/breaches'),
   });
 
   const calculateMutation = useMutation({
     mutationFn: () =>
-      api.post<{ count: number }>('/api/admin/breaches/calculate-affected', {}),
+      api.post<{ count: number }>('/admin/breaches/calculate-affected', {}),
     onSuccess: (res) => setAffectedCount(String(res.count)),
     onError: () => toast.error('Calculation failed'),
   });
 
   const createMutation = useMutation({
     mutationFn: (body: Omit<Breach, 'id' | 'notifications_sent'>) =>
-      api.post('/api/admin/breaches', body),
+      api.post('/admin/breaches', body),
     onSuccess: () => {
       toast.success('Incident recorded');
       qc.invalidateQueries({ queryKey: ['admin-breaches'] });

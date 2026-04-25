@@ -28,7 +28,20 @@ export default function Nav() {
       transition={{ duration: 0.25 }}
     >
       <a href="/" className="flex items-center gap-2.5 group">
-        <FlowerMark size={30} />
+        <div
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
+            background: '#FF4716',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <FlowerMark size={22} />
+        </div>
         <span
           className="text-[17px] font-semibold text-ink tracking-tight"
           style={{ fontFamily: "'Fraunces', serif" }}

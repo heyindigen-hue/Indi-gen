@@ -9,8 +9,10 @@ import UserDetailPage from '@/pages/users/[id]';
 import InvitesPage from '@/pages/users/invites';
 import WaitlistPage from '@/pages/users/waitlist';
 import LeadsPage from '@/pages/leads/index';
+import LeadDetailPage from '@/pages/leads/[id]';
 import EnrichmentPage from '@/pages/leads/enrichment';
 import AddLeadPage from '@/pages/leads/add';
+import ProposalsPage from '@/pages/leads/proposals';
 import ScrapersPage from '@/pages/scrapers/index';
 import ScraperRunsPage from '@/pages/scrapers/runs';
 import ScraperAccountsPage from '@/pages/scrapers/accounts';
@@ -118,6 +120,8 @@ export default function App() {
           <Route path="leads" element={<LeadsPage />} />
           <Route path="leads/enrichment" element={<EnrichmentPage />} />
           <Route path="leads/add" element={<AddLeadPage />} />
+          <Route path="leads/:id" element={<LeadDetailPage />} />
+          <Route path="leads/proposals" element={<ProposalsPage />} />
           <Route path="leads/scoring" element={<PlaceholderPage title="Lead Scoring" />} />
           <Route path="leads/export" element={<PlaceholderPage title="Lead Export" />} />
 

@@ -108,12 +108,12 @@ export default function AdminsPage() {
 
   const { data, isLoading } = useQuery<AdminUsersResponse>({
     queryKey: ['admin-users'],
-    queryFn: () => api.get<AdminUsersResponse>('/api/admin/admin-users'),
+    queryFn: () => api.get<AdminUsersResponse>('/admin/admin-users'),
   });
 
   const inviteMutation = useMutation({
     mutationFn: (body: { email: string; role: AdminUser['role'] }) =>
-      api.post('/api/admin/admin-users/invite', body),
+      api.post('/admin/admin-users/invite', body),
     onSuccess: () => {
       toast.success('Invitation sent');
       qc.invalidateQueries({ queryKey: ['admin-users'] });
@@ -126,7 +126,7 @@ export default function AdminsPage() {
 
   const changeRoleMutation = useMutation({
     mutationFn: ({ id, role }: { id: string; role: AdminUser['role'] }) =>
-      api.patch(`/api/admin/admin-users/${id}`, { role }),
+      api.patch(`/admin/admin-users/${id}`, { role }),
     onSuccess: () => {
       toast.success('Role updated');
       qc.invalidateQueries({ queryKey: ['admin-users'] });
@@ -137,7 +137,7 @@ export default function AdminsPage() {
 
   const resetPasswordMutation = useMutation({
     mutationFn: (id: string) =>
-      api.post(`/api/admin/admin-users/${id}/reset-password`, {}),
+      api.post(`/admin/admin-users/${id}/reset-password`, {}),
     onSuccess: () => {
       toast.success('Password reset email sent');
       setDialog({ kind: 'none' });
@@ -146,7 +146,7 @@ export default function AdminsPage() {
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/admin/admin-users/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/admin-users/${id}`),
     onSuccess: () => {
       toast.success('Access revoked');
       qc.invalidateQueries({ queryKey: ['admin-users'] });

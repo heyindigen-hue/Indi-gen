@@ -93,12 +93,12 @@ export default function ApiKeysPage() {
 
   const { data, isLoading } = useQuery<ApiKeysResponse>({
     queryKey: ['admin-api-keys'],
-    queryFn: () => api.get<ApiKeysResponse>('/api/admin/api-keys'),
+    queryFn: () => api.get<ApiKeysResponse>('/admin/api-keys'),
   });
 
   const createMutation = useMutation({
     mutationFn: (body: { name: string; scopes: string[]; expiry: string }) =>
-      api.post<CreateKeyResponse>('/api/admin/api-keys', body),
+      api.post<CreateKeyResponse>('/admin/api-keys', body),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['admin-api-keys'] });
       setNewName('');
@@ -110,7 +110,7 @@ export default function ApiKeysPage() {
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/admin/api-keys/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/api-keys/${id}`),
     onSuccess: () => {
       toast.success('API key revoked');
       qc.invalidateQueries({ queryKey: ['admin-api-keys'] });

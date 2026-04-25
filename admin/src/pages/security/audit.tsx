@@ -125,7 +125,7 @@ export default function AuditPage() {
       page,
     ],
     queryFn: () =>
-      api.get<AuditResponse>(`/api/admin/audit-log?${params.toString()}`),
+      api.get<AuditResponse>(`/admin/audit-log?${params.toString()}`),
   });
 
   const entries = data?.entries ?? [];

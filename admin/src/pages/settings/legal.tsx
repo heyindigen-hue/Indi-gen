@@ -48,14 +48,14 @@ function DocEditor({ type }: DocEditorProps) {
 
   const { data, isLoading } = useQuery<LegalDoc>({
     queryKey: ['settings-legal', type],
-    queryFn: () => api.get<LegalDoc>(`/api/admin/settings/legal?type=${type}`),
+    queryFn: () => api.get<LegalDoc>(`/admin/settings/legal?type=${type}`),
   });
 
   const currentContent = content ?? data?.content ?? '';
 
   const mutation = useMutation({
     mutationFn: () =>
-      api.post('/api/admin/settings/legal', { type, content: currentContent }),
+      api.post('/admin/settings/legal', { type, content: currentContent }),
     onSuccess: () => {
       toast.success('Saved. Users will be re-prompted to consent.');
       qc.invalidateQueries({ queryKey: ['settings-legal', type] });

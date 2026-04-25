@@ -59,7 +59,7 @@ export default function FlagsPage() {
 
   const { data, isLoading } = useQuery<FlagsResponse>({
     queryKey: ['feature-flags'],
-    queryFn: () => api.get<FlagsResponse>('/api/admin/feature-flags'),
+    queryFn: () => api.get<FlagsResponse>('/admin/feature-flags'),
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -67,7 +67,7 @@ export default function FlagsPage() {
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
-      api.patch(`/api/admin/feature-flags/${id}`, { enabled }),
+      api.patch(`/admin/feature-flags/${id}`, { enabled }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['feature-flags'] });
     },
@@ -78,7 +78,7 @@ export default function FlagsPage() {
 
   const rolloutMutation = useMutation({
     mutationFn: ({ id, rollout_pct }: { id: string; rollout_pct: number }) =>
-      api.patch(`/api/admin/feature-flags/${id}`, { rollout_pct }),
+      api.patch(`/admin/feature-flags/${id}`, { rollout_pct }),
     onError: () => {
       toast.error('Failed to update rollout');
     },
@@ -86,7 +86,7 @@ export default function FlagsPage() {
 
   const createMutation = useMutation({
     mutationFn: (values: NewFlagForm) =>
-      api.post('/api/admin/feature-flags', values),
+      api.post('/admin/feature-flags', values),
     onSuccess: () => {
       toast.success('Feature flag created');
       qc.invalidateQueries({ queryKey: ['feature-flags'] });

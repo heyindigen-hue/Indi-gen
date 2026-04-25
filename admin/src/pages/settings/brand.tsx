@@ -58,7 +58,7 @@ export default function BrandPage() {
 
   const { data, isLoading } = useQuery<BrandSettings>({
     queryKey: ['settings-brand'],
-    queryFn: () => api.get<BrandSettings>('/api/admin/settings/brand'),
+    queryFn: () => api.get<BrandSettings>('/admin/settings/brand'),
   });
 
   const [form, setForm] = useState<BrandState>(DEFAULTS);
@@ -80,7 +80,7 @@ export default function BrandPage() {
 
   const mutation = useMutation({
     mutationFn: (values: BrandState) =>
-      api.patch('/api/admin/settings/brand', {
+      api.patch('/admin/settings/brand', {
         logo_light_url: values.logoLightUrl,
         logo_dark_url: values.logoDarkUrl,
         accent_color: values.accentColor,

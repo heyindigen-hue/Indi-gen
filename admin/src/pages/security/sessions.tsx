@@ -79,7 +79,7 @@ export default function SessionsPage() {
   const { data, isLoading } = useQuery<SessionsResponse>({
     queryKey: ['admin-sessions', userFilter, countryFilter, page],
     queryFn: () =>
-      api.get<SessionsResponse>(`/api/admin/sessions?${params.toString()}`),
+      api.get<SessionsResponse>(`/admin/sessions?${params.toString()}`),
   });
 
   const filteredSessions = useMemo(() => {
@@ -91,7 +91,7 @@ export default function SessionsPage() {
   const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / LIMIT));
 
   const revokeMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/api/admin/sessions/${id}`),
+    mutationFn: (id: string) => api.delete(`/admin/sessions/${id}`),
     onSuccess: () => {
       toast.success('Session revoked');
       qc.invalidateQueries({ queryKey: ['admin-sessions'] });
@@ -101,7 +101,7 @@ export default function SessionsPage() {
 
   const revokeAllMutation = useMutation({
     mutationFn: (userId: string) =>
-      api.delete(`/api/admin/sessions?user_id=${userId}`),
+      api.delete(`/admin/sessions?user_id=${userId}`),
     onSuccess: () => {
       toast.success('All sessions revoked for user');
       setSelectedRows(new Set());

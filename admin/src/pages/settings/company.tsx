@@ -79,7 +79,7 @@ export default function CompanyPage() {
 
   const { data, isLoading } = useQuery<CompanySettings>({
     queryKey: ['settings-company'],
-    queryFn: () => api.get<CompanySettings>('/api/admin/settings/company'),
+    queryFn: () => api.get<CompanySettings>('/admin/settings/company'),
   });
 
   const [form, setForm] = useState<CompanyState>(DEFAULTS);
@@ -95,7 +95,7 @@ export default function CompanyPage() {
 
   const mutation = useMutation({
     mutationFn: (values: CompanyState) =>
-      api.patch('/api/admin/settings/company', {
+      api.patch('/admin/settings/company', {
         legal_name: values.legalName,
         gstin: values.gstin,
         pan: values.pan,
