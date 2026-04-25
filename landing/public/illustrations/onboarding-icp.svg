@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none">
+  <!-- Background -->
+  <circle cx="120" cy="100" r="80" fill="#f3eeff" opacity="0.4"/>
+
+  <!-- Center petal arrangement with people icons -->
+  <!-- Petal 1 (top) -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#7c4db8" opacity="0.15"/>
+  <!-- Petal 2 -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#552f83" opacity="0.12" transform="rotate(45 120 100)"/>
+  <!-- Petal 3 -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#7c4db8" opacity="0.15" transform="rotate(90 120 100)"/>
+  <!-- Petal 4 -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#552f83" opacity="0.12" transform="rotate(135 120 100)"/>
+  <!-- Petal 5 -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#7c4db8" opacity="0.15" transform="rotate(180 120 100)"/>
+  <!-- Petal 6 -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#552f83" opacity="0.12" transform="rotate(225 120 100)"/>
+  <!-- Petal 7 -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#7c4db8" opacity="0.15" transform="rotate(270 120 100)"/>
+  <!-- Petal 8 -->
+  <ellipse cx="120" cy="48" rx="22" ry="38" fill="#552f83" opacity="0.12" transform="rotate(315 120 100)"/>
+
+  <!-- People icons in petal positions -->
+  <!-- Top person -->
+  <circle cx="120" cy="46" r="8" fill="#552f83"/>
+  <path d="M110 66 Q120 58 130 66" stroke="#552f83" stroke-width="3" fill="none"/>
+
+  <!-- Right person -->
+  <circle cx="170" cy="100" r="8" fill="#7c4db8"/>
+  <path d="M160 118 Q170 110 180 118" stroke="#7c4db8" stroke-width="3" fill="none"/>
+
+  <!-- Bottom-right person -->
+  <circle cx="148" cy="140" r="7" fill="#552f83" opacity="0.8"/>
+  <path d="M139 156 Q148 149 157 156" stroke="#552f83" stroke-width="2.5" fill="none" opacity="0.8"/>
+
+  <!-- Bottom-left person -->
+  <circle cx="92" cy="140" r="7" fill="#7c4db8" opacity="0.8"/>
+  <path d="M83 156 Q92 149 101 156" stroke="#7c4db8" stroke-width="2.5" fill="none" opacity="0.8"/>
+
+  <!-- Left person -->
+  <circle cx="70" cy="100" r="8" fill="#552f83"/>
+  <path d="M60 118 Q70 110 80 118" stroke="#552f83" stroke-width="3" fill="none"/>
+
+  <!-- Centre orange dot -->
+  <circle cx="120" cy="100" r="12" fill="#f97316"/>
+  <circle cx="120" cy="100" r="7" fill="#fff3e0"/>
+
+  <!-- Checkmark in centre -->
+  <path d="M115 100 l4 4 7-7" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Caption -->
+  <text x="120" y="185" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#552f83" font-weight="600">Define your ICP</text>
+</svg>

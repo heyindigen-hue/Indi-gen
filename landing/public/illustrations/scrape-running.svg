@@ -1,0 +1,16 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" width="240" height="240">
+  <rect width="240" height="240" fill="#FAF7F2"/>
+  <g id="flower" transform="translate(120,120)">
+    <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="4s" repeatCount="indefinite" additive="sum"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#FF4716" opacity="0.9" stroke="#2C1810" stroke-width="1.2"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#C8553D" opacity="0.85" stroke="#2C1810" stroke-width="1.2" transform="rotate(45)"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#FF4716" opacity="0.88" stroke="#2C1810" stroke-width="1.2" transform="rotate(90)"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#C8553D" opacity="0.85" stroke="#2C1810" stroke-width="1.2" transform="rotate(135)"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#FF4716" opacity="0.9" stroke="#2C1810" stroke-width="1.2" transform="rotate(180)"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#C8553D" opacity="0.85" stroke="#2C1810" stroke-width="1.2" transform="rotate(225)"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#FF4716" opacity="0.88" stroke="#2C1810" stroke-width="1.2" transform="rotate(270)"/>
+    <ellipse cx="0" cy="-38" rx="16" ry="28" fill="#C8553D" opacity="0.85" stroke="#2C1810" stroke-width="1.2" transform="rotate(315)"/>
+    <circle cx="0" cy="0" r="13" fill="#FAF7F2" stroke="#2C1810" stroke-width="1.5"/>
+    <circle cx="0" cy="0" r="5" fill="#FF4716"/>
+  </g>
+</svg>

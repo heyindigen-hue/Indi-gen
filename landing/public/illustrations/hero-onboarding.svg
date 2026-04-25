@@ -1,0 +1,50 @@
+<svg viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg" width="480" height="360">
+  <rect width="480" height="360" fill="#FAF7F2"/>
+
+  <!-- scattered small petals background -->
+  <ellipse cx="60" cy="80" rx="14" ry="7" fill="none" stroke="#FFB098" stroke-width="1.5" stroke-linecap="round" transform="rotate(-30 60 80)" opacity="0.6"/>
+  <ellipse cx="420" cy="60" rx="12" ry="6" fill="none" stroke="#FFB098" stroke-width="1.5" stroke-linecap="round" transform="rotate(45 420 60)" opacity="0.5"/>
+  <ellipse cx="430" cy="290" rx="16" ry="8" fill="none" stroke="#FFB098" stroke-width="1.5" stroke-linecap="round" transform="rotate(-20 430 290)" opacity="0.55"/>
+  <ellipse cx="50" cy="310" rx="10" ry="5" fill="none" stroke="#C8553D" stroke-width="1.5" stroke-linecap="round" transform="rotate(60 50 310)" opacity="0.4"/>
+  <ellipse cx="380" cy="170" rx="8" ry="4" fill="none" stroke="#FF4716" stroke-width="1.2" stroke-linecap="round" transform="rotate(15 380 170)" opacity="0.35"/>
+  <ellipse cx="100" cy="200" rx="9" ry="4.5" fill="none" stroke="#C8553D" stroke-width="1.2" stroke-linecap="round" transform="rotate(-45 100 200)" opacity="0.3"/>
+
+  <!-- center flower — 8 petals radiating from center at cx=240, cy=175 -->
+  <!-- each petal: ellipse rotated at 0,45,90,135,180,225,270,315 degrees -->
+  <!-- petal length ~55, width ~22, center at 240,175 -->
+  <g transform="translate(240,175)">
+    <!-- petal 0° (top) -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#FF4716" opacity="0.92" stroke="#2C1810" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- petal 45° -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#FF4716" opacity="0.88" stroke="#2C1810" stroke-width="1.2" transform="rotate(45)"/>
+    <!-- petal 90° (right) -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#C8553D" opacity="0.85" stroke="#2C1810" stroke-width="1.2" transform="rotate(90)"/>
+    <!-- petal 135° -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#FF4716" opacity="0.88" stroke="#2C1810" stroke-width="1.2" transform="rotate(135)"/>
+    <!-- petal 180° (bottom) -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#C8553D" opacity="0.85" stroke="#2C1810" stroke-width="1.2" transform="rotate(180)"/>
+    <!-- petal 225° -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#FF4716" opacity="0.88" stroke="#2C1810" stroke-width="1.2" transform="rotate(225)"/>
+    <!-- petal 270° (left) -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#C8553D" opacity="0.9" stroke="#2C1810" stroke-width="1.2" transform="rotate(270)"/>
+    <!-- petal 315° -->
+    <ellipse cx="0" cy="-42" rx="18" ry="30" fill="#FF4716" opacity="0.88" stroke="#2C1810" stroke-width="1.2" transform="rotate(315)"/>
+    <!-- center circle -->
+    <circle cx="0" cy="0" r="14" fill="#FAF7F2" stroke="#2C1810" stroke-width="1.5"/>
+    <circle cx="0" cy="0" r="6" fill="#FF4716"/>
+  </g>
+
+  <!-- magnifier implied: a circle arc + handle near flower -->
+  <circle cx="310" cy="130" r="28" fill="none" stroke="#2C1810" stroke-width="2.2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="330" y1="152" x2="348" y2="170" stroke="#2C1810" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- tagline text area placeholder dots -->
+  <rect x="170" y="265" width="140" height="6" rx="3" fill="#C8553D" opacity="0.2"/>
+  <rect x="195" y="278" width="90" height="5" rx="2.5" fill="#C8553D" opacity="0.15"/>
+
+  <!-- sparkle dots radiating -->
+  <circle cx="178" cy="120" r="3" fill="#FF4716" opacity="0.5"/>
+  <circle cx="305" cy="235" r="2.5" fill="#FF4716" opacity="0.45"/>
+  <circle cx="160" cy="240" r="2" fill="#C8553D" opacity="0.4"/>
+  <circle cx="340" cy="110" r="2" fill="#FF4716" opacity="0.5"/>
+</svg>
