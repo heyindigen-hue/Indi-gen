@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FF4716"
+      "backgroundColor": "#F7F1E5"
     },
     "ios": {
       "supportsTablet": false,
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FF4716"
+        "backgroundColor": "#F7F1E5"
       },
       "package": "com.leadhangover.indigen",
       "googleServicesFile": "./google-services.json",
@@ -39,7 +39,7 @@
       "expo-font",
       ["expo-notifications", {
         "icon": "./assets/icon.png",
-        "color": "#FF4716"
+        "color": "#FF5A1F"
       }],
       "@react-native-firebase/app",
       ["expo-build-properties", {

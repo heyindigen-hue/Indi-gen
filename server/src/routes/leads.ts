@@ -30,7 +30,7 @@ const feedbackSchema = z.object({
 });
 
 router.get('/', async (req: any, res) => {
-  const { status, icp, icp_type, score_min, q, sort, limit = '50', offset = '0' } = req.query;
+  const { status, icp, icp_type, score_min, q, sort, platform, limit = '50', offset = '0' } = req.query;
   const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
   const conditions: string[] = ['1=1'];
   const params: any[] = [];
@@ -51,6 +51,11 @@ router.get('/', async (req: any, res) => {
   if (score_min) {
     params.push(parseInt(score_min as string));
     conditions.push(`l.score >= $${params.length}`);
+  }
+  // platform filter — the dataset only carries LinkedIn URLs; "linkedin" maps to
+  // rows with a linkedin_url, so the mobile feed never surfaces archived non-LI rows.
+  if (platform === 'linkedin') {
+    conditions.push(`l.linkedin_url IS NOT NULL`);
   }
   if (q) {
     params.push(`%${q}%`);

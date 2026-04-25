@@ -1,0 +1,47 @@
+# Mobile-specific EAS ignore — overrides root .gitignore for the build context.
+# Crucially, we do NOT ignore google-services.json / GoogleService-Info.plist here:
+# the root .gitignore excludes them, but EAS uses .easignore (when present) so the
+# Firebase config files reach the build server.
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Expo / RN local artifacts
+.expo/
+ios/build/
+android/build/
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+
+# Local APK/log dumps committed during diagnostics
+apk*_log_*.txt
+apk*_view*.json
+apk[0-9]*.json
