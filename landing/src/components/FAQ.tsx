@@ -1,61 +1,76 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 
-const FAQS = [
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+const ITEMS = [
   {
-    q: 'Is what you do legal?',
-    a: 'Yes. We collect publicly visible LinkedIn profile data the same way a human visiting a profile does. We do not scrape private data, bypass auth, or violate ToS. You connect your own LinkedIn account; nothing happens off-account.',
+    q: 'Is LinkedIn scraping legal?',
+    a: 'Public posts and public profile data are fair game under the hiQ v. LinkedIn precedent in the US, and we operate identically under Indian DPDP. We do not scrape behind logins of accounts that are not yours, we do not bulk-export private connections, and we honor LinkedIn rate limits with conservative pacing.',
   },
   {
-    q: 'Will I get my LinkedIn account banned?',
-    a: 'We mirror human behavior with rate limits well under platform thresholds, randomized timing, and per-user pacing. We have run >180k sessions without a single account flagged. You stay in control of every action.',
+    q: "What about LinkedIn's Terms of Service?",
+    a: 'You authenticate with your own LinkedIn account, set your own pacing, and stay within human-feasible activity. We rotate sessions, keep cookie state warm, and stop the moment LinkedIn surfaces a friction prompt — no aggressive bypassing.',
   },
   {
-    q: 'How do you handle data privacy?',
-    a: 'GDPR + CCPA compliant. All lead data lives in your workspace, encrypted at rest. We do not train models on your data. You can export or delete everything at any moment.',
+    q: 'How does Claude score a lead?',
+    a: 'Each post or comment is summarized into intent (buyer / seeker / self-promo / noise) plus a confidence score from 0 to 10. The model uses your ICP brief plus rolling examples from leads you accepted or rejected. Scores improve every week.',
+  },
+  {
+    q: 'What data do you store?',
+    a: 'Your ICP brief, the public LinkedIn artifacts that matched, the enriched contact details we found, your draft messages, and outcomes (sent / replied / closed). All in your tenant. Nothing is shared across customers.',
+  },
+  {
+    q: 'Can I export my leads?',
+    a: 'CSV, JSON, and webhook in real time. We will also push to HubSpot, Pipedrive, Zoho, Salesforce, and any system that speaks Zapier. Your data leaves with you.',
   },
   {
     q: 'How long is the free trial?',
-    a: '7 days. Full Pro features. No credit card. After trial, choose any plan or stay on Starter (100 leads/mo).',
+    a: 'Fourteen days, no credit card. You get fifty leads, one ICP, and the full draft engine. After that you pick a plan or your data sits idle for thirty days before deletion.',
   },
   {
-    q: 'Can I cancel anytime?',
-    a: 'One click. No emails to support, no cancellation calls. Your account converts to Starter at the end of the billing cycle.',
+    q: 'Do you support white-label?',
+    a: 'Yes — Pro and Enterprise can rebrand the admin app, add a custom domain, and resell to their own clients. The mobile app supports custom theming too.',
   },
   {
-    q: 'Do you have a team plan?',
-    a: 'Yes. Team comes with 5 seats, shared voice library, and admin analytics. Need 20+? We have an enterprise tier with SSO and dedicated infra.',
-  },
-  {
-    q: 'Can I export my data?',
-    a: 'CSV, JSON or direct sync to HubSpot, Salesforce, Pipedrive, Attio and Notion. Webhooks let you push into anything custom.',
-  },
-  {
-    q: 'Do you offer webhooks or an API?',
-    a: 'On Team and Enterprise. Lead events, reply events and sequence stage changes — all available as webhooks or via REST API.',
+    q: 'What if I run out of tokens mid-month?',
+    a: 'You can buy a top-up pack at the same per-token rate, or wait for the next cycle. We never overcharge silently — you will see a banner and an explicit confirmation before any extra charge.',
   },
 ];
 
 export default function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
   return (
-    <section id="faq" className="px-6 md:px-10 py-32 md:py-44">
-      <div className="max-w-[70ch] mx-auto">
-        <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-6">
-          [ FAQ // 05 ]
+    <section
+      id="faq"
+      className="relative w-full"
+      style={{ backgroundColor: 'var(--cream)' }}
+    >
+      <div className="px-6 md:px-10 py-24 md:py-36 max-w-[1600px] mx-auto">
+        <div className="mb-14 md:mb-20 max-w-[34ch]">
+          <div className="mono mb-4" style={{ color: 'var(--ash)' }}>
+            QUESTIONS / ANSWERED
+          </div>
+          <h2
+            className="serif"
+            style={{
+              fontSize: 'clamp(40px, 6vw, 96px)',
+              lineHeight: 1.05,
+              letterSpacing: '-0.018em',
+              fontWeight: 300,
+            }}
+          >
+            Eight things people <span className="serif-italic">always ask.</span>
+          </h2>
         </div>
-        <h2 className="text-h2 font-display mb-16 md:mb-20">
-          Questions, answered.
-        </h2>
-        <div className="border-t border-[var(--line)]">
-          {FAQS.map((item, i) => (
-            <FAQItem
+
+        <div style={{ borderTop: '1px solid var(--line)' }}>
+          {ITEMS.map((item, i) => (
+            <FAQRow
               key={i}
-              q={item.q}
-              a={item.a}
-              open={open === i}
+              item={item}
+              isOpen={open === i}
               onToggle={() => setOpen(open === i ? null : i)}
-              index={i}
             />
           ))}
         </div>
@@ -64,54 +79,73 @@ export default function FAQ() {
   );
 }
 
-function FAQItem({
-  q,
-  a,
-  open,
+function FAQRow({
+  item,
+  isOpen,
   onToggle,
-  index,
 }: {
-  q: string;
-  a: string;
-  open: boolean;
+  item: { q: string; a: string };
+  isOpen: boolean;
   onToggle: () => void;
-  index: number;
 }) {
   return (
-    <div className="border-b border-[var(--line)]">
+    <div style={{ borderBottom: '1px solid var(--line)' }} className="group">
       <button
-        type="button"
         onClick={onToggle}
-        className="w-full flex items-start gap-6 py-6 md:py-8 text-left group"
-        data-cursor
-        data-cursor-label={open ? 'Close' : 'Open'}
+        className="w-full text-left py-6 md:py-8 flex items-start gap-6 relative"
       >
-        <span className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] pt-2 w-10 shrink-0">
-          {String(index + 1).padStart(2, '0')}
-        </span>
-        <span className="flex-1 font-display text-[20px] md:text-[24px] leading-[1.3] tracking-[-0.02em] group-hover:text-[#FF5A1F] transition-colors duration-200">
-          {q}
+        <span
+          className="absolute left-0 right-0 bottom-0 h-px origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ backgroundColor: 'var(--orange)' }}
+        />
+        <span className="flex-1">
+          <span
+            className="serif block"
+            style={{
+              fontSize: 'clamp(22px, 2vw, 30px)',
+              lineHeight: 1.25,
+              letterSpacing: '-0.012em',
+              fontWeight: 300,
+              color: 'var(--ink)',
+            }}
+          >
+            {item.q}
+          </span>
         </span>
         <motion.span
-          className="font-mono-brand text-[20px] shrink-0 pt-1"
-          animate={{ rotate: open ? 45 : 0 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          animate={{ rotate: isOpen ? 45 : 0 }}
+          transition={{ duration: 0.4, ease: EASE }}
+          className="serif shrink-0"
+          style={{
+            fontSize: 32,
+            fontWeight: 300,
+            color: isOpen ? 'var(--orange)' : 'var(--ink)',
+            lineHeight: 1,
+          }}
         >
           +
         </motion.span>
       </button>
       <AnimatePresence initial={false}>
-        {open && (
+        {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
+            transition={{ duration: 0.45, ease: EASE }}
+            style={{ overflow: 'hidden' }}
           >
-            <div className="pl-16 pb-8 pr-4">
-              <p className="text-[16px] leading-[1.6] text-[var(--ink-soft)] max-w-[60ch]">{a}</p>
-            </div>
+            <p
+              className="pb-7 md:pb-9"
+              style={{
+                fontSize: 17,
+                lineHeight: 1.55,
+                color: 'var(--ash)',
+                maxWidth: '64ch',
+              }}
+            >
+              {item.a}
+            </p>
           </motion.div>
         )}
       </AnimatePresence>

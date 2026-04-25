@@ -1,103 +1,136 @@
-import { motion, useScroll } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import MagneticPill from './MagneticPill';
+import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
+import { useState } from 'react';
 import FlowerMark from './FlowerMark';
 
-const NAV_LINKS = [
-  { label: '[ HUNT ]', href: '#hunt' },
-  { label: '[ PROOF ]', href: '#proof' },
-  { label: '[ PRICING ]', href: '#pricing' },
-  { label: '[ STORY ]', href: '#story' },
+const NAV = [
+  { label: 'How it works', href: '#story' },
+  { label: 'Features', href: '#features' },
+  { label: 'Pricing', href: '#pricing' },
+  { label: 'FAQ', href: '#faq' },
 ];
 
 export default function Nav() {
-  const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    return scrollY.on('change', (v) => setScrolled(v > 100));
-  }, [scrollY]);
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, 'change', (v) => setScrolled(v > 80));
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 right-0 z-[100] transition-all duration-300"
+      className="fixed top-0 left-0 right-0 z-[90]"
       style={{
-        backdropFilter: scrolled ? 'saturate(180%) blur(8px)' : undefined,
-        WebkitBackdropFilter: scrolled ? 'saturate(180%) blur(8px)' : undefined,
-        backgroundColor: scrolled ? 'rgba(244, 241, 234, 0.78)' : 'transparent',
-        borderBottom: scrolled ? '1px solid rgba(20,20,15,0.06)' : '1px solid transparent',
+        backdropFilter: scrolled ? 'saturate(180%) blur(10px)' : undefined,
+        WebkitBackdropFilter: scrolled ? 'saturate(180%) blur(10px)' : undefined,
+        backgroundColor: scrolled ? 'rgba(247,241,229,0.78)' : 'transparent',
+        borderBottom: scrolled ? '1px solid var(--line)' : '1px solid transparent',
+        transition: 'background-color .35s ease, border-color .35s ease',
       }}
     >
       <div className="px-6 md:px-10 py-5 flex items-center justify-between max-w-[1600px] mx-auto">
-        <a href="#top" className="flex items-center gap-2.5" data-cursor data-cursor-label="Home">
-          <FlowerMark size={32} />
-          <span className="font-display font-semibold tracking-[-0.02em] text-[18px] text-[#14140F]">
+        <a
+          href="#top"
+          className="flex items-center gap-2.5 group"
+          style={{ color: 'var(--ink)' }}
+        >
+          <FlowerMark size={28} />
+          <span
+            className="serif"
+            style={{ fontSize: 20, fontWeight: 400, letterSpacing: '-0.02em' }}
+          >
             LeadHangover
           </span>
         </a>
 
-        <div className="hidden md:flex items-center gap-7">
-          {NAV_LINKS.map((link) => (
-            <NavLink key={link.href} href={link.href}>
-              {link.label}
+        <div className="hidden md:flex items-center gap-8">
+          {NAV.map((l) => (
+            <NavLink key={l.href} href={l.href}>
+              {l.label}
             </NavLink>
           ))}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
           <a
             href="/auth/login"
-            className="hidden md:inline text-[14px] font-display tracking-[-0.01em] hover:opacity-60 transition-opacity"
-            data-cursor
-            data-cursor-label="Sign in"
+            className="hidden md:inline mono"
+            style={{ color: 'var(--ash)' }}
           >
-            Sign in
+            sign in
           </a>
-          <div className="hidden md:block">
-            <MagneticPill href="/auth/signup" cursorLabel="Start">
-              Start free
-            </MagneticPill>
-          </div>
+          <a
+            href="/auth/signup"
+            className="hidden md:inline-block group relative overflow-hidden rounded-full"
+            style={{
+              backgroundColor: 'var(--ink)',
+              color: 'var(--cream)',
+              padding: '10px 20px',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            <span className="relative inline-block">Start free</span>
+          </a>
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden flex flex-col gap-1 p-2"
+            className="md:hidden flex flex-col gap-1.5 p-2"
             aria-label="Menu"
-            data-cursor
-            data-cursor-label="Menu"
           >
-            <span className={`block w-6 h-px bg-[#14140F] transition-transform ${open ? 'rotate-45 translate-y-[5px]' : ''}`} />
-            <span className={`block w-6 h-px bg-[#14140F] transition-opacity ${open ? 'opacity-0' : ''}`} />
-            <span className={`block w-6 h-px bg-[#14140F] transition-transform ${open ? '-rotate-45 -translate-y-[5px]' : ''}`} />
+            <span
+              className={`block w-5 h-px transition-transform duration-300 ${
+                open ? 'rotate-45 translate-y-[6px]' : ''
+              }`}
+              style={{ backgroundColor: 'var(--ink)' }}
+            />
+            <span
+              className={`block w-5 h-px transition-opacity duration-300 ${open ? 'opacity-0' : ''}`}
+              style={{ backgroundColor: 'var(--ink)' }}
+            />
+            <span
+              className={`block w-5 h-px transition-transform duration-300 ${
+                open ? '-rotate-45 -translate-y-[6px]' : ''
+              }`}
+              style={{ backgroundColor: 'var(--ink)' }}
+            />
           </button>
         </div>
       </div>
 
       <motion.div
-        className="md:hidden overflow-hidden border-t border-[rgba(20,20,15,0.1)] bg-[#F4F1EA]"
+        className="md:hidden overflow-hidden"
         initial={false}
         animate={{ height: open ? 'auto' : 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        style={{ backgroundColor: 'var(--cream)', borderTop: '1px solid var(--line)' }}
       >
         <div className="px-6 py-6 flex flex-col gap-5">
-          {NAV_LINKS.map((link) => (
+          {NAV.map((l) => (
             <a
-              key={link.href}
-              href={link.href}
-              className="font-mono-brand text-[14px] uppercase tracking-[0.12em] hover:text-[#FF5A1F]"
+              key={l.href}
+              href={l.href}
               onClick={() => setOpen(false)}
+              className="serif"
+              style={{ fontSize: 22 }}
             >
-              {link.label}
+              {l.label}
             </a>
           ))}
-          <a
-            href="/auth/login"
-            className="font-display text-[16px] hover:opacity-60"
-            onClick={() => setOpen(false)}
-          >
-            Sign in
+          <div className="h-px my-2" style={{ backgroundColor: 'var(--line)' }} />
+          <a href="/auth/login" className="mono" style={{ color: 'var(--ash)' }}>
+            sign in
           </a>
-          <MagneticPill href="/auth/signup" cursorLabel="Start">Start free</MagneticPill>
+          <a
+            href="/auth/signup"
+            className="inline-block w-fit rounded-full"
+            style={{
+              backgroundColor: 'var(--ink)',
+              color: 'var(--cream)',
+              padding: '12px 22px',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Start free
+          </a>
         </div>
       </motion.div>
     </motion.nav>
@@ -108,12 +141,14 @@ function NavLink({ children, href }: { children: string; href: string }) {
   return (
     <a
       href={href}
-      className="relative font-mono-brand text-[12px] uppercase tracking-[0.12em] py-1 group inline-block"
-      data-cursor
-      data-cursor-label="Go"
+      className="relative group inline-block"
+      style={{ fontSize: 14, color: 'var(--ink)' }}
     >
-      <span className="relative z-10">{children}</span>
-      <span className="absolute left-0 bottom-0 h-px w-full bg-[#14140F] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]" />
+      <span>{children}</span>
+      <span
+        className="absolute left-0 -bottom-1 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ backgroundColor: 'var(--ink)' }}
+      />
     </a>
   );
 }

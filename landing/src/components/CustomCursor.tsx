@@ -1,22 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 export default function CustomCursor() {
-  const x = useMotionValue(-100);
-  const y = useMotionValue(-100);
-  const sx = useSpring(x, { stiffness: 500, damping: 40, mass: 0.5 });
-  const sy = useSpring(y, { stiffness: 500, damping: 40, mass: 0.5 });
+  const x = useMotionValue(-200);
+  const y = useMotionValue(-200);
+  const ringX = useSpring(x, { stiffness: 200, damping: 30, mass: 0.6 });
+  const ringY = useSpring(y, { stiffness: 200, damping: 30, mass: 0.6 });
 
-  const [hover, setHover] = useState(false);
-  const [label, setLabel] = useState<string | null>(null);
   const [enabled, setEnabled] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [mode, setMode] = useState<'idle' | 'link' | 'drag'>('idle');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (matchMedia('(pointer: coarse)').matches) return;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     setEnabled(true);
+    document.documentElement.classList.add('has-custom-cursor');
+    return () => document.documentElement.classList.remove('has-custom-cursor');
   }, []);
 
   useEffect(() => {
@@ -27,15 +27,13 @@ export default function CustomCursor() {
     };
     const onOver = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
-      const linkLike = t.closest('a, button, [data-cursor]');
-      if (linkLike) {
-        const lbl = (linkLike as HTMLElement).dataset.cursorLabel ?? null;
-        setHover(true);
-        setLabel(lbl);
-      } else {
-        setHover(false);
-        setLabel(null);
+      const dragZone = t.closest('[data-cursor="drag"]');
+      if (dragZone) {
+        setMode('drag');
+        return;
       }
+      const linkLike = t.closest('a, button, [data-cursor="link"]');
+      setMode(linkLike ? 'link' : 'idle');
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseover', onOver);
@@ -48,35 +46,51 @@ export default function CustomCursor() {
   if (!enabled) return null;
 
   return (
-    <motion.div
-      ref={ref}
-      className="pointer-events-none fixed top-0 left-0 z-[9998]"
-      style={{ x: sx, y: sy }}
-    >
+    <>
+      {/* Inner dot — exact pointer position, 8px ink */}
       <motion.div
-        className="rounded-full"
+        className="pointer-events-none fixed top-0 left-0 z-[9999]"
         style={{
+          x,
+          y,
+          width: 8,
+          height: 8,
+          borderRadius: 999,
+          backgroundColor: 'var(--ink)',
           translateX: '-50%',
           translateY: '-50%',
           mixBlendMode: 'difference',
         }}
-        animate={{
-          width: label ? 88 : hover ? 56 : 12,
-          height: label ? 88 : hover ? 56 : 12,
-          backgroundColor: hover ? 'transparent' : '#F4F1EA',
-          borderColor: '#F4F1EA',
-          borderWidth: hover ? 1 : 0,
-        }}
-        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        animate={{ opacity: mode === 'drag' ? 0 : 1, scale: mode === 'link' ? 0.5 : 1 }}
+        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+      />
+      {/* Outer ring — spring lag */}
+      <motion.div
+        className="pointer-events-none fixed top-0 left-0 z-[9998]"
+        style={{ x: ringX, y: ringY, translateX: '-50%', translateY: '-50%' }}
       >
-        {label && (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="font-mono-brand text-[10px] uppercase tracking-[0.12em] text-[#F4F1EA]">
-              {label}
+        <motion.div
+          className="rounded-full flex items-center justify-center"
+          animate={{
+            width: mode === 'drag' ? 76 : mode === 'link' ? 48 : 32,
+            height: mode === 'drag' ? 36 : mode === 'link' ? 48 : 32,
+            borderRadius: mode === 'drag' ? 999 : 999,
+            backgroundColor: mode === 'drag' ? 'var(--cream)' : 'transparent',
+            borderWidth: mode === 'drag' ? 0 : 1,
+            borderColor: 'var(--ink)',
+          }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {mode === 'drag' && (
+            <span
+              className="mono"
+              style={{ color: 'var(--ink)', fontSize: 10, letterSpacing: '0.14em' }}
+            >
+              drag
             </span>
-          </div>
-        )}
+          )}
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   );
 }

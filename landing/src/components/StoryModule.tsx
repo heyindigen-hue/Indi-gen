@@ -1,0 +1,154 @@
+import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion';
+import { ReactNode, useRef, useState } from 'react';
+import SplitText from './SplitText';
+
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+export interface StoryModuleProps {
+  number: string;
+  eyebrow: string;
+  title: string;
+  italicTail?: string;
+  body: string;
+  ctaLabel: string;
+  ctaHref: string;
+  theme: 'cream' | 'ink';
+  /** Mock receives the current step index (0-2). */
+  mock: (step: number, progress: number) => ReactNode;
+  /** Optional id for anchor */
+  id?: string;
+}
+
+export default function StoryModule({
+  number,
+  eyebrow,
+  title,
+  italicTail,
+  body,
+  ctaLabel,
+  ctaHref,
+  theme,
+  mock,
+  id,
+}: StoryModuleProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start start', 'end end'],
+  });
+
+  const [step, setStep] = useState(0);
+  const stepMV = useTransform(scrollYProgress, [0, 0.33, 0.66, 1], [0, 1, 2, 2]);
+  const [progress, setProgress] = useState(0);
+
+  useMotionValueEvent(stepMV, 'change', (v) => {
+    setStep(Math.round(v));
+  });
+  useMotionValueEvent(scrollYProgress, 'change', (v) => setProgress(v));
+
+  const isInk = theme === 'ink';
+  const bg = isInk ? 'var(--ink)' : 'var(--cream)';
+  const fg = isInk ? 'var(--cream)' : 'var(--ink)';
+  const muted = isInk ? 'rgba(247,241,229,0.55)' : 'var(--ash)';
+
+  return (
+    <section
+      ref={ref}
+      id={id}
+      className="relative w-full"
+      style={{ backgroundColor: bg, color: fg, height: '200vh' }}
+    >
+      <div className="sticky top-0 h-screen w-full flex items-center">
+        <div className="px-6 md:px-10 max-w-[1600px] mx-auto w-full">
+          <div className="grid md:grid-cols-12 gap-8 md:gap-10 items-center">
+            {/* Left 40% — copy */}
+            <div className="md:col-span-5">
+              <div
+                className="mono mb-8 md:mb-10 flex items-center gap-3"
+                style={{ color: muted }}
+              >
+                <span style={{ color: fg, fontWeight: 500 }}>{number}</span>
+                <span style={{ width: 24, height: 1, backgroundColor: muted, display: 'inline-block' }} />
+                <span>{eyebrow}</span>
+              </div>
+              <h2
+                className="serif"
+                style={{
+                  fontSize: 'clamp(40px, 6vw, 96px)',
+                  lineHeight: 1.05,
+                  letterSpacing: '-0.018em',
+                  fontWeight: 300,
+                  color: fg,
+                }}
+              >
+                <SplitText delay={0} stagger={0.05} duration={0.85} as="span" inView>
+                  {title}
+                </SplitText>
+                {italicTail && (
+                  <>
+                    <br />
+                    <span className="serif-italic">
+                      <SplitText delay={0.15} stagger={0.05} duration={0.85} as="span" italic inView>
+                        {italicTail}
+                      </SplitText>
+                    </span>
+                  </>
+                )}
+              </h2>
+              <p
+                className="mt-8 max-w-[36ch]"
+                style={{ fontSize: 'clamp(17px, 1.3vw, 21px)', lineHeight: 1.5, color: muted }}
+              >
+                {body}
+              </p>
+
+              <a
+                href={ctaHref}
+                className="mt-10 inline-flex items-center gap-2 group relative"
+                style={{ color: fg, fontSize: 16, fontWeight: 500 }}
+              >
+                <span className="relative">
+                  {ctaLabel}
+                  <span
+                    className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    style={{ backgroundColor: fg }}
+                  />
+                </span>
+                <motion.span
+                  whileHover={{ x: 5 }}
+                  transition={{ duration: 0.4, ease: EASE }}
+                  style={{ display: 'inline-block' }}
+                >
+                  →
+                </motion.span>
+              </a>
+
+              {/* Step indicator */}
+              <div className="mt-12 flex items-center gap-2.5">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-px transition-all duration-500"
+                    style={{
+                      width: step === i ? 36 : 16,
+                      backgroundColor: step === i ? 'var(--orange)' : muted,
+                      opacity: step === i ? 1 : 0.4,
+                    }}
+                  />
+                ))}
+                <span className="mono ml-3" style={{ color: muted }}>
+                  STEP {step + 1} / 3
+                </span>
+              </div>
+            </div>
+
+            {/* Right 60% — mock */}
+            <div className="md:col-span-7 relative" style={{ minHeight: 540 }}>
+              {mock(step, progress)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,182 +1,247 @@
-import { motion } from 'framer-motion';
-import { useState, FormEvent } from 'react';
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
+import { FormEvent, useRef, useState } from 'react';
 import FlowerMark from './FlowerMark';
-import { useMagnetic } from '../lib/useMagnetic';
 
-const COLUMNS = [
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+const COLUMNS: Array<{ heading: string; links: string[] }> = [
   {
-    label: 'PRODUCT',
-    items: [
-      { label: 'Targeting', href: '#hunt' },
-      { label: 'Outreach', href: '#hunt' },
-      { label: 'Replies', href: '#hunt' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'Changelog', href: '/changelog' },
-    ],
+    heading: 'Product',
+    links: ['How it works', 'Features', 'Pricing', 'Mobile app', 'Roadmap'],
   },
   {
-    label: 'COMPANY',
-    items: [
-      { label: 'Story', href: '#story' },
-      { label: 'Hunters', href: '#testimonials' },
-      { label: 'Careers', href: '/careers' },
-      { label: 'Press', href: '/press' },
-      { label: 'Contact', href: 'mailto:book@leadhangover.com' },
-    ],
+    heading: 'Resources',
+    links: ['Blog', 'Changelog', 'Help center', 'API docs', 'Status'],
   },
   {
-    label: 'LEGAL',
-    items: [
-      { label: 'Terms', href: '/terms' },
-      { label: 'Privacy', href: '/privacy' },
-      { label: 'DPA', href: '/dpa' },
-      { label: 'Security', href: '/security' },
-    ],
+    heading: 'Company',
+    links: ['About', 'Indigen Services', 'Careers', 'Contact', 'Press kit'],
+  },
+  {
+    heading: 'Legal',
+    links: ['Privacy', 'Terms', 'DPDP', 'Refunds', 'Cookie preferences'],
   },
 ];
 
 export default function Footer() {
-  const { ref, x, y } = useMagnetic<HTMLAnchorElement>({ strength: 0.18, radius: 80 });
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start end', 'end end'],
+  });
+  const wordmarkY = useTransform(scrollYProgress, [0, 1], [0, -40]);
+
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const onSubmit = (e: FormEvent) => {
+  const [lang, setLang] = useState<'EN' | 'HI'>('EN');
+
+  function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!email) return;
+    if (!email.includes('@')) return;
     setSubmitted(true);
-  };
+  }
 
   return (
-    <footer className="bg-[var(--bg)] text-[var(--ink)] border-t border-[var(--line)]">
+    <footer
+      ref={ref}
+      id="footer"
+      className="relative w-full overflow-hidden"
+      style={{ backgroundColor: 'var(--cream)', color: 'var(--ink)' }}
+    >
       <div className="px-6 md:px-10 pt-24 md:pt-32 pb-10 max-w-[1600px] mx-auto">
-        {/* Email CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.4 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-4">
-            [ TALK TO US ]
-          </div>
-          <motion.a
-            ref={ref as React.Ref<HTMLAnchorElement>}
-            href="mailto:book@leadhangover.com"
-            style={{ x, y }}
-            className="font-display font-medium tracking-[-0.04em] inline-flex items-baseline gap-3 hover:text-[#FF5A1F] transition-colors duration-300"
-            data-cursor
-            data-cursor-label="Mail"
-          >
-            <span style={{ fontSize: 'clamp(40px, 6vw, 80px)' }}>book@leadhangover.com</span>
-            <span className="font-mono-brand text-[24px] md:text-[40px]">→</span>
-          </motion.a>
-        </motion.div>
-
-        {/* Newsletter */}
-        <div className="mt-20 md:mt-24 grid grid-cols-1 md:grid-cols-12 gap-10">
-          <div className="md:col-span-5">
-            <div className="flex items-center gap-2.5 mb-5">
-              <FlowerMark size={28} />
-              <span className="font-display font-semibold tracking-[-0.02em] text-[16px]">LeadHangover</span>
+        {/* Top: brand + newsletter */}
+        <div className="grid md:grid-cols-12 gap-10 mb-16 md:mb-24 pb-12" style={{ borderBottom: '1px solid var(--line)' }}>
+          <div className="md:col-span-5 flex flex-col gap-5">
+            <div className="flex items-center gap-3">
+              <FlowerMark size={36} />
+              <span
+                className="serif"
+                style={{ fontSize: 26, fontWeight: 400, letterSpacing: '-0.02em' }}
+              >
+                LeadHangover
+              </span>
             </div>
-            <p className="text-body-l max-w-[36ch] text-[var(--ink-soft)]">
-              We hunt LinkedIn while you sleep. So you wake up to better leads.
+            <p
+              className="serif"
+              style={{
+                fontSize: 22,
+                fontWeight: 300,
+                lineHeight: 1.4,
+                letterSpacing: '-0.01em',
+                maxWidth: '28ch',
+                color: 'var(--ash)',
+              }}
+            >
+              Built by Indigen Services.<br />Hand-rolled in Nashik.
             </p>
-            <form onSubmit={onSubmit} className="mt-8 max-w-[400px] relative">
-              <div className="font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-3">
-                [ FIELD NOTES // MONTHLY ]
-              </div>
-              <div className="relative group">
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder={submitted ? 'Subscribed.' : 'your@email.com'}
-                  disabled={submitted}
-                  className="w-full pr-10 pb-3 pt-2 bg-transparent text-[18px] outline-none disabled:opacity-60"
-                />
-                <span className="absolute left-0 right-0 bottom-0 h-px bg-[var(--ink-line)]" />
-                <motion.span
-                  className="absolute left-0 bottom-0 h-px bg-[#14140F] origin-left"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: submitted ? 1 : 0 }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                />
-                <span
-                  className="absolute left-0 bottom-0 h-px bg-[#14140F] origin-left scale-x-0 group-focus-within:scale-x-100 transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] w-full"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-0 bottom-2 font-mono-brand text-[18px] hover:text-[#FF5A1F] transition-colors"
-                  data-cursor
-                  data-cursor-label="Send"
-                  aria-label="Subscribe"
-                >
-                  →
-                </button>
-              </div>
+          </div>
+
+          <div className="md:col-span-7 md:pl-16">
+            <div className="mono mb-3" style={{ color: 'var(--ash)' }}>
+              MORNING DIGEST · ONCE A WEEK
+            </div>
+            <form onSubmit={onSubmit} className="relative max-w-md">
+              <AnimatePresence mode="wait">
+                {!submitted ? (
+                  <motion.div
+                    key="form"
+                    layoutId="newsletter-shell"
+                    initial={false}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4, ease: EASE }}
+                    className="flex items-center gap-3"
+                  >
+                    <input
+                      type="email"
+                      placeholder="you@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="line-input flex-1"
+                      style={{ fontSize: 18 }}
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="serif shrink-0"
+                      style={{ fontSize: 18, fontWeight: 400, color: 'var(--ink)' }}
+                    >
+                      subscribe →
+                    </button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="ok"
+                    layoutId="newsletter-shell"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4, ease: EASE }}
+                    className="flex items-center gap-3 py-3"
+                    style={{ borderBottom: '1px solid var(--orange)' }}
+                  >
+                    <motion.span
+                      initial={{ scale: 0, rotate: -90 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ duration: 0.5, ease: EASE }}
+                      className="block"
+                      style={{ fontSize: 22, color: 'var(--orange)' }}
+                    >
+                      ✓
+                    </motion.span>
+                    <span className="serif" style={{ fontSize: 18, fontWeight: 300 }}>
+                      You're in. First note lands Tuesday.
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </form>
           </div>
+        </div>
 
+        {/* Columns */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-6 mb-20 md:mb-32">
           {COLUMNS.map((col) => (
-            <div key={col.label} className="md:col-span-2">
-              <div className="font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-5">
-                [ {col.label} ]
+            <div key={col.heading}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  marginBottom: 16,
+                  color: 'var(--ink)',
+                  letterSpacing: '-0.005em',
+                }}
+              >
+                {col.heading}
               </div>
               <ul className="flex flex-col gap-3">
-                {col.items.map((item) => (
-                  <li key={item.label}>
+                {col.links.map((l) => (
+                  <li key={l}>
                     <a
-                      href={item.href}
-                      className="text-[14px] hover:text-[#FF5A1F] transition-colors"
-                      data-cursor
-                      data-cursor-label="Open"
+                      href="#"
+                      className="relative group inline-block"
+                      style={{ fontSize: 14, color: 'var(--ash)' }}
                     >
-                      {item.label}
+                      <span>{l}</span>
+                      <span
+                        className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        style={{ backgroundColor: 'var(--orange)' }}
+                      />
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
-
-          <div className="md:col-span-1">
-            <div className="font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-5">
-              [ SOCIAL ]
-            </div>
-            <ul className="flex md:flex-col gap-4 md:gap-3 text-[14px]">
-              {[
-                { l: 'Twitter', h: 'https://twitter.com/leadhangover' },
-                { l: 'LinkedIn', h: 'https://linkedin.com/company/leadhangover' },
-                { l: 'GitHub', h: 'https://github.com/leadhangover' },
-              ].map((s) => (
-                <li key={s.l}>
-                  <a
-                    href={s.h}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-[#FF5A1F] transition-colors"
-                    data-cursor
-                    data-cursor-label="Open"
-                  >
-                    {s.l}↗
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        {/* Mono meta */}
-        <div className="mt-24 md:mt-32 pt-6 border-t border-[var(--line)] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-            [ NASHIK / IN // 2026 // © LEADHANGOVER ]
-          </div>
-          <div className="font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-            [ STATUS // ALL SYSTEMS HUNTING ]
+        {/* Giant wordmark */}
+        <motion.div
+          aria-hidden
+          style={{ y: wordmarkY }}
+          className="serif select-none leading-none"
+        >
+          <span
+            style={{
+              fontSize: 'clamp(120px, 22vw, 360px)',
+              fontWeight: 300,
+              letterSpacing: '-0.04em',
+              color: 'var(--ink)',
+              display: 'block',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+            }}
+          >
+            LeadHangover<span className="serif-italic">.</span>
+          </span>
+        </motion.div>
+
+        {/* Bottom strip */}
+        <div className="mt-10 md:mt-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pt-6" style={{ borderTop: '1px solid var(--line)' }}>
+          <span className="mono" style={{ color: 'var(--ash)' }}>
+            © 2026 INDI-GEN SERVICES · NASHIK, IN
+          </span>
+          <div className="flex items-center gap-5">
+            <SocialIcon kind="x" />
+            <SocialIcon kind="li" />
+            <SocialIcon kind="ig" />
+            <span className="block w-px h-4" style={{ backgroundColor: 'var(--line)' }} />
+            <button
+              onClick={() => setLang(lang === 'EN' ? 'HI' : 'EN')}
+              className="mono flex items-center gap-1.5"
+              style={{ color: 'var(--ash)' }}
+            >
+              <span style={{ color: lang === 'EN' ? 'var(--ink)' : 'var(--ash)' }}>EN</span>
+              <span>/</span>
+              <span style={{ color: lang === 'HI' ? 'var(--ink)' : 'var(--ash)' }}>HI</span>
+            </button>
           </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+function SocialIcon({ kind }: { kind: 'x' | 'li' | 'ig' }) {
+  const stroke = 'var(--ash)';
+  return (
+    <a href="#" style={{ color: stroke }} className="hover:text-[var(--orange)] transition-colors">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        {kind === 'x' && (
+          <path d="M2 2l5 6.2L2 14h2l4-4.5 3.5 4.5H14L8.7 7.3 14 2h-2L8.4 6.1 4.7 2z" fill="currentColor" />
+        )}
+        {kind === 'li' && (
+          <>
+            <rect x="1.5" y="1.5" width="13" height="13" rx="1" stroke="currentColor" strokeWidth="1" />
+            <path d="M4 6.5v5M4 4.5v.5M7 11.5v-3a1.5 1.5 0 013 0v3M7 6.5v5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          </>
+        )}
+        {kind === 'ig' && (
+          <>
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3" stroke="currentColor" strokeWidth="1" />
+            <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1" />
+            <circle cx="11.5" cy="4.5" r="0.6" fill="currentColor" />
+          </>
+        )}
+      </svg>
+    </a>
   );
 }

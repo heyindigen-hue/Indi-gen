@@ -1,84 +1,41 @@
-import { motion } from 'framer-motion';
-
-interface FlowerMarkProps {
+interface Props {
   size?: number;
+  petal?: string;
+  core?: string;
   className?: string;
-  animated?: boolean;
-  petalColor?: string;
-  centerColor?: string;
 }
 
-const PETAL_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
-
-const petalVariants = {
-  hidden: { scale: 0.4, rotate: -8, opacity: 0 },
-  show: {
-    scale: 1,
-    rotate: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
-  },
-};
-
+/** The Indi-gen flower mark — 8 petals around an orange core. Inline so it can be themed. */
 export default function FlowerMark({
   size = 32,
-  className = '',
-  animated = false,
-  petalColor = '#14140F',
-  centerColor = '#FF5A1F',
-}: FlowerMarkProps) {
-  if (!animated) {
-    return (
-      <svg width={size} height={size} viewBox="0 0 80 80" fill="none" className={className} aria-hidden>
-        <g transform="translate(40,40)">
-          {PETAL_ANGLES.map((angle) => (
-            <ellipse
-              key={angle}
-              cx="0"
-              cy="-22"
-              rx="6"
-              ry="18"
-              fill={petalColor}
-              transform={`rotate(${angle})`}
-            />
-          ))}
-          <circle cx="0" cy="0" r="6" fill={centerColor} />
-        </g>
-      </svg>
-    );
-  }
-
+  petal = 'currentColor',
+  core = '#FF5A1F',
+  className,
+}: Props) {
   return (
-    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" className={className} aria-hidden>
-      <motion.g
-        transform="translate(40,40)"
-        animate={{ rotate: [0, 1, -1, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 0.7 }}
-      >
-        <motion.g initial="hidden" animate="show" transition={{ staggerChildren: 0.05 } as never}>
-          {PETAL_ANGLES.map((angle) => (
-            <motion.ellipse
-              key={angle}
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      className={className}
+      fill="none"
+      aria-hidden
+    >
+      <g transform="translate(256 256)">
+        <g fill={petal}>
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+            <ellipse
+              key={deg}
               cx="0"
-              cy="-22"
-              rx="6"
-              ry="18"
-              fill={petalColor}
-              transform={`rotate(${angle})`}
-              variants={petalVariants}
+              cy="-141"
+              rx="36"
+              ry="107"
+              transform={`rotate(${deg})`}
             />
           ))}
-        </motion.g>
-        <motion.circle
-          cx="0"
-          cy="0"
-          r="6"
-          fill={centerColor}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.5, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        />
-      </motion.g>
+          <circle cx="0" cy="0" r="26" fill={core} />
+        </g>
+      </g>
     </svg>
   );
 }

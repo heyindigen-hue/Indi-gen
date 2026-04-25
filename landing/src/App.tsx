@@ -1,105 +1,163 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import Lenis from 'lenis';
+import { LazyMotion, domAnimation, AnimatePresence, motion } from 'framer-motion';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { useLenis } from './lib/useLenis';
+
 import Nav from './components/Nav';
 import Hero from './components/Hero';
-import Manifesto from './components/Manifesto';
-import Features from './components/Features';
-import Showcase from './components/Showcase';
-import Stats from './components/Stats';
-import ProofTicker from './components/ProofTicker';
-import Testimonials from './components/Testimonials';
+import TrustMarquee from './components/TrustMarquee';
+import StoryModule from './components/StoryModule';
+import Curtain from './components/Curtain';
+import EvidenceGallery from './components/EvidenceGallery';
+import FeatureGrid from './components/FeatureGrid';
+import WorkflowDiagram from './components/WorkflowDiagram';
 import Pricing from './components/Pricing';
+import Testimonials from './components/Testimonials';
 import FAQ from './components/FAQ';
-import Wordmark from './components/Wordmark';
+import FinalCTA from './components/FinalCTA';
 import Footer from './components/Footer';
 import CustomCursor from './components/CustomCursor';
 import GrainOverlay from './components/GrainOverlay';
+import ScrollProgress from './components/ScrollProgress';
+
+const IntakeMock = lazy(() => import('./components/modules/IntakeMock'));
+const HuntMock = lazy(() => import('./components/modules/HuntMock'));
+const QualifyMock = lazy(() => import('./components/modules/QualifyMock'));
+const SendMock = lazy(() => import('./components/modules/SendMock'));
 
 export default function App() {
+  useLenis();
   const [transitionDone, setTransitionDone] = useState(false);
 
   useEffect(() => {
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const small = window.innerWidth < 768;
-    if (reduce || small) {
-      return;
-    }
-    const lenis = new Lenis({
-      lerp: 0.1,
-      duration: 1.2,
-      smoothWheel: true,
-      wheelMultiplier: 1,
-    });
-    let raf = 0;
-    const tick = (time: number) => {
-      lenis.raf(time);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-
-    return () => {
-      cancelAnimationFrame(raf);
-      lenis.destroy();
-    };
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setTransitionDone(true), 700);
-    return () => clearTimeout(t);
+    const t = window.setTimeout(() => setTransitionDone(true), 600);
+    return () => window.clearTimeout(t);
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] overflow-x-hidden relative">
-      <GrainOverlay />
-      <CustomCursor />
+    <LazyMotion features={domAnimation}>
+      <div
+        className="min-h-screen relative"
+        style={{ backgroundColor: 'var(--cream)', color: 'var(--ink)' }}
+      >
+        <ScrollProgress />
+        <GrainOverlay />
+        <CustomCursor />
 
-      {/* Page transition curtain */}
-      <AnimatePresence>
-        {!transitionDone && <PageCurtain />}
-      </AnimatePresence>
+        <AnimatePresence>{!transitionDone && <PageCurtain />}</AnimatePresence>
 
-      <Nav />
+        <Nav />
 
-      <main>
-        <Hero />
-        <Manifesto />
-        <Features />
-        <Showcase />
-        <Stats />
-        <ProofTicker />
-        <Testimonials />
-        <Pricing />
-        <FAQ />
-        <Wordmark />
-      </main>
+        <main>
+          <Hero />
+          <TrustMarquee />
 
-      <Footer />
-    </div>
+          <Suspense fallback={<ModuleFallback theme="cream" />}>
+            <StoryModule
+              id="story-01"
+              number="01"
+              eyebrow="INTAKE"
+              title="Tell us who"
+              italicTail="you sell to."
+              body="Pick an industry, drop a phrase, name your geography. We turn it into a hunting brief Claude can read."
+              ctaLabel="See an example brief"
+              ctaHref="/auth/signup"
+              theme="cream"
+              mock={(step) => <IntakeMock step={step} />}
+            />
+          </Suspense>
+
+          <Curtain reveal="ink" />
+
+          <Suspense fallback={<ModuleFallback theme="ink" />}>
+            <StoryModule
+              id="story-02"
+              number="02"
+              eyebrow="HUNT"
+              title="We scrape"
+              italicTail="while you sleep."
+              body="Every twelve hours we sweep LinkedIn — posts, comments, hashtags. Filtered hard for buying intent."
+              ctaLabel="How the scraper works"
+              ctaHref="#story"
+              theme="ink"
+              mock={(step, progress) => <HuntMock step={step} progress={progress} />}
+            />
+          </Suspense>
+
+          <Curtain reveal="cream" />
+
+          <Suspense fallback={<ModuleFallback theme="cream" />}>
+            <StoryModule
+              id="story-03"
+              number="03"
+              eyebrow="QUALIFY"
+              title="Claude reads"
+              italicTail="every post."
+              body="Buyer? Job seeker? Self-promoter? We tag every lead with intent and a confidence score."
+              ctaLabel="See the score model"
+              ctaHref="#story"
+              theme="cream"
+              mock={(step) => <QualifyMock step={step} />}
+            />
+          </Suspense>
+
+          <Curtain reveal="ink" />
+
+          <Suspense fallback={<ModuleFallback theme="ink" />}>
+            <StoryModule
+              id="story-04"
+              number="04"
+              eyebrow="SEND"
+              title="Drafts that don't"
+              italicTail="sound like a bot."
+              body="WhatsApp, email, LinkedIn DM — written in your voice from your replies. You hit send."
+              ctaLabel="See a sample sequence"
+              ctaHref="#story"
+              theme="ink"
+              mock={(step) => <SendMock step={step} />}
+            />
+          </Suspense>
+
+          <Curtain reveal="cream" />
+
+          <EvidenceGallery />
+          <FeatureGrid />
+          <WorkflowDiagram />
+          <Pricing />
+          <Testimonials />
+          <FAQ />
+          <FinalCTA />
+        </main>
+
+        <Footer />
+      </div>
+    </LazyMotion>
+  );
+}
+
+function ModuleFallback({ theme }: { theme: 'cream' | 'ink' }) {
+  return (
+    <div
+      className="w-full h-screen"
+      style={{ backgroundColor: theme === 'cream' ? 'var(--cream)' : 'var(--ink)' }}
+    />
   );
 }
 
 function PageCurtain() {
-  const [pct, setPct] = useState(0);
-  useEffect(() => {
-    let i = 0;
-    const t = setInterval(() => {
-      i = Math.min(100, i + 7);
-      setPct(i);
-      if (i >= 100) clearInterval(t);
-    }, 28);
-    return () => clearInterval(t);
-  }, []);
   return (
     <motion.div
       key="lh-curtain"
-      className="fixed inset-0 z-[9999] bg-[#F4F1EA] flex items-end p-8 md:p-12"
-      initial={{ y: 0 }}
-      exit={{ y: '-105%', transition: { duration: 0.5, ease: [0.65, 0, 0.35, 1] } }}
+      className="fixed inset-0 z-[9999] flex items-end px-6 md:px-10 pb-8"
+      style={{ backgroundColor: 'var(--cream)' }}
+      initial={{ clipPath: 'inset(0 0 0 0)' }}
+      exit={{
+        clipPath: 'inset(0 0 100% 0)',
+        transition: { duration: 0.6, ease: [0.65, 0, 0.35, 1] },
+      }}
     >
-      <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-        [ LOADING / {String(pct).padStart(2, '0')}% ]
-      </div>
+      <span className="mono" style={{ color: 'var(--ash)' }}>
+        LEADHANGOVER —
+      </span>
     </motion.div>
   );
 }

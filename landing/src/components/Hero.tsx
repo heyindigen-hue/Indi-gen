@@ -1,195 +1,140 @@
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
-import { useForceField } from '../lib/useForceField';
-import MagneticPill from './MagneticPill';
+import { motion, useReducedMotion } from 'framer-motion';
+import LeadCard from './LeadCard';
+import SplitText from './SplitText';
 
-const HEADLINE_WORDS = ['Wake', 'up', 'to', 'better', 'leads.'];
+const EASE = [0.22, 1, 0.36, 1] as const;
 
-const SUBTITLE_LINES = [
-  'We hunt LinkedIn while you sleep,',
-  'score every lead with Claude,',
-  "and draft outreach that doesn't sound like a bot.",
-];
-
-const EYEBROW = '[ LH-001 // LINKEDIN LEAD HUNTING ]';
-
-const TICKER_ITEMS = [
-  'Sarah Chen — Director of Sales — qualified 2m ago — added to sequence',
-  'Raj Patel — VP Engineering — score 9.2 — DM drafted',
-  'Maya Singh — Founder, Acme — match: SaaS+India — outreach sent',
-  'Daniel Okafor — Head of RevOps — qualified 4m ago — reviewing',
-  'Aiko Tanaka — Director of Growth — score 8.7 — DM drafted',
-  'Lukas Bauer — VP Sales — match: B2B+EMEA — outreach sent',
+const HERO_LEADS = [
+  { name: 'John D.', role: 'CTO', company: 'Acme Threads', score: 8.4, tag: 'D2C' },
+  { name: 'Priya R.', role: 'Founder', company: 'Loom & Co', score: 9.1, tag: 'Shopify Plus' },
+  { name: 'Marc K.', role: 'Head of Growth', company: 'Northstar', score: 7.6, tag: 'B2B SaaS' },
+  { name: 'Aisha B.', role: 'COO', company: 'Granular', score: 8.2, tag: 'Climate' },
+  { name: 'Tom W.', role: 'VP Sales', company: 'Beacon Labs', score: 6.8, tag: 'Enterprise' },
+  { name: 'Sana V.', role: 'CEO', company: 'Slate Studio', score: 8.9, tag: 'Agency' },
+  { name: 'Rohit M.', role: 'Co-founder', company: 'Hearthstone', score: 7.4, tag: 'D2C' },
+  { name: 'Elise P.', role: 'Director', company: 'Maple Group', score: 8.0, tag: 'B2B' },
+  { name: 'Karthik S.', role: 'CMO', company: 'Pivot Mfg', score: 7.9, tag: 'Industrial' },
+  { name: 'Dana L.', role: 'Head of RevOps', company: 'Helix', score: 8.6, tag: 'D2C' },
 ];
 
 export default function Hero() {
-  const [eyebrowText, setEyebrowText] = useState('');
-  const [showHeadline, setShowHeadline] = useState(false);
-  const [showSubtitle, setShowSubtitle] = useState(false);
-  const [showCTA, setShowCTA] = useState(false);
-  const [showTicker, setShowTicker] = useState(false);
-
-  const headlineRef = useForceField<HTMLHeadingElement>({
-    radius: 180,
-    strength: 18,
-    selector: '.char',
-    enabled: showHeadline,
-  });
-
-  // Eyebrow typewriter
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setEyebrowText(EYEBROW.slice(0, i));
-      if (i >= EYEBROW.length) clearInterval(interval);
-    }, 18);
-    const t1 = setTimeout(() => setShowHeadline(true), 350);
-    const t2 = setTimeout(() => setShowSubtitle(true), 900);
-    const t3 = setTimeout(() => setShowCTA(true), 1250);
-    const t4 = setTimeout(() => setShowTicker(true), 1400);
-    return () => {
-      clearInterval(interval);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      clearTimeout(t4);
-    };
-  }, []);
-
+  const reduce = useReducedMotion();
   return (
     <section
       id="top"
-      className="relative pt-36 md:pt-44 pb-12 md:pb-20 px-6 md:px-10 overflow-hidden min-h-screen flex flex-col"
+      className="relative w-full"
+      style={{ backgroundColor: 'var(--cream)', minHeight: '100vh' }}
     >
-      {/* Eyebrow */}
-      <div className="max-w-[1600px] mx-auto w-full">
-        <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-8 md:mb-12 h-[14px]">
-          {eyebrowText}
-          <span className="inline-block w-[7px] h-[12px] -mb-px ml-0.5 align-middle bg-[var(--ink)] animate-pulse" />
-        </div>
-      </div>
-
-      {/* Headline */}
-      <div className="max-w-[1600px] mx-auto w-full">
-        <h1
-          ref={headlineRef}
-          className="text-hero font-display text-[#14140F] force-field select-none"
-          aria-label={HEADLINE_WORDS.join(' ')}
-        >
-          {HEADLINE_WORDS.map((word, wi) => (
-            <span key={wi} className="word">
-              <WordReveal word={word} delay={wi * 0.07} active={showHeadline} />
-              {wi < HEADLINE_WORDS.length - 1 && <span className="char">&nbsp;</span>}
-            </span>
-          ))}
-        </h1>
-      </div>
-
-      {/* Subtitle + CTA + ticker */}
-      <div className="max-w-[1600px] mx-auto w-full mt-10 md:mt-16 flex-1 flex flex-col">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
-          <div className="md:col-span-7 lg:col-span-6">
-            {SUBTITLE_LINES.map((line, i) => (
-              <div key={i} className="overflow-hidden">
-                <motion.p
-                  className="text-body-l text-[#14140F]"
-                  initial={{ y: '110%' }}
-                  animate={{ y: showSubtitle ? '0%' : '110%' }}
-                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
-                >
-                  {line}
-                </motion.p>
-              </div>
-            ))}
-          </div>
-          <div className="md:col-span-5 lg:col-span-4 lg:col-start-9 flex flex-col gap-3 items-start">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: showCTA ? 1 : 0, scale: showCTA ? 1 : 0.92 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <MagneticPill href="/auth/signup" size="lg" cursorLabel="Start">
-                Start hunting
-              </MagneticPill>
-            </motion.div>
-            <motion.div
-              className="font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mt-1"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: showCTA ? 1 : 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-            >
-              [ free for 7 days // no card ]
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Ticker */}
+      <div className="px-6 md:px-10 pt-40 md:pt-44 pb-10 max-w-[1600px] mx-auto">
         <motion.div
-          className="mt-16 md:mt-20 lg:mt-24 -mx-6 md:-mx-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: showTicker ? 0.6 : 0 }}
-          transition={{ duration: 0.8 }}
+          initial={reduce ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="mb-8 md:mb-12"
         >
-          <div className="border-y border-[var(--line)] py-3.5 overflow-hidden relative">
-            <div className="marquee-track">
-              {[0, 1].map((dup) => (
-                <div key={dup} className="flex items-center gap-12 pr-12 shrink-0" aria-hidden={dup === 1}>
-                  <Ticker />
-                </div>
-              ))}
-            </div>
-            <style>{`
-              .marquee-track { animation: lh-marquee 40s linear infinite; }
-              @keyframes lh-marquee {
-                from { transform: translateX(0); }
-                to { transform: translateX(-50%); }
-              }
-              @media (prefers-reduced-motion: reduce) {
-                .marquee-track { animation: none; }
-              }
-            `}</style>
+          <span className="mono" style={{ color: 'var(--ash)' }}>
+            LEADHANGOVER —
+          </span>
+        </motion.div>
+
+        <h1
+          className="serif"
+          style={{
+            fontSize: 'clamp(56px, 9vw, 168px)',
+            lineHeight: 1.0,
+            letterSpacing: '-0.02em',
+            fontWeight: 300,
+            display: 'block',
+          }}
+        >
+          <SplitText delay={0.15} stagger={0.07} duration={0.95} as="span">
+            Hunt LinkedIn leads
+          </SplitText>
+          <br />
+          <span className="serif-italic">
+            <SplitText delay={0.45} stagger={0.07} duration={0.95} as="span" italic>
+              while you sleep.
+            </SplitText>
+          </span>
+        </h1>
+
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.95, ease: EASE }}
+          className="mt-12 md:mt-16 grid md:grid-cols-2 gap-10 items-end"
+        >
+          <p
+            className="max-w-[34ch]"
+            style={{ fontSize: 'clamp(17px, 1.3vw, 21px)', lineHeight: 1.5, color: 'var(--ash)' }}
+          >
+            Indigen Services builds your private outbound engine in twenty-one days.
+            Claude reads every post. Drafts arrive in your inbox. You hit send.
+          </p>
+          <div className="flex flex-col gap-3 md:items-end">
+            <a
+              href="/auth/signup"
+              className="serif group relative inline-flex items-center gap-3"
+              style={{ fontSize: 28, fontWeight: 300 }}
+            >
+              <span className="relative">
+                Start a hunt
+                <span
+                  className="absolute left-0 -bottom-0.5 h-px w-full"
+                  style={{ backgroundColor: 'var(--ink)' }}
+                />
+              </span>
+              <motion.span
+                aria-hidden
+                initial={false}
+                whileHover={{ x: 6 }}
+                style={{ display: 'inline-block', fontSize: 24 }}
+              >
+                →
+              </motion.span>
+            </a>
+            <a href="#story" className="mono" style={{ color: 'var(--ash)' }}>
+              watch the 90-sec demo →
+            </a>
           </div>
         </motion.div>
       </div>
 
-      {/* Bottom hint */}
-      <div className="max-w-[1600px] mx-auto w-full mt-8 md:mt-12 flex items-center justify-between font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-        <span>↓ Scroll</span>
-        <span className="hidden md:inline">[ v1.0 // april 2026 ]</span>
-      </div>
-    </section>
-  );
-}
-
-function WordReveal({ word, delay, active }: { word: string; delay: number; active: boolean }) {
-  return (
-    <span className="inline-block overflow-hidden align-bottom" style={{ paddingBottom: '0.08em' }}>
-      <motion.span
-        className="inline-block"
-        initial={{ y: '110%' }}
-        animate={{ y: active ? '0%' : '110%' }}
-        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay }}
+      {/* Bottom carousel strip */}
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.9, delay: 1.1, ease: EASE }}
+        className="relative mt-6 md:mt-12 mb-10"
+        data-cursor="drag"
+        aria-hidden
       >
-        {word.split('').map((ch, i) => (
-          <span key={`${ch}-${i}`} className="char">
-            {ch}
-          </span>
-        ))}
-      </motion.span>
-    </span>
-  );
-}
-
-function Ticker() {
-  return (
-    <>
-      {TICKER_ITEMS.map((item, i) => (
-        <span key={i} className="font-mono-brand text-[12px] tracking-[0.04em] uppercase whitespace-nowrap text-[var(--ink-soft)]">
-          <span className="text-[var(--accent)] mr-3">{'>>>'}</span>
-          {item}
-        </span>
-      ))}
-    </>
+        <div className="px-6 md:px-10 mb-3 mono" style={{ color: 'var(--ash)', fontSize: 10 }}>
+          → leads landing in your queue
+        </div>
+        <div
+          className="relative overflow-hidden"
+          style={{
+            maskImage:
+              'linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%)',
+            WebkitMaskImage:
+              'linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%)',
+          }}
+        >
+          <motion.div
+            className="flex gap-4 py-2"
+            animate={reduce ? undefined : { x: [0, -((280 + 16) * HERO_LEADS.length)] }}
+            transition={
+              reduce ? undefined : { duration: 60, repeat: Infinity, ease: 'linear' }
+            }
+            style={{ width: 'max-content' }}
+          >
+            {[...HERO_LEADS, ...HERO_LEADS].map((l, i) => (
+              <LeadCard key={i} {...l} variant="paper" />
+            ))}
+          </motion.div>
+        </div>
+      </motion.div>
+    </section>
   );
 }

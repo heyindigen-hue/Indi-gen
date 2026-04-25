@@ -3,153 +3,178 @@
 @tailwind utilities;
 
 :root {
-  --bg: #F4F1EA;
-  --ink: #14140F;
-  --ink-soft: rgba(20, 20, 15, 0.6);
-  --ink-mid: rgba(20, 20, 15, 0.4);
-  --accent: #FF5A1F;
-  --line: rgba(20, 20, 15, 0.1);
-  --success: #2BB673;
+  --cream: #F7F1E5;
+  --paper: #FBF7EE;
+  --ink: #0E0E0C;
+  --ash: #2A2823;
+  --orange: #FF5A1F;
+  --line: rgba(14, 14, 12, 0.10);
 }
 
-@layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-
-  html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
-
-  html.lenis, html.lenis body {
-    height: auto;
-  }
-  .lenis.lenis-smooth {
-    scroll-behavior: auto !important;
-  }
-  .lenis.lenis-smooth [data-lenis-prevent] {
-    overscroll-behavior: contain;
-  }
-  .lenis.lenis-stopped {
-    overflow: hidden;
-  }
-
-  body {
-    background-color: var(--bg);
-    color: var(--ink);
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-weight: 400;
-    line-height: 1.45;
-    overflow-x: hidden;
-  }
-
-  ::selection {
-    background: var(--accent);
-    color: var(--bg);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    body, a, button {
-      cursor: none;
-    }
-  }
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-@layer utilities {
-  .font-display {
-    font-family: 'Manrope', system-ui, sans-serif;
-  }
-  .font-body {
-    font-family: 'Manrope', system-ui, sans-serif;
-  }
-  .font-mono-brand {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-  }
+html,
+body,
+#root {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 400;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+}
 
-  .text-hero {
-    font-size: clamp(64px, 11vw, 184px);
-    line-height: 0.92;
-    letter-spacing: -0.04em;
-    font-weight: 500;
-  }
-  .text-h2 {
-    font-size: clamp(40px, 6vw, 96px);
-    line-height: 0.95;
-    letter-spacing: -0.03em;
-    font-weight: 500;
-  }
-  .text-body-l {
-    font-size: clamp(18px, 1.4vw, 22px);
-    line-height: 1.45;
-  }
-  .text-eyebrow {
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-weight: 500;
-  }
+body {
+  font-feature-settings: 'ss01', 'cv11';
+}
 
-  .border-line {
-    border-color: var(--line);
-  }
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+  color: inherit;
+}
 
-  .magnetic-zone {
-    position: relative;
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--orange);
+  color: var(--ink);
+}
+
+/* Hide native cursor when custom cursor is active */
+html.has-custom-cursor,
+html.has-custom-cursor * {
+  cursor: none !important;
+}
+@media (pointer: coarse) {
+  html.has-custom-cursor,
+  html.has-custom-cursor * {
+    cursor: auto !important;
   }
 }
 
-/* Char force-field perspective container */
-.force-field {
-  perspective: 1200px;
-  transform-style: preserve-3d;
+/* Lenis smooth-scroll fix for sticky elements */
+html.lenis,
+html.lenis body {
+  height: auto;
 }
-.force-field .char {
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.serif {
+  font-family: 'Fraunces', ui-serif, Georgia, serif;
+  font-weight: 300;
+  font-variation-settings: 'opsz' 144;
+  letter-spacing: -0.02em;
+}
+
+.serif-italic {
+  font-family: 'Fraunces', ui-serif, Georgia, serif;
+  font-weight: 300;
+  font-style: italic;
+  font-variation-settings: 'opsz' 144;
+  letter-spacing: -0.02em;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ash);
+}
+
+/* Word-mask used by SplitText */
+.word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  line-height: inherit;
+  /* allow descenders + italic strokes that bleed below the baseline */
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+}
+.word-mask > span {
   display: inline-block;
   will-change: transform;
 }
-.force-field .word {
-  display: inline-block;
-  white-space: nowrap;
+
+/* Disable hover effects on touch */
+@media (hover: none) {
+  .hover\:bg-orange:hover { background: var(--ink); }
 }
 
-/* Hide native cursor on hover-capable devices */
-@media (hover: hover) and (pointer: fine) {
-  * {
-    cursor: none !important;
-  }
-}
-
-/* Marquee track */
-.marquee-track {
-  display: flex;
-  width: max-content;
-  will-change: transform;
-}
-
-/* Grain overlay */
-.grain-overlay {
+/* Top progress bar root */
+#scroll-progress {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  z-index: 90;
   pointer-events: none;
-  z-index: 10;
-  mix-blend-mode: multiply;
-  opacity: 0.04;
 }
 
-/* Mobile safe */
-@media (max-width: 767px) {
-  * { cursor: auto !important; }
+/* Inputs (line only) */
+.line-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 16px;
+}
+.line-input:focus {
+  border-bottom-color: var(--orange);
+}
+.line-input::placeholder {
+  color: rgba(14, 14, 12, 0.4);
 }
 
-/* prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
 }

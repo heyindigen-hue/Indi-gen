@@ -1,57 +1,64 @@
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
+import FlowerMark from './FlowerMark';
 
-const QUOTES = [
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+interface Quote {
+  quote: string;
+  attribution: string;
+  role: string;
+  flower: { petal: string; core: string };
+}
+
+const QUOTES: Quote[] = [
   {
     quote:
-      "Stopped writing first messages. Started reading replies. The drafts already sound like me by the time I open the app.",
-    name: 'Mira Lalwani',
-    role: 'FOUNDER / OUTBOUND CO',
+      'We went from six hours of manual scrolling to leads waiting in the morning. The drafts close themselves.',
+    attribution: 'Sales lead',
+    role: 'B2B SaaS, 18 person team',
+    flower: { petal: '#0E0E0C', core: '#FF5A1F' },
   },
   {
     quote:
-      "We replaced two sales-enablement tools and a part-time researcher. The targeting is the part that finally clicked.",
-    name: 'Felix Andersen',
-    role: 'HEAD OF GROWTH / KOTO',
+      'Indigen built ours in three weeks. We replaced two SDR tools and a Slack channel of complaints.',
+    attribution: 'Founder',
+    role: 'D2C agency, Mumbai',
+    flower: { petal: '#FF5A1F', core: '#0E0E0C' },
   },
   {
     quote:
-      "First pipeline tool that doesn't make me feel like I'm spamming people. The signal trail is the killer feature.",
-    name: 'Hari Kumar',
-    role: 'VP SALES / WEFTLY',
-  },
-  {
-    quote:
-      "Hangover is right — I literally wake up to qualified leads, score and draft. I open it before email.",
-    name: 'Noor Bashir',
-    role: 'GTM LEAD / PARALLAX',
+      'The proposal builder is the killer feature. Lead-to-quote in two clicks — and the buyer thinks I wrote it.',
+    attribution: 'Independent consultant',
+    role: 'Operations, Bengaluru',
+    flower: { petal: '#2A2823', core: '#FF5A1F' },
   },
 ];
 
 export default function Testimonials() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start end', 'end start'],
-  });
-
   return (
-    <section id="testimonials" ref={ref} className="px-6 md:px-10 py-32 md:py-44">
-      <div className="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16">
-        <div className="md:col-span-4 md:sticky md:top-32 self-start">
-          <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-8">
-            [ FROM HUNTERS ]
+    <section className="relative w-full" style={{ backgroundColor: 'var(--cream)' }}>
+      <div className="px-6 md:px-10 py-24 md:py-36 max-w-[1600px] mx-auto">
+        <div className="mb-14 md:mb-20 max-w-[40ch]">
+          <div className="mono mb-4" style={{ color: 'var(--ash)' }}>
+            VOICES / FROM THE FIELD
           </div>
-          <div className="font-display text-[180px] md:text-[260px] leading-[0.7] text-[var(--ink)] -mt-4 -ml-2 select-none">
-            "
-          </div>
-          <p className="mt-2 max-w-[28ch] text-body-l text-[var(--ink-soft)]">
-            What teams say after the first three weeks.
-          </p>
+          <h2
+            className="serif"
+            style={{
+              fontSize: 'clamp(40px, 6vw, 96px)',
+              lineHeight: 1.05,
+              letterSpacing: '-0.018em',
+              fontWeight: 300,
+            }}
+          >
+            People who used to <span className="serif-italic">scroll.</span>
+          </h2>
         </div>
-        <div className="md:col-span-8 flex flex-col gap-8 md:gap-12">
+
+        <div className="grid md:grid-cols-3 gap-5 md:gap-6">
           {QUOTES.map((q, i) => (
-            <Quote key={i} {...q} index={i} progress={scrollYProgress} />
+            <QuoteCard key={i} quote={q} index={i} />
           ))}
         </div>
       </div>
@@ -59,68 +66,77 @@ export default function Testimonials() {
   );
 }
 
-function Quote({
-  quote,
-  name,
-  role,
-  index,
-  progress,
-}: {
-  quote: string;
-  name: string;
-  role: string;
-  index: number;
-  progress: ReturnType<typeof useScroll>['scrollYProgress'];
-}) {
-  // Avatar parallax bound to scroll
-  const y = useTransform(progress, [0, 1], [20, -20]);
+function QuoteCard({ quote, index }: { quote: Quote; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start end', 'end start'],
+  });
+  const range = index === 1 ? [-20, -40] : index === 0 ? [0, -20] : [-10, -30];
+  const y = useTransform(scrollYProgress, [0, 1], range);
+
   return (
     <motion.div
-      className="border-t border-[var(--line)] pt-8 md:pt-10"
-      initial={{ opacity: 0, y: 24 }}
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.7, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
+      viewport={{ once: true, margin: '-10%' }}
+      transition={{ duration: 0.7, ease: EASE, delay: index * 0.08 }}
+      style={{ y }}
     >
-      <p className="font-display text-[24px] md:text-[32px] leading-[1.25] tracking-[-0.02em] mb-6">
-        <LineSplit text={quote} />
-      </p>
-      <div className="flex items-center gap-4">
-        <motion.div
-          className="w-8 h-8 rounded-full bg-[var(--ink)] flex items-center justify-center text-[#F4F1EA] font-mono-brand text-[10px]"
-          style={{ y }}
+      <div
+        className="rounded-3xl h-full flex flex-col gap-6"
+        style={{
+          backgroundColor: 'var(--paper)',
+          border: '1px solid var(--line)',
+          padding: 28,
+          minHeight: 380,
+        }}
+      >
+        <span
+          className="serif"
+          style={{ fontSize: 64, lineHeight: 0.6, color: 'var(--orange)', fontWeight: 300 }}
         >
-          {name.split(' ').map((p) => p[0]).join('')}
-        </motion.div>
-        <div>
-          <span className="font-display text-[14px] tracking-[-0.01em]">{name}</span>
-          <span className="ml-2 font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-            {role}
-          </span>
+          “
+        </span>
+        <p
+          className="serif"
+          style={{
+            fontSize: 'clamp(20px, 1.6vw, 24px)',
+            lineHeight: 1.4,
+            letterSpacing: '-0.008em',
+            fontWeight: 300,
+            color: 'var(--ink)',
+            flex: 1,
+          }}
+        >
+          {quote.quote}
+        </p>
+        <div
+          className="flex items-center gap-3 pt-4"
+          style={{ borderTop: '1px solid var(--line)' }}
+        >
+          <div
+            className="rounded-full flex items-center justify-center shrink-0"
+            style={{
+              width: 44,
+              height: 44,
+              backgroundColor: 'var(--cream)',
+              border: '1px solid var(--line)',
+            }}
+          >
+            <FlowerMark size={28} petal={quote.flower.petal} core={quote.flower.core} />
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>
+              {quote.attribution}
+            </div>
+            <div className="mono" style={{ color: 'var(--ash)', fontSize: 10 }}>
+              {quote.role}
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>
-  );
-}
-
-function LineSplit({ text }: { text: string }) {
-  // Split into pseudo-lines on word boundaries (just animated as one line-split via stagger)
-  const words = text.split(' ');
-  return (
-    <span aria-label={text}>
-      {words.map((w, i) => (
-        <span key={i} className="inline-block overflow-hidden align-bottom" aria-hidden>
-          <motion.span
-            className="inline-block"
-            initial={{ y: 24, opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: i * 0.018 }}
-          >
-            {w}&nbsp;
-          </motion.span>
-        </span>
-      ))}
-    </span>
   );
 }
