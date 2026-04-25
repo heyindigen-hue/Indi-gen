@@ -34,9 +34,13 @@ export async function enrichLead(leadId: string, linkedinUrl?: string): Promise<
     return;
   }
 
-  const searchData: any = {
-    url: linkedinUrl,
-    webhookUrl: `${process.env.PUBLIC_URL || ''}/webhook/signalhire`,
+  // SignalHire /candidate/search expects:
+  //   items: string[]   (LinkedIn profile URLs, must be absolute)
+  //   callbackUrl: string  (absolute https URL — relative paths return 422)
+  const publicBase = process.env.PUBLIC_URL || 'https://leadgen.indigenservices.com';
+  const searchData = {
+    items: [linkedinUrl],
+    callbackUrl: `${publicBase.replace(/\/$/, '')}/webhook/signalhire`,
   };
 
   try {
