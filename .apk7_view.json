@@ -1,0 +1,47 @@
+{
+  "id": "222a29ac-4ac8-4862-9cbf-f9ad0d374412",
+  "status": "ERRORED",
+  "platform": "ANDROID",
+  "error": {
+    "errorCode": "UNKNOWN_ERROR",
+    "message": "Unknown error. See logs of the Pre-install hook build phase for more information."
+  },
+  "artifacts": {},
+  "initiatingActor": {
+    "id": "d92f2845-1e7c-4e69-a388-dbc042e4c144",
+    "displayName": "yashraj-indigen"
+  },
+  "logFiles": [
+    "https://job-logs.eascdn.net/production/222a29ac-4ac8-4862-9cbf-f9ad0d374412/1777119704785-cd541833-5266-4c7e-bc98-0ee31e2f4685.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T185654Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=8c95f083a0a20329a08b1f2013f3fd17ed2c6ed68a537c1f9bfe8cd678db41662fadae5d6f685819cb9f9734393348c7d0db3bd1f725602705383f76c8dd0f4a7ab1aa667c37b77f16ed480244f348b671ae0ca1c3ac216fc92d020816c7ea1e5f21851ff979aa2da78af8c810bca61d7032ba2e185f6ee4c1d2525f93c56a7f623b6f060689db44b0396ea87a4e243397349c904aa9266605d3eef098760333d6311d7421a8a16c2a9967ec2902b7b7579c5751e7bc44988527d95d33b9fa5676c79a12174a5a2a595f8f19c4886cfbf817e61b626d24b8aea066745e4a2dec37782649614d6b11bece5678fb9339f3384e7632f09404920bc2e492f18b5d76",
+    "https://job-logs.eascdn.net/production/222a29ac-4ac8-4862-9cbf-f9ad0d374412/1777119713371-77e04aec-93d9-4614-aa2b-75dcd666455d.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T185654Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=df0c9a081c848731db42e5832894680b4dc461b08c66e3f51d2d08447f002a6ca2466b06b3e1089fcd1fbe1eba17b5441ee4e817bd3f57f5fb52179503d696b6379bf7bfa42fb5ae4ac6eb4aa30c9f2febf1f6981c753cba79f70881da8cae6d155c948d03ade2a26da497d9d030a209e8236eb20bb2a65e38c8a3223f1d7986c60aaf77d80dce7ba2f77a71158b442fd23b9da7d06896b77e869a4afd639eb23157b02f10d408d77ded0ff859d29d4312b16d84e9bcb59f857e9b8443ff4797c9b15d016446b8bb260ceceb0bd1069d7490d24ecd313d9fb47e8fb24f0d80e1b967566845f93e069c9fbd83291aa5e8ad1c7b4f5b77326fd44d28234d7d8f43",
+    "https://job-logs.eascdn.net/production/222a29ac-4ac8-4862-9cbf-f9ad0d374412/1777119713626-3d5a6b23-283f-4cba-8f79-68428ecab32f.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T185654Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=265c703a27c5948c8ec8230655b84ce500679b7b7b20e9d9c56990286ef88ff158ab8cf39383d39b5b102a66a2b6104f2f4ec949c37b3bcef1af6df19413a21db9e2cce51ab94aca2f978a56ae39f0bbea3a14ae5519dfc1ca9740514f740aa18f89a3f6e8d78341f3618a74058ec2343927bcdb78ec76dc48407cd7b45273dd3aef66a873a3b69b089fccf30c12010f17b4bb128e9bfe8ba07af7873f2917e19c75bf079851f6ede874faaa0472f217a08086dbb6dab03c4bd4881b3f0f2f1a9363d6262816636152647b21963eb4f8f0df8bc620e31ab3081abb33945283d65ae600eeb7f08bc4f35302e8bc26095a4ecb5eb2d9306f008ef1c6da715a4236",
+    "https://job-logs.eascdn.net/production/222a29ac-4ac8-4862-9cbf-f9ad0d374412/1777119713814-f6b67f53-76e1-4e4d-b461-311caa8b8572.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T185654Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=0a38520e1fd8ca72865e9754d398ced2f2eea3515d9f85aa64ae6391f5f516e20799b908c65e8abddad4e37b0f077f528d693ececfdb6a1ff6857d4a3137578c2794b3ff78a19d8a2c5e8f21b994f6de8b5605cf356ed5197233291d0365d0718a1ea08b90e5cb91863fc20460f10a2e5b143bdc4b466297e003bcd9dd4976c134c76d30d1ae1353e77e9832ccb0cd3efee0acc26d4a382073510cbd2303dda9f38d9169d90b8a203f8290d071d282de4fc563346e0b12f77424a5b50b9d22f94cffbd72c868a7988f8be4bcf6c1bb554963724c1f560d35778c60fb2289c2f6937378d1aef66c16b0d28e125c631ae0ec6a777e1a33c8196fa003e81a6437ff"
+  ],
+  "project": {
+    "id": "a514eb9b-7483-435e-bfe5-1c4d432c627f",
+    "name": "leadhangover",
+    "slug": "leadhangover",
+    "ownerAccount": {
+      "id": "2ff9eb04-1ffb-4179-8aa1-368ed57ac861",
+      "name": "yashraj-indigen"
+    }
+  },
+  "distribution": "INTERNAL",
+  "buildProfile": "preview",
+  "sdkVersion": "50.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "gitCommitHash": "5f9a2660879cf1428c6d8cc2ac08ee5205a58dc4",
+  "gitCommitMessage": "feat(mobile): preflight harness — 14-check verification before EAS submit\n\nRoot cause of APK#6 (aa769cc8) failure:\n  expo-router/babel plugin in babel.config.js — deprecated in SDK 50,\n  causes :app:createBundleReleaseJsAndAssets to fail at metro stage.\n\nFixes:\n- Remove deprecated 'expo-router/babel' from babel.config.js\n  (babel-preset-expo already includes it in SDK 50)\n\nNew: mobile/preflight.js (14 checks)\n  1. expo-doctor\n  2. tsc --noEmit\n  3. require()/import asset paths exist on disk\n  4. every package.json dep is in node_modules\n  5. every app.json plugin is an installed package\n  6. babel.config.js — no deprecated SDK 50 plugins, reanimated last\n  7. eas.json has preview profile\n  8. app.json schema (no newArchEnabled, package + bundleIdentifier set)\n  9. app.json + plugin asset paths exist on disk\n 10. metro bundle simulation (Linux only — Windows path bug)\n 11. expo install --check (native module versions)\n 12. package.json main entry resolves\n 13. .npmrc has legacy-peer-deps for EAS\n 14. babel transform smoke test — runs project's babel.config.js against\n     expo-router/entry to catch deprecated plugins WITHOUT metro\n     (this would have caught APK#6 locally)\n\nWired into package.json:\n- npm run preflight    (local)\n- eas-build-pre-install (runs on EAS server before npm install — aborts\n  build immediately if config is broken, no waste)\n\nCycle: run preflight -> fix top error -> repeat -> only submit when 0 errors.",
+  "priority": "NORMAL",
+  "createdAt": "2026-04-25T12:21:44.538Z",
+  "updatedAt": "2026-04-25T16:00:39.491Z",
+  "completedAt": "2026-04-25T12:22:53.412Z",
+  "expirationDate": "2026-05-09T12:21:44.607Z",
+  "isForIosSimulator": false,
+  "metrics": {
+    "buildWaitTime": 130,
+    "buildQueueTime": 45519,
+    "buildDuration": 22836
+  }
+}

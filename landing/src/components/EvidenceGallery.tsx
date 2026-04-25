@@ -67,7 +67,7 @@ export default function EvidenceGallery() {
       ref={sectionRef}
       id="proof"
       className="relative w-full"
-      style={{ backgroundColor: 'var(--cream)', height: '300vh' }}
+      style={{ backgroundColor: 'var(--cream)', height: '180vh' }}
     >
       <div
         className="sticky top-0 h-screen w-full flex flex-col justify-center overflow-hidden"

@@ -1,0 +1,37 @@
+{
+  "id": "f80f5d2b-7e96-4ed2-b70b-eeceac7082c4",
+  "status": "IN_PROGRESS",
+  "platform": "ANDROID",
+  "artifacts": {},
+  "initiatingActor": {
+    "id": "d92f2845-1e7c-4e69-a388-dbc042e4c144",
+    "displayName": "yashraj-indigen"
+  },
+  "logFiles": [
+    "https://job-logs.eascdn.net/production/f80f5d2b-7e96-4ed2-b70b-eeceac7082c4/1777143843998-6bb2ccc9-7f58-4766-9f4e-7d6e96fa3a98.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T191136Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=003ef4d8241da4077080a458d0e414fde423f19bb8d1196b804f888eccec3f41af63d227d5228cf27f2f2643128fc5c376f536465610c2e1bdffdb4d86567501ac36e5f0852bfd049fa28a19155fb3a289f746caa1fd97ff3aae46e25e64bc21642929ce44727fbf20befaf99294e730cb4811be0fa04331b7a4d1171406c78f7339d7bbe91b289b953401ee6bdfa02fe075307d0bd8e681dd84399fc1299b88590015aac091cbf3278d8f61d1ab2bc68f5b247680dc3cc2544bc678ff886c4dd3a827e1a9e48660903a84e63f00145adc58327d4577d20556a1cd073080a1a320ec0786f4157aa4f0ada3a9823a211ac8b2530e4665eceb940f89f8e8c92ee2",
+    "https://job-logs.eascdn.net/production/f80f5d2b-7e96-4ed2-b70b-eeceac7082c4/1777143854056-4f880304-8984-4495-a877-c5cd657bbfd3.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T191136Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=58b041d96344af2046c243234a3a30ce38dbc759a8dc08099da408af725a7ab60252cf38051b70323fba2aab15a388160e951522cf0128ab6203de0910ba6b0659da73c79eed2d9425a837d7f5337f9511fd112f191df48bbdf515350dde7eac2888919abb43f32eab9a06748f2fabd9b47cebfe185bf7ceff9911c891ba649228f1bcdd16858c4c6b7eaad9ccfdfea61072caa3b7894ac7e95a53cf5a0a349e859c7f5bb9c8f6dd781fc89b7bb62429d815d1ef75b1fbf4b4c09ab4239bf423f0053cf4bb6cf29befffdd9ef84da3881ed66b0b870a0cb9ca8f381929843bddfff9bcd3a35d97dfb8880bf1097ad3c84f2345c8308dfed13ea81b3b874f41a4",
+    "https://job-logs.eascdn.net/production/f80f5d2b-7e96-4ed2-b70b-eeceac7082c4/1777143854308-a4a8b47c-351f-4a61-a25c-b8a4d95629ee.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T191136Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=dafeedbdecf3f0d0ec25c769af078fa26783ba6f2625140070b6794a5f4b7e32a3e5c6c4e87eb2ba08120efcfc31a65e8a3ec699dcfc23263ec5027c9017e6883d5b26322f48cd0f957f77ea7aed6a89f4beb7c728d57543979658bb69e11a652938d274e725841740fe958c5fe01c45f61765bc8efa98dd7205a01607c341b7c177a43cd1bbd9c323907ef8e342010f2d7fe23370296ead69cd8332644fb24befe64b2592fb9269a84fdc4401ddf840438760f9784866ef02d5495b1d9f219a86a626754f1073edcf08ee61c6fc367ed09d830c155fbbcfcd23a6ec1191d90743a88998df59ca5f0f7e3669485a7a53b40ae89bc73d912452559fdf9eb9b6f7",
+    "https://job-logs.eascdn.net/production/f80f5d2b-7e96-4ed2-b70b-eeceac7082c4/1777143854515-2f443956-5b44-46cb-b855-c0563ff82572.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260425%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260425T191136Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=163a8087ea482599bd3dcf8267228dbaeecab5e4ca87082985207af5ce586c539ffead51d7b92ad7b8d9f75b0290a6576b465eba37439dc6d463b45cfa266453d8033a15f7ceaf9d669d2aeeb70339574813829cbbd0544736108b782f7c1db137b7d6743d514a7bf228b235f9e7ab455177ec2105e4e75c3a93d8dd41d8356104fdfbb85f9053d658c039f2b175f06c5125130a1f6e77d654883151110e1c6579942ab3dd3327f6f5ca562169b09d682ec8f7e63034c5cf11c0e2fe1c4e8ef7dfaf7a44d687455ff8847f9e86a805389a3d4aeb3d38dac42ed2703592ae62ff90d6ad8d449b983f823d93631a70eb8ed53ffbf17ff0b69e7e19ad78ddfeec94"
+  ],
+  "project": {
+    "id": "a514eb9b-7483-435e-bfe5-1c4d432c627f",
+    "name": "leadhangover",
+    "slug": "leadhangover",
+    "ownerAccount": {
+      "id": "2ff9eb04-1ffb-4179-8aa1-368ed57ac861",
+      "name": "yashraj-indigen"
+    }
+  },
+  "distribution": "INTERNAL",
+  "buildProfile": "preview",
+  "sdkVersion": "50.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "gitCommitHash": "71ea4dfe02bb19e31acb76c2c1821e28e7a2277e",
+  "gitCommitMessage": "feat(landing): editorial storytelling rebuild — 4 pinned story modules teach lead-gen + drag evidence gallery + workflow diagram + restrained motion + Fraunces serif + Manrope sans + JetBrains mono",
+  "priority": "NORMAL",
+  "createdAt": "2026-04-25T19:04:03.760Z",
+  "updatedAt": "2026-04-25T19:04:55.280Z",
+  "expirationDate": "2026-05-09T19:04:03.791Z",
+  "isForIosSimulator": false
+}

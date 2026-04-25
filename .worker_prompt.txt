@@ -1,214 +1,152 @@
-You are WORKER Claude on PC2. Major sprint: import old VPS data + add missing features + polish UI. Use **CodeGraph MCP** for codebase nav.
+You are WORKER Claude on PC2 — running on **opus + max effort**. The new LAND3 landing is live at https://leadgen.indigenservices.com but feels laggy: animations are slow, scroll/animation sync is off, and section spacing is uneven. Fix it.
 
-## Critical inputs available
-
-`C:\Users\Indigen-Server-2\Desktop\Indi-gen\import\` contains:
-- `leads.jsonl` (2,783 leads from old production)
-- `contacts.jsonl` (383 contacts)
-- `phrases.jsonl` (427 search phrases — battle-tested)
-- `proposals.jsonl` (6 lead proposals — the proposal builder feature)
-- `outreach_log.jsonl` (200 outreach records)
-- `all_settings.tsv` (44 app_settings rows including API keys, company profile, AI context)
-- `routes/admin/proposal.ts`, `routes/admin/company.ts`, `routes/pitch.ts` (old proposal builder source)
-- `cron/followupJob.ts`, `llm/router.ts`, `scoring/`, `scraper/` directories (old scraper + LLM router)
-
-## Your Task (huge — go through in order)
-
-### Phase A — Pull latest + read context
 ```
 cd C:\Users\Indigen-Server-2\Desktop\Indi-gen
 git pull --rebase origin master
 ```
 
-Read `import/all_settings.tsv` to understand the keys we're importing (especially `claude_api_key`, `apify_token`, `apify_tokens`, `signalhire_api_key`, `gemini_api_key`, `aws_bedrock_api_key`, `linkedin_access_token`, `linkedin_refresh_token`, `company_profile` JSON, all `ai_context_*` and `ai_company_*`).
+## User-reported issues (priority order)
 
-### Phase B — Import data into NEW Postgres (running on EC2)
-
-Cannot run on EC2 directly. Instead:
-1. Write `scripts/import_old_data.ts` in `server/` that reads JSONL files from `/import/` directory and INSERTs into the new schema.
-2. Map old schema → new schema. Old `leads` columns may differ — handle gracefully (set NULL for missing, drop unknown columns).
-3. Filter leads on import: only import `score >= 4` or with `intent_label='BUYER_PROJECT'` to keep quality high.
-4. Match leads against the company profile (Indigen Services AI/SaaS dev agency) — already pre-filtered in old DB so this is mostly preserved.
-5. Same for contacts (foreign-key to leads), phrases, proposals, outreach_log.
-
-For settings — write a one-off SQL migration (`db/migrations/002_import_old_settings.sql`) that INSERTs the API keys + company_profile + ai_context_* into `app_settings`. Mark API keys as `is_secret=TRUE`. Keys to import:
-- `claude_api_key`, `gemini_api_key`, `aws_bedrock_api_key`
-- `apify_token`, `apify_tokens` (JSON multi-key)
-- `signalhire_api_key`, `signalhire_credits_remaining`
-- `linkedin_access_token`, `linkedin_refresh_token`, `linkedin_li_at`, `linkedin_jsessionid`, `linkedin_bcookie`, `linkedin_bscookie`
-- `company_profile` (JSON: name/tagline/website/email/city/state)
-- `ai_context_pitch`, `ai_context_ideal_clients`, `ai_context_banned_phrases`, `ai_context_case_studies`, `ai_context_signature`, `ai_context_writing_style`
-- `schedule_cron` (default '0 */12 * * *')
-
-This migration should ONLY be applied on EC2 (which has the running DB). Don't run it locally on PC2 — just write and commit.
-
-### Phase C — Build the **Proposal Builder** feature
-
-Port from `import/routes/admin/proposal.ts` and `import/routes/pitch.ts`:
-
-1. **Schema**: add `lead_proposals` table to `db/migrations/003_proposal_builder.sql`:
-   ```sql
-   CREATE TABLE lead_proposals (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
-     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-     status TEXT DEFAULT 'draft', -- draft | sent | accepted | rejected
-     title TEXT,
-     scope JSONB, -- {deliverables: [], timeline: '', team: ''}
-     pricing JSONB, -- {currency, total, milestones: []}
-     content_md TEXT, -- markdown body
-     pdf_url TEXT,
-     sent_at TIMESTAMPTZ,
-     viewed_at TIMESTAMPTZ,
-     accepted_at TIMESTAMPTZ,
-     created_at TIMESTAMPTZ DEFAULT NOW(),
-     updated_at TIMESTAMPTZ DEFAULT NOW()
-   );
-   CREATE INDEX ON lead_proposals (lead_id, status);
-   ```
-
-2. **Backend routes** in `server/src/routes/proposals.ts`:
-   - `GET /api/admin/leads/:lead_id/proposals` (list)
-   - `POST /api/admin/leads/:lead_id/proposals/generate` (calls Claude with company context + lead profile, returns draft proposal markdown + suggested pricing)
-   - `PATCH /api/admin/proposals/:id` (edit title/scope/pricing/content)
-   - `POST /api/admin/proposals/:id/send` (mark sent, optional email via Resend)
-   - `GET /api/admin/proposals/:id/pdf` (render PDF via @react-pdf/renderer or puppeteer)
-
-3. **Admin page** `admin/src/pages/leads/proposals.tsx`:
-   - List view: all proposals across leads, filter by status
-   - Detail/edit view: side-by-side markdown editor + live preview
-   - "Generate with AI" button → calls `/generate` with current company context
-   - "Send" with email subject + body
-   - Activity timeline (sent / viewed / accepted)
-
-4. **Mobile**: add a "Proposals" tab item in lead detail screen showing proposals for that lead. Tap → opens proposal preview with native share button.
-
-### Phase D — Fix the 15+ missing admin routes
-
-The audit found these 404s. Add aliases or new routes in `server/src/routes/admin.ts`:
-- `GET /admin/feature-flags` → mirror of `feature_flags`
-- `GET /admin/audit-log` → mirror of `audit`
-- `GET /admin/breaches` → mirror of `breach`
-- `GET /admin/admin-users` (NEW route — list users with role IN ('admin','super_admin'))
-- `POST /admin/admin-users/invite`
-- `GET /admin/api-keys`, `POST /admin/api-keys`, `DELETE /admin/api-keys/:id`
-- `GET /admin/sessions`, `GET /admin/sessions?user_id=:id`, `DELETE /admin/sessions/:id`
-- `GET /admin/settings/brand`, `/settings/company`, `/settings/legal`, `/settings/maintenance` (return subset of app_settings filtered by category)
-- `GET /admin/dpdp/consent-stats`, `/dpdp/consent-timeline`
-- `POST /admin/erasure-requests/:id/preview`, `/queue`, `/verify`, `/receipt`
-- `GET /admin/phrases` → mirror of search_phrases
-- `GET /admin/integrations` → list of provider configs
-- `POST /admin/integrations/:provider/test` (test connection per provider)
-- `GET /api/billing/subscriptions` → list user's subscriptions
-- Remove the duplicate `leads_today/leadsToday` etc. — pick snake_case only
-
-### Phase E — Landing page
-
-Create `admin/public/index.html` proxy via nginx that serves a static landing page at `/`.
-
-Actually simpler: create a `landing/` folder at project root with a static HTML/CSS site (no React build needed). nginx config serves it at `https://leadgen.indigenservices.com/` while admin moves to `/app/`.
-
-The landing page should have:
-- Hero: "LeadHangover — Wake up to better leads" + flower logo + orange accents + Fraunces serif
-- Stats strip: "2,783 leads scraped · 85% qualification rate · 12s/lead"
-- 3-column feature grid: AI filtering · LinkedIn-first · Cashfree + INR billing
-- Pricing: 4 plans (Free / Starter ₹1,499 / Pro ₹4,999 / Enterprise) — fetch from `/api/billing/plans` at runtime
-- "Sign in" + "Start free trial" CTAs (link to `/app/login`)
-- Footer: links + legal + brand
-
-Use the same custom 50 icons + flower logo. Pure HTML+CSS+vanilla JS, no React, very fast.
-
-Update nginx config (`deploy/nginx-prod.conf`) to:
-- `/app/*` → admin SPA
-- `/api/*`, `/webhook/*` → server (unchanged)
-- `/` → static landing in `/usr/share/nginx/landing/`
-
-Or simpler: add the landing as a route inside admin that's exposed publicly without auth. Pick whichever is simpler and works.
-
-### Phase F — Illustrations + Logo
-
-The flower logo we already have. ALSO create **5 SVG illustrations** for the marketing/empty states, matching the warm-light theme + flower-petal aesthetic:
-
-1. `illustrations/empty-leads.svg` — magnifying glass with petals around it (empty state for "no leads yet")
-2. `illustrations/onboarding-icp.svg` — abstract people icons in petal arrangement
-3. `illustrations/paywall.svg` — flower bloom with coins falling
-4. `illustrations/scrape-running.svg` — animated petal spinner (CSS animation)
-5. `illustrations/error.svg` — wilted flower for error states
-6. `illustrations/success.svg` — bloomed flower with sparkles
-
-Save under `shared/brand/illustrations/`. Each ~2-4 KB SVG.
-
-Use them in:
-- Mobile: empty state of Home tab when no leads, paywall hero, onboarding screens, success/error toasts
-- Admin: empty states of Leads/Users/Audit, login page header (logo already there but make bigger + tagline)
-
-### Phase G — Login page enhancement
-
-`admin/src/pages/Login.tsx`:
-- Add the flower logo SVG large at top (centered, 120×120px, animated subtle pulse)
-- Tagline below: "Wake up to better leads"
-- Background: subtle scattered flower petals SVG pattern (very faint, opacity 0.05)
-- Bottom: "By signing in you agree to Terms · Privacy · DPDP"
-
-### Phase H — LinkedIn-only focus
-
-User said "we will be focusing only on linkedin platform right now no other platform". Remove platform configs that aren't LinkedIn:
-- In `db/seed.sql`, remove `platform_*` settings except `platform_linkedin_enabled`
-- In admin Sources page, hide non-LinkedIn sources or show as "coming soon"
-- In Integrations sidebar, keep: LinkedIn (links to Scrapers), Anthropic, SignalHire, Apify (multi-key), Cashfree, Resend, WhatsApp. Hide: Slack, Discord, PostHog, Sentry (mark as "coming soon" badge)
-
-### Phase I — Mobile features comparison
-
-The old app had: `nurture_queue`, `followup_queue`, `contact_hunt_queue`, `push_tokens`, `lead_proposals`. The new app is missing these. ADD to mobile:
-
-1. **Push notifications**: install `expo-notifications`. Add `/api/me/push-token` endpoint. Mobile registers token on login.
-2. **Followup queue tab section**: under Outreach tab, add a "Follow-up" filter showing leads needing follow-up (last touched > 7 days, no reply).
-3. **Proposals**: in lead detail, add "Proposals" sub-section.
-
-### Phase J — Comparison chart
-
-Write `docs/old_vs_new.md` markdown with a feature comparison table:
-
-| Feature | Old (lead-hunter) | New (LeadHangover) | Status |
-|---|---|---|---|
-| Scraper | LinkedIn via cookies | LinkedIn via linkedin-api lib | ✅ both |
-| Filter | Claude Haiku batch | Claude Haiku batch | ✅ ported |
-| Proposal Builder | Yes (lead_proposals table) | being added in this task | ✅ |
-| Push notifications | Yes (push_tokens) | being added | ✅ |
-| Followup queue | Yes (followup_queue) | being added | ✅ |
-| Multi-Apify-key rotation | Yes (apify_tokens JSON) | needs port | ✅ |
-| AI context (pitch/clients/style) | 6 fields | 2 fields | ⚠️ porting more |
-| Multi-platform sources | 7 platforms (LI, IG, Reddit, ...) | LinkedIn only (per user) | ✅ |
-| Mobile app | None | Full SDUI mobile | NEW |
-| Admin panel | Basic | Full enterprise admin | NEW |
-| Landing page | None | being added | NEW |
-| Server-driven UI | None | Full SDUI manifest system | NEW |
-| White-label | No | Yes | NEW |
-| DPDP compliance | No | Yes (erasure + breach) | NEW |
-| Cashfree payments | No | Yes (subs + topups + tokens ledger) | NEW |
-| GST invoices | No | Yes | NEW |
-| Custom icons | No | 50 flower-aesthetic icons | NEW |
-| Animated splash | No | Yes (Reanimated petals) | NEW |
-| Light + dark theme | Dark only | Both, light default | NEW |
-
-### Phase K — Test, commit, push
-
-1. `cd server && npx tsc --noEmit` — must pass
-2. `cd admin && npx tsc --noEmit` — must pass
-3. `cd mobile && npx tsc --noEmit` — must pass
-4. Stage all changes:
-   ```
-   git add -A
-   git -c user.email=worker@pc2.local -c user.name='PC2 Worker' commit -m 'feat: import old VPS data + proposal builder + landing + illustrations + missing routes + LinkedIn focus'
-   git push origin master
-   ```
+1. **Laggy / janky scroll** — site doesn't feel smooth, FPS drops mid-scroll
+2. **Animations look slow** — fades/translates take too long, kill perceived speed
+3. **Scroll ↔ animation sync is off** — pinned modules' progress doesn't match scroll position; mocks animate in late
+4. **Inconsistent section spacing** — vertical rhythm between sections is uneven, looks unbalanced
 
 ## Hard rules
-- Use sonnet model + high effort: invoke `claude` is already running for you. Just code thoroughly.
-- Do NOT start dev servers
-- Do NOT run the import script — write it and let me run it on EC2
-- Do NOT delete the old `import/` directory after using it
-- Do NOT add Liveblocks, AI copilot in admin, SQL playground (per simplicity rule)
-- Use CodeGraph MCP to find existing code — `grep -rn` is wasteful
 
-This is a big task. Take time, do it right.
+- DO NOT rebuild the landing. Edit existing files in `landing/`.
+- DO NOT add new sections, copy, or content.
+- After fix, build (`npm run build`) and report the new dist asset names so PC1 can deploy.
+- All copy stays original LeadHangover.
+
+## Fix plan
+
+### 1. Lenis tuning (make scroll feel native, not floaty)
+
+`landing/src/lib/useLenis.ts` (or wherever Lenis is initialized):
+- `lerp: 0.1` (was 0.08) — slightly snappier
+- `duration: 0.9` (was 1.2) — closer to native momentum
+- `wheelMultiplier: 1` — don't amplify scroll
+- `smoothTouch: false` — let mobile use native (it's faster + matches platform)
+- `easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))` — snappier exponential ease
+- Disable Lenis if `window.innerWidth < 768` OR `prefers-reduced-motion: reduce`
+- Make sure it's destroyed on unmount + only mounted once
+
+### 2. Framer Motion durations (cut everything by ~40%)
+
+Audit every `transition={{ duration: X }}` in `landing/src/components/**`. Defaults should be:
+- Fades / opacity-only: `duration: 0.4, ease: [0.16, 1, 0.3, 1]` (out-expo)
+- Translates / slides: `duration: 0.5, ease: [0.16, 1, 0.3, 1]`
+- Hover micro-interactions: `duration: 0.18`
+- Word-mask reveals (SplitText.tsx): `duration: 0.5`, stagger `0.03`
+- Hero giant text reveal: `duration: 0.6` max
+
+Anything currently `duration: 1.0+` → cut to `0.5-0.6`. Anything currently `0.6-0.9` → cut to `0.3-0.4`. Spring presets like `stiffness: 100, damping: 20` should be tightened to `stiffness: 200, damping: 25` for crisper response.
+
+### 3. Scroll ↔ animation sync (the big one)
+
+For each pinned StoryModule (IntakeMock, HuntMock, QualifyMock, SendMock):
+
+- **Single source of truth:** one `useScroll({ target: sectionRef, offset: ['start start', 'end end'] })` per module. All sub-animations derive from this `scrollYProgress`.
+- **Smooth the source:** wrap with `useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 })` to remove ticker jitter without lagging.
+- **Stepped useTransform:** for module phases, use stepped input arrays — e.g. typewriter typing in IntakeMock should be:
+  ```ts
+  const charProgress = useTransform(smoothProgress, [0.1, 0.6], [0, 1])
+  ```
+  Not `[0, 1] → [0, 1]` (mushy).
+- **No competing scroll listeners.** If StoryModule.tsx has its own `useScroll`, the inner mock must NOT have a second one — pass `scrollYProgress` down as a prop.
+- **Use `useMotionValueEvent` for stepped state changes** (e.g. "qualify accepted" check appearing) so the trigger fires once at the right scroll depth, not on every frame.
+
+### 4. Custom cursor / scroll progress (perf)
+
+`CustomCursor.tsx`:
+- Use `useMotionValue` + `transform: translate3d(...)` directly. No React state in the hot path.
+- Spring should be `stiffness: 350, damping: 35, mass: 0.5` — snappy, not floaty.
+- Hide on touch via `(pointer: coarse)` media query — don't even mount the listener.
+- `requestAnimationFrame` only if NOT using motion values directly.
+
+`ScrollProgress.tsx`:
+- Use `useScroll({ container: undefined })` once.
+- The orange bar should be a single `motion.div` with `style={{ scaleX: scrollYProgress }}` and `transformOrigin: 0` — no useTransform, no extra subscriber.
+
+### 5. Grain overlay (often the culprit)
+
+`GrainOverlay.tsx`:
+- Make sure it's `position: fixed; pointer-events: none; z-index: 60; mix-blend-mode: overlay; opacity: 0.04` and the SVG is rendered ONCE (memoize the data URL).
+- Add `transform: translateZ(0); will-change: transform` to hint GPU compositing.
+- If it's animated (subtle drift), animate `transform: translate3d(...)` — never `background-position`.
+
+### 6. Section spacing rhythm
+
+Define a single rhythm token in `landing/src/index.css` `:root`:
+```css
+--section-y: clamp(80px, 9vw, 144px);
+--section-y-tight: clamp(56px, 6vw, 96px);
+```
+
+Then apply to every section in App.tsx / individual sections:
+- Default vertical padding: `padding-block: var(--section-y)`
+- Tight pairs (e.g. trust marquee following hero, FAQ following pricing): `padding-block: var(--section-y-tight)`
+- Story modules already pin via height — leave their internal pin height alone, but ensure the wrapper around the 4 modules uses the rhythm token for the gap to next section.
+- Footer gets only top spacing.
+
+Also enforce horizontal: `padding-inline: clamp(20px, 4vw, 80px)` consistently — no rogue per-section margins.
+
+### 7. GPU composition hints
+
+Add `will-change: transform` (only) to:
+- Pinned module wrappers
+- Hero word-reveal spans
+- Drag gallery track
+- Custom cursor
+- Curtain transitions
+
+Don't add `will-change` everywhere — it backfires. Just the elements that move every frame.
+
+### 8. Image / asset perf
+
+- Hero illustrations should have `loading="eager"` + width/height attributes set.
+- All other illustrations: `loading="lazy" decoding="async"`.
+- If any illustration is a large PNG, leave it but verify `<img>` has explicit dimensions to avoid CLS.
+
+### 9. Verify
+
+```
+cd landing
+npm run build
+```
+
+Bundle should be ≤ 120 KB gz main chunk. If your changes inflated it, check for accidentally pulled new dependencies.
+
+```
+npx tsc --noEmit
+```
+
+Must pass clean.
+
+Open `dist/index.html` and verify no console errors are introduced.
+
+### 10. Commit + report
+
+```
+cd C:\Users\Indigen-Server-2\Desktop\Indi-gen
+git add -A
+git -c user.email=worker@pc2.local -c user.name='PC2 Worker' commit -m 'perf(landing): smoothness pass — Lenis tuning + Framer durations cut 40% + single-source useScroll for pinned modules + GPU compositing hints + section rhythm tokens'
+git push origin master
+```
+
+### Report
+
+- New dist asset filenames (so PC1 can scp deploy)
+- Bundle size before/after
+- Concrete numbers: Lenis settings, Framer default durations, section rhythm values
+- List of pinned modules whose useScroll was unified
+- TypeScript clean confirmation
+
+## Hard rules
+
+- **opus + max effort**
+- Don't change copy or sections
+- Don't add new dependencies (use what's already in package.json)
+- All animations must respect `prefers-reduced-motion: reduce` (no movement)
+- Nothing below 768px should rely on Lenis or custom cursor

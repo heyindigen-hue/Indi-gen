@@ -17,7 +17,7 @@ export default function Curtain({ reveal }: CurtainProps) {
   // Tightened input range so the reveal completes earlier — feels in-sync, not lagging behind.
   const clip = useTransform(
     scrollYProgress,
-    [0.25, 0.55],
+    [0.15, 0.5],
     ['inset(100% 0 0 0)', 'inset(0% 0 0 0)']
   );
   const baseBg = reveal === 'cream' ? 'var(--ink)' : 'var(--cream)';
@@ -26,7 +26,7 @@ export default function Curtain({ reveal }: CurtainProps) {
     <div
       ref={ref}
       className="relative w-full"
-      style={{ height: '60vh', backgroundColor: baseBg }}
+      style={{ height: '24vh', backgroundColor: baseBg }}
       aria-hidden
     >
       <motion.div

@@ -48,8 +48,8 @@ export default function StoryModule({
   // Smooth out ticker jitter without lagging visibly.
   const smoothProgress = useSpring(scrollYProgress, SMOOTH_SPRING);
 
-  // Stepped phases — each step covers ~1/3 of pinned scroll.
-  const stepMV = useTransform(smoothProgress, [0, 0.33, 0.66, 1], [0, 1, 2, 2]);
+  // Stepped phases — three steps across the 140vh of pinned scroll.
+  const stepMV = useTransform(smoothProgress, [0.05, 0.4, 0.75, 1], [0, 1, 2, 2]);
   const [step, setStep] = useState(0);
   useMotionValueEvent(stepMV, 'change', (v) => {
     const next = Math.round(v);
@@ -66,7 +66,7 @@ export default function StoryModule({
       ref={ref}
       id={id}
       className="relative w-full"
-      style={{ backgroundColor: bg, color: fg, height: '200vh' }}
+      style={{ backgroundColor: bg, color: fg, height: '140vh' }}
     >
       <div
         className="sticky top-0 h-screen w-full flex items-center"

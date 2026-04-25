@@ -26,7 +26,7 @@ export default function Hero() {
       style={{ backgroundColor: 'var(--cream)', minHeight: '100vh' }}
     >
       <div
-        className="pt-40 md:pt-44 pb-10 max-w-[1600px] mx-auto"
+        className="pt-28 md:pt-32 pb-4 max-w-[1600px] mx-auto"
         style={{ paddingInline: 'var(--section-x)' }}
       >
         <motion.div
@@ -108,7 +108,7 @@ export default function Hero() {
         initial={reduce ? false : { opacity: 0, y: 32 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, delay: 0.7, ease: EASE }}
-        className="relative mt-6 md:mt-12 mb-10"
+        className="relative mt-4 md:mt-8 mb-6"
         data-cursor="drag"
         aria-hidden
       >
