@@ -73,5 +73,7 @@ coverage/
 import/
 
 # Mobile build artifacts/logs
-mobile/apk2_log_*.txt
-mobile/apk2_view*.json
+mobile/apk*_log_*.txt
+mobile/apk*_view*.json
+mobile/apk*.json
+mobile/.preflight-export/
