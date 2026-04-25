@@ -23,7 +23,9 @@
         "backgroundColor": "#FF4716"
       },
       "package": "com.leadhangover.app",
-      "permissions": ["NOTIFICATIONS"],
+      "permissions": [
+        "NOTIFICATIONS"
+      ],
       "blockedPermissions": [],
       "softwareKeyboardLayoutMode": "pan"
     },
@@ -37,6 +39,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a514eb9b-7483-435e-bfe5-1c4d432c627f"
+      }
+    },
+    "owner": "yashraj-indigen"
   }
 }
