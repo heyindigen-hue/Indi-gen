@@ -146,6 +146,11 @@ html.lenis body {
   padding-bottom: 0.16em;
   margin-bottom: -0.16em;
 }
+/* Inter-word spacing — overflow:hidden + inline-block strips the trailing
+   text-node space, so we restore it explicitly between consecutive words. */
+.word-mask + .word-mask {
+  margin-left: 0.25em;
+}
 .word-mask > span {
   display: inline-block;
   will-change: transform;
