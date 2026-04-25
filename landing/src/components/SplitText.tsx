@@ -12,14 +12,14 @@ interface Props {
   inView?: boolean;
 }
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function SplitText({
   children,
   className = '',
   delay = 0,
-  stagger = 0.06,
-  duration = 0.9,
+  stagger = 0.03,
+  duration = 0.5,
   as = 'span',
   italic = false,
   inView = false,
@@ -45,7 +45,7 @@ export default function SplitText({
             style={{ display: 'inline-block' }}
           >
             {w}
-            {i !== words.length - 1 ? ' ' : ''}
+            {i !== words.length - 1 ? ' ' : ''}
           </motion.span>
         </span>
       ))}

@@ -99,7 +99,7 @@ export default function Nav() {
         className="md:hidden overflow-hidden"
         initial={false}
         animate={{ height: open ? 'auto' : 0 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
         style={{ backgroundColor: 'var(--cream)', borderTop: '1px solid var(--line)' }}
       >
         <div className="px-6 py-6 flex flex-col gap-5">
@@ -146,7 +146,7 @@ function NavLink({ children, href }: { children: string; href: string }) {
     >
       <span>{children}</span>
       <span
-        className="absolute left-0 -bottom-1 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        className="absolute left-0 -bottom-1 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
         style={{ backgroundColor: 'var(--ink)' }}
       />
     </a>

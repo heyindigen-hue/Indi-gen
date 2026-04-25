@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
 import { FormEvent, useRef, useState } from 'react';
 import FlowerMark from './FlowerMark';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 const COLUMNS: Array<{ heading: string; links: string[] }> = [
   {
@@ -48,7 +48,10 @@ export default function Footer() {
       className="relative w-full overflow-hidden"
       style={{ backgroundColor: 'var(--cream)', color: 'var(--ink)' }}
     >
-      <div className="px-6 md:px-10 pt-24 md:pt-32 pb-10 max-w-[1600px] mx-auto">
+      <div
+        className="pb-10 max-w-[1600px] mx-auto"
+        style={{ paddingInline: 'var(--section-x)', paddingTop: 'var(--section-y)' }}
+      >
         {/* Top: brand + newsletter */}
         <div className="grid md:grid-cols-12 gap-10 mb-16 md:mb-24 pb-12" style={{ borderBottom: '1px solid var(--line)' }}>
           <div className="md:col-span-5 flex flex-col gap-5">
@@ -88,7 +91,7 @@ export default function Footer() {
                     layoutId="newsletter-shell"
                     initial={false}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4, ease: EASE }}
+                    transition={{ duration: 0.3, ease: EASE }}
                     className="flex items-center gap-3"
                   >
                     <input
@@ -114,14 +117,14 @@ export default function Footer() {
                     layoutId="newsletter-shell"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4, ease: EASE }}
+                    transition={{ duration: 0.3, ease: EASE }}
                     className="flex items-center gap-3 py-3"
                     style={{ borderBottom: '1px solid var(--orange)' }}
                   >
                     <motion.span
                       initial={{ scale: 0, rotate: -90 }}
                       animate={{ scale: 1, rotate: 0 }}
-                      transition={{ duration: 0.5, ease: EASE }}
+                      transition={{ duration: 0.3, ease: EASE }}
                       className="block"
                       style={{ fontSize: 22, color: 'var(--orange)' }}
                     >
@@ -162,7 +165,7 @@ export default function Footer() {
                     >
                       <span>{l}</span>
                       <span
-                        className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                        className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
                         style={{ backgroundColor: 'var(--orange)' }}
                       />
                     </a>

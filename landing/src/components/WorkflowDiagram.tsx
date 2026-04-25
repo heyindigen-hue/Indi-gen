@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useState } from 'react';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 interface Node {
   id: string;
@@ -83,7 +83,7 @@ export default function WorkflowDiagram() {
       className="relative w-full"
       style={{ backgroundColor: 'var(--cream)' }}
     >
-      <div className="px-6 md:px-10 py-24 md:py-36 max-w-[1600px] mx-auto">
+      <div className="section-rhythm max-w-[1600px] mx-auto">
         <div className="mb-14 md:mb-20 max-w-[42ch]">
           <div className="mono mb-4" style={{ color: 'var(--ash)' }}>
             WORKFLOW / FIVE STEPS
@@ -108,7 +108,7 @@ export default function WorkflowDiagram() {
           viewport={{ once: true, margin: '-15%' }}
           variants={{
             hidden: {},
-            visible: { transition: { staggerChildren: 0.16 } },
+            visible: { transition: { staggerChildren: 0.1 } },
           }}
           className="relative"
         >
@@ -128,7 +128,7 @@ export default function WorkflowDiagram() {
               initial={{ pathLength: 0 }}
               whileInView={{ pathLength: 1 }}
               viewport={{ once: true, margin: '-15%' }}
-              transition={{ duration: reduce ? 0 : 1.4, ease: EASE, delay: 0.2 }}
+              transition={{ duration: reduce ? 0 : 0.9, ease: EASE, delay: 0.15 }}
             />
           </svg>
 
@@ -141,7 +141,7 @@ export default function WorkflowDiagram() {
                   hidden: { opacity: 0, y: 20 },
                   visible: { opacity: 1, y: 0 },
                 }}
-                transition={{ duration: 0.7, ease: EASE }}
+                transition={{ duration: 0.5, ease: EASE }}
                 whileHover={{ y: -4 }}
                 className="flex flex-col items-center gap-3 group"
                 style={{ cursor: 'pointer' }}
@@ -151,7 +151,7 @@ export default function WorkflowDiagram() {
                   animate={{
                     backgroundColor: active === n.id ? 'var(--paper)' : 'var(--cream)',
                   }}
-                  transition={{ duration: 0.4 }}
+                  transition={{ duration: 0.3, ease: EASE }}
                   style={{
                     width: 110,
                     height: 110,
@@ -163,7 +163,7 @@ export default function WorkflowDiagram() {
                       layoutId="flow-ring"
                       className="absolute inset-0 rounded-full"
                       style={{ border: '1.5px solid var(--orange)' }}
-                      transition={{ duration: 0.5, ease: EASE }}
+                      transition={{ duration: 0.35, ease: EASE }}
                     />
                   )}
                   <div style={{ width: 56, height: 56 }}>{n.illustration()}</div>
@@ -193,10 +193,10 @@ export default function WorkflowDiagram() {
             <motion.div
               key={activeNode.id}
               layoutId="flow-detail"
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.4, ease: EASE }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3, ease: EASE }}
               className="rounded-3xl flex flex-col md:flex-row items-start gap-8 md:gap-12"
               style={{
                 backgroundColor: 'var(--paper)',

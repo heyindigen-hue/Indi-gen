@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 const ITEMS = [
   {
@@ -46,7 +46,7 @@ export default function FAQ() {
       className="relative w-full"
       style={{ backgroundColor: 'var(--cream)' }}
     >
-      <div className="px-6 md:px-10 py-24 md:py-36 max-w-[1600px] mx-auto">
+      <div className="section-rhythm-tight max-w-[1600px] mx-auto">
         <div className="mb-14 md:mb-20 max-w-[34ch]">
           <div className="mono mb-4" style={{ color: 'var(--ash)' }}>
             QUESTIONS / ANSWERED
@@ -95,7 +95,7 @@ function FAQRow({
         className="w-full text-left py-6 md:py-8 flex items-start gap-6 relative"
       >
         <span
-          className="absolute left-0 right-0 bottom-0 h-px origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute left-0 right-0 bottom-0 h-px origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
           style={{ backgroundColor: 'var(--orange)' }}
         />
         <span className="flex-1">
@@ -114,7 +114,7 @@ function FAQRow({
         </span>
         <motion.span
           animate={{ rotate: isOpen ? 45 : 0 }}
-          transition={{ duration: 0.4, ease: EASE }}
+          transition={{ duration: 0.22, ease: EASE }}
           className="serif shrink-0"
           style={{
             fontSize: 32,
@@ -132,7 +132,7 @@ function FAQRow({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.45, ease: EASE }}
+            transition={{ duration: 0.3, ease: EASE }}
             style={{ overflow: 'hidden' }}
           >
             <p

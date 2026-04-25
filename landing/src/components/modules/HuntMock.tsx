@@ -1,7 +1,8 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionValue, useMotionValueEvent } from 'framer-motion';
+import { useMemo, useState } from 'react';
 import FlowerMark from '../FlowerMark';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 const STREAM = [
   { name: 'Priya Raghavan', role: 'Founder · Loom & Co', snippet: 'Hiring two senior backend engineers — Shopify + Postgres stack...' },
@@ -15,12 +16,25 @@ const STREAM = [
 
 interface Props {
   step: number;
-  progress: number;
+  progress: MotionValue<number>;
 }
 
 export default function HuntMock({ step, progress }: Props) {
   const visibleCount = step === 0 ? 1 : step === 1 ? 4 : STREAM.length;
-  const counter = Math.round(1247 + (8902 - 1247) * Math.min(1, progress * 1.3));
+
+  const [counter, setCounter] = useState(1247);
+
+  // Frozen "minutes ago" stamps so they don't reroll on every parent render.
+  const stamps = useMemo(
+    () => STREAM.map(() => Math.floor(Math.random() * 9) + 1),
+    []
+  );
+
+  // Setter bails on equal values, so this only re-renders when the integer changes.
+  useMotionValueEvent(progress, 'change', (v) => {
+    const c = Math.round(1247 + (8902 - 1247) * Math.min(1, v * 1.3));
+    setCounter((cur) => (cur === c ? cur : c));
+  });
 
   return (
     <div
@@ -60,10 +74,10 @@ export default function HuntMock({ step, progress }: Props) {
             <motion.div
               key={row.name}
               layout
-              initial={{ opacity: 0, y: -16, height: 0 }}
+              initial={{ opacity: 0, y: -12, height: 0 }}
               animate={{ opacity: 1, y: 0, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.5, ease: EASE, delay: i * 0.04 }}
+              transition={{ duration: 0.4, ease: EASE, delay: i * 0.03 }}
               className="rounded-xl flex items-start gap-3"
               style={{
                 padding: '12px 14px',
@@ -92,7 +106,7 @@ export default function HuntMock({ step, progress }: Props) {
                 >
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{row.name}</span>
                   <span className="mono" style={{ color: 'rgba(247,241,229,0.4)', fontSize: 9.5 }}>
-                    {Math.floor(Math.random() * 9) + 1}M AGO
+                    {stamps[i]}M AGO
                   </span>
                 </div>
                 <div className="mono" style={{ color: 'rgba(247,241,229,0.5)', fontSize: 9.5, marginTop: 2 }}>

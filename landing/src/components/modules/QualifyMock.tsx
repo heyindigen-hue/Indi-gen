@@ -1,8 +1,8 @@
-import { motion, Reorder } from 'framer-motion';
+import { motion, MotionValue, Reorder } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import FlowerMark from '../FlowerMark';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 type Row = {
   id: string;
@@ -40,6 +40,8 @@ const PILL_LABEL: Record<Row['intent'], string> = {
 
 interface Props {
   step: number;
+  // Accepted to keep StoryModule mock signature uniform; not subscribed here.
+  progress?: MotionValue<number>;
 }
 
 export default function QualifyMock({ step }: Props) {
@@ -71,7 +73,7 @@ export default function QualifyMock({ step }: Props) {
             backgroundColor: step >= 1 ? 'rgba(255,90,31,0.12)' : 'rgba(14,14,12,0.05)',
             color: step >= 1 ? 'var(--orange)' : 'var(--ash)',
             fontSize: 9.5,
-            transition: 'all .4s',
+            transition: 'all .3s',
           }}
         >
           <motion.span
@@ -99,14 +101,14 @@ export default function QualifyMock({ step }: Props) {
               value={row}
               drag={false}
               layout
-              transition={{ duration: 0.7, ease: EASE }}
+              transition={{ duration: 0.5, ease: EASE }}
               className="rounded-xl flex items-center gap-3"
               style={{
                 padding: 14,
                 backgroundColor: 'var(--cream)',
                 border: '1px solid var(--line)',
                 opacity: dim ? 0.32 : 1,
-                transition: 'opacity .5s',
+                transition: 'opacity .35s',
               }}
             >
               <div
@@ -127,7 +129,7 @@ export default function QualifyMock({ step }: Props) {
                       key={`dot-${row.id}-${step}`}
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      transition={{ duration: 0.3, ease: EASE, delay: 0.2 }}
+                      transition={{ duration: 0.2, ease: EASE, delay: 0.12 }}
                       className="block w-1.5 h-1.5 rounded-full"
                       style={{ backgroundColor: 'var(--orange)' }}
                     />
@@ -146,7 +148,7 @@ export default function QualifyMock({ step }: Props) {
                       className="h-full rounded-full"
                       initial={false}
                       animate={{ width: filled ? `${row.score * 10}%` : '0%' }}
-                      transition={{ duration: 0.7, ease: EASE }}
+                      transition={{ duration: 0.5, ease: EASE }}
                       style={{
                         backgroundColor: row.intent === 'buyer' ? 'var(--orange)' : 'rgba(14,14,12,0.35)',
                       }}
@@ -167,7 +169,7 @@ export default function QualifyMock({ step }: Props) {
                   color: PILL_COLOR[row.intent],
                   border: `1px solid ${PILL_COLOR[row.intent]}`,
                   opacity: filled ? 1 : 0.3,
-                  transition: 'opacity .5s',
+                  transition: 'opacity .35s',
                 }}
               >
                 {PILL_LABEL[row.intent]}

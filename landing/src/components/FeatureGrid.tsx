@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 interface Feature {
   title: string;
@@ -149,7 +149,7 @@ export default function FeatureGrid() {
       className="relative w-full"
       style={{ backgroundColor: 'var(--cream)' }}
     >
-      <div className="px-6 md:px-10 py-24 md:py-36 max-w-[1600px] mx-auto">
+      <div className="section-rhythm max-w-[1600px] mx-auto">
         <div className="mb-12 md:mb-20 grid md:grid-cols-2 gap-6 items-end">
           <div>
             <div className="mono mb-4" style={{ color: 'var(--ash)' }}>
@@ -194,10 +194,10 @@ function FeatureTile({ feature, index }: { feature: Feature; index: number }) {
     <motion.div
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-10%' }}
-      transition={{ duration: 0.6, ease: EASE, delay: (index % 4) * 0.05 }}
+      transition={{ duration: 0.4, ease: EASE, delay: (index % 4) * 0.04 }}
       whileHover={{ y: -4 }}
       className="relative overflow-hidden"
       style={{
@@ -218,7 +218,7 @@ function FeatureTile({ feature, index }: { feature: Feature; index: number }) {
       <div className="relative">
         <motion.div
           animate={{ rotate: hover ? 5 : 0 }}
-          transition={{ duration: 0.5, ease: EASE }}
+          transition={{ duration: 0.3, ease: EASE }}
           style={{ width: 32, height: 32, marginBottom: 24 }}
         >
           {feature.icon(hover ? 'var(--orange)' : 'var(--ink)')}

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
+const RING_SPRING = { stiffness: 350, damping: 35, mass: 0.5 } as const;
+
 export default function CustomCursor() {
   const x = useMotionValue(-200);
   const y = useMotionValue(-200);
-  const ringX = useSpring(x, { stiffness: 200, damping: 30, mass: 0.6 });
-  const ringY = useSpring(y, { stiffness: 200, damping: 30, mass: 0.6 });
+  const ringX = useSpring(x, RING_SPRING);
+  const ringY = useSpring(y, RING_SPRING);
 
   const [enabled, setEnabled] = useState(false);
   const [mode, setMode] = useState<'idle' | 'link' | 'drag'>('idle');
@@ -35,8 +37,8 @@ export default function CustomCursor() {
       const linkLike = t.closest('a, button, [data-cursor="link"]');
       setMode(linkLike ? 'link' : 'idle');
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseover', onOver);
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseover', onOver, { passive: true });
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseover', onOver);
@@ -60,26 +62,33 @@ export default function CustomCursor() {
           translateX: '-50%',
           translateY: '-50%',
           mixBlendMode: 'difference',
+          willChange: 'transform',
         }}
         animate={{ opacity: mode === 'drag' ? 0 : 1, scale: mode === 'link' ? 0.5 : 1 }}
-        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
       />
       {/* Outer ring — spring lag */}
       <motion.div
         className="pointer-events-none fixed top-0 left-0 z-[9998]"
-        style={{ x: ringX, y: ringY, translateX: '-50%', translateY: '-50%' }}
+        style={{
+          x: ringX,
+          y: ringY,
+          translateX: '-50%',
+          translateY: '-50%',
+          willChange: 'transform',
+        }}
       >
         <motion.div
           className="rounded-full flex items-center justify-center"
           animate={{
             width: mode === 'drag' ? 76 : mode === 'link' ? 48 : 32,
             height: mode === 'drag' ? 36 : mode === 'link' ? 48 : 32,
-            borderRadius: mode === 'drag' ? 999 : 999,
+            borderRadius: 999,
             backgroundColor: mode === 'drag' ? 'var(--cream)' : 'transparent',
             borderWidth: mode === 'drag' ? 0 : 1,
             borderColor: 'var(--ink)',
           }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
           {mode === 'drag' && (
             <span

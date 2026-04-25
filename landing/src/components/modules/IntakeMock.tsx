@@ -1,36 +1,30 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { AnimatePresence, MotionValue, motion, useMotionValueEvent, useTransform } from 'framer-motion';
+import { useState } from 'react';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 const TARGET = 'D2C founders in India who use Shopify Plus';
 const TAGS = ['D2C', 'Shopify Plus', 'Hiring devs', 'India', 'Series A+'];
 
 interface Props {
   step: number;
+  progress: MotionValue<number>;
 }
 
-export default function IntakeMock({ step }: Props) {
+export default function IntakeMock({ step, progress }: Props) {
+  // Type the brief in lockstep with scroll position — feels exactly synced.
+  const charProgress = useTransform(progress, [0.10, 0.55], [0, 1]);
   const [typed, setTyped] = useState('');
 
-  useEffect(() => {
-    if (step !== 1) {
-      setTyped(step >= 2 ? TARGET : '');
-      return;
-    }
-    let i = 0;
-    setTyped('');
-    const id = window.setInterval(() => {
-      i++;
-      setTyped(TARGET.slice(0, i));
-      if (i >= TARGET.length) window.clearInterval(id);
-    }, 38);
-    return () => window.clearInterval(id);
-  }, [step]);
+  useMotionValueEvent(charProgress, 'change', (v) => {
+    const idx = Math.max(0, Math.min(TARGET.length, Math.round(v * TARGET.length)));
+    const next = TARGET.slice(0, idx);
+    setTyped((cur) => (cur === next ? cur : next));
+  });
 
   return (
     <motion.div
       layoutId="intake-card"
-      transition={{ duration: 0.6, ease: EASE }}
+      transition={{ duration: 0.4, ease: EASE }}
       className="rounded-3xl relative overflow-hidden"
       style={{
         backgroundColor: 'var(--paper)',
@@ -64,17 +58,18 @@ export default function IntakeMock({ step }: Props) {
           minHeight: 76,
         }}
       >
-        {step === 0 && (
+        {step === 0 && typed.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, ease: EASE }}
             className="serif"
             style={{ fontSize: 22, fontWeight: 300, color: 'rgba(14,14,12,0.36)' }}
           >
             Add your ICP →
           </motion.div>
         )}
-        {step >= 1 && (
+        {(step >= 1 || typed.length > 0) && (
           <div
             className="serif"
             style={{
@@ -112,10 +107,10 @@ export default function IntakeMock({ step }: Props) {
               <motion.span
                 key={t}
                 layout
-                initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                initial={{ opacity: 0, y: -10, scale: 0.92 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.45, ease: EASE, delay: i * 0.08 }}
+                transition={{ duration: 0.3, ease: EASE, delay: i * 0.04 }}
                 className="rounded-full"
                 style={{
                   padding: '7px 14px',
@@ -151,7 +146,7 @@ export default function IntakeMock({ step }: Props) {
                 fontWeight: 300,
                 color: step >= 2 ? 'var(--ink)' : 'rgba(14,14,12,0.4)',
                 marginTop: 4,
-                transition: 'color .4s',
+                transition: 'color .3s',
               }}
             >
               {row.v}

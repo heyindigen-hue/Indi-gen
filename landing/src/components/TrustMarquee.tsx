@@ -17,10 +17,17 @@ export default function TrustMarquee() {
   const reduce = useReducedMotion();
   return (
     <section
-      className="w-full py-10 md:py-14 border-y"
-      style={{ backgroundColor: 'var(--cream)', borderColor: 'var(--line)' }}
+      className="w-full border-y"
+      style={{
+        backgroundColor: 'var(--cream)',
+        borderColor: 'var(--line)',
+        paddingBlock: 'var(--section-y-tight)',
+      }}
     >
-      <div className="px-6 md:px-10 mb-6 max-w-[1600px] mx-auto">
+      <div
+        className="mb-6 max-w-[1600px] mx-auto"
+        style={{ paddingInline: 'var(--section-x)' }}
+      >
         <span className="mono" style={{ color: 'var(--ash)' }}>
           TEAMS HUNTING WITH LEADHANGOVER
         </span>

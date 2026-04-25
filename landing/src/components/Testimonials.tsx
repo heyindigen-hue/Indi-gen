@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import FlowerMark from './FlowerMark';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 interface Quote {
   quote: string;
@@ -38,7 +38,7 @@ const QUOTES: Quote[] = [
 export default function Testimonials() {
   return (
     <section className="relative w-full" style={{ backgroundColor: 'var(--cream)' }}>
-      <div className="px-6 md:px-10 py-24 md:py-36 max-w-[1600px] mx-auto">
+      <div className="section-rhythm max-w-[1600px] mx-auto">
         <div className="mb-14 md:mb-20 max-w-[40ch]">
           <div className="mono mb-4" style={{ color: 'var(--ash)' }}>
             VOICES / FROM THE FIELD
@@ -78,10 +78,10 @@ function QuoteCard({ quote, index }: { quote: Quote; index: number }) {
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-10%' }}
-      transition={{ duration: 0.7, ease: EASE, delay: index * 0.08 }}
+      transition={{ duration: 0.5, ease: EASE, delay: index * 0.04 }}
       style={{ y }}
     >
       <div

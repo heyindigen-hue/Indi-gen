@@ -1,13 +1,15 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion, AnimatePresence, MotionValue, useMotionValueEvent, useTransform } from 'framer-motion';
+import { useState } from 'react';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 const DRAFT_LINES = [
   'Hi Marc — saw you mentioned killing off SalesLoft this Q.',
   'We just shipped a Claude-native draft engine that writes in your voice.',
   'Worth a 12-min look? Tuesday afternoon works on my end.',
 ];
+
+const TOTAL_CHARS = DRAFT_LINES.reduce((s, l) => s + l.length, 0);
 
 const SENT = [
   { name: 'Priya R.', channel: 'WhatsApp' },
@@ -18,39 +20,35 @@ const SENT = [
 
 interface Props {
   step: number;
+  progress: MotionValue<number>;
 }
 
-export default function SendMock({ step }: Props) {
+export default function SendMock({ step, progress }: Props) {
+  // Scroll-driven typing across all 3 lines.
+  const charProgress = useTransform(progress, [0.20, 0.78], [0, 1]);
   const [typedLine, setTypedLine] = useState(0);
   const [typed, setTyped] = useState('');
 
-  useEffect(() => {
-    if (step !== 1 && step !== 2) {
-      setTypedLine(0);
-      setTyped('');
-      return;
-    }
+  useMotionValueEvent(charProgress, 'change', (v) => {
+    const target = Math.max(0, Math.min(TOTAL_CHARS, Math.round(v * TOTAL_CHARS)));
+    let used = 0;
     let line = 0;
-    let i = 0;
-    let timer: number | null = null;
-    function tick() {
-      const current = DRAFT_LINES[line] ?? '';
-      if (i < current.length) {
-        i++;
-        setTyped(current.slice(0, i));
-        setTypedLine(line);
-        timer = window.setTimeout(tick, 26);
-      } else if (line < DRAFT_LINES.length - 1) {
-        line++;
-        i = 0;
-        timer = window.setTimeout(tick, 360);
+    let lineChar = 0;
+    for (let i = 0; i < DRAFT_LINES.length; i++) {
+      const len = DRAFT_LINES[i].length;
+      if (used + len >= target) {
+        line = i;
+        lineChar = target - used;
+        break;
       }
+      used += len;
+      line = i;
+      lineChar = len;
     }
-    tick();
-    return () => {
-      if (timer) window.clearTimeout(timer);
-    };
-  }, [step]);
+    setTypedLine((cur) => (cur === line ? cur : line));
+    const nextSlice = DRAFT_LINES[line]?.slice(0, lineChar) ?? '';
+    setTyped((cur) => (cur === nextSlice ? cur : nextSlice));
+  });
 
   const renderedLines = DRAFT_LINES.slice(0, typedLine);
   const currentLine = DRAFT_LINES[typedLine] ? typed : '';
@@ -92,7 +90,7 @@ export default function SendMock({ step }: Props) {
               key={i}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: EASE }}
+              transition={{ duration: 0.3, ease: EASE }}
               style={{ marginBottom: 8 }}
             >
               {l}
@@ -172,7 +170,7 @@ export default function SendMock({ step }: Props) {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: EASE, delay: i * 0.06 }}
+                transition={{ duration: 0.3, ease: EASE, delay: i * 0.04 }}
                 className="flex items-center justify-between"
                 style={{
                   padding: '8px 10px',
@@ -204,8 +202,8 @@ export default function SendMock({ step }: Props) {
           </div>
           {[
             { day: 'DAY 1', label: 'Opener', delay: 0, width: 0.18 },
-            { day: 'DAY 3', label: 'Nudge', delay: 0.15, width: 0.42 },
-            { day: 'DAY 7', label: 'Break-up', delay: 0.3, width: 0.78 },
+            { day: 'DAY 3', label: 'Nudge', delay: 0.08, width: 0.42 },
+            { day: 'DAY 7', label: 'Break-up', delay: 0.16, width: 0.78 },
           ].map((row) => (
             <div key={row.day} className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
@@ -224,7 +222,7 @@ export default function SendMock({ step }: Props) {
                   className="h-full"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: step >= 2 ? row.width : 0 }}
-                  transition={{ duration: 0.9, ease: EASE, delay: row.delay }}
+                  transition={{ duration: 0.55, ease: EASE, delay: row.delay }}
                   style={{
                     backgroundColor: 'var(--orange)',
                     transformOrigin: 'left',

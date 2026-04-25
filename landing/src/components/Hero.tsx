@@ -2,7 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import LeadCard from './LeadCard';
 import SplitText from './SplitText';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 const HERO_LEADS = [
   { name: 'John D.', role: 'CTO', company: 'Acme Threads', score: 8.4, tag: 'D2C' },
@@ -25,11 +25,14 @@ export default function Hero() {
       className="relative w-full"
       style={{ backgroundColor: 'var(--cream)', minHeight: '100vh' }}
     >
-      <div className="px-6 md:px-10 pt-40 md:pt-44 pb-10 max-w-[1600px] mx-auto">
+      <div
+        className="pt-40 md:pt-44 pb-10 max-w-[1600px] mx-auto"
+        style={{ paddingInline: 'var(--section-x)' }}
+      >
         <motion.div
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          transition={{ duration: 0.4, delay: 0.05, ease: EASE }}
           className="mb-8 md:mb-12"
         >
           <span className="mono" style={{ color: 'var(--ash)' }}>
@@ -47,21 +50,21 @@ export default function Hero() {
             display: 'block',
           }}
         >
-          <SplitText delay={0.15} stagger={0.07} duration={0.95} as="span">
+          <SplitText delay={0.08} stagger={0.04} duration={0.6} as="span">
             Hunt LinkedIn leads
           </SplitText>
           <br />
           <span className="serif-italic">
-            <SplitText delay={0.45} stagger={0.07} duration={0.95} as="span" italic>
+            <SplitText delay={0.28} stagger={0.04} duration={0.6} as="span" italic>
               while you sleep.
             </SplitText>
           </span>
         </h1>
 
         <motion.div
-          initial={reduce ? false : { opacity: 0, y: 20 }}
+          initial={reduce ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.95, ease: EASE }}
+          transition={{ duration: 0.5, delay: 0.55, ease: EASE }}
           className="mt-12 md:mt-16 grid md:grid-cols-2 gap-10 items-end"
         >
           <p
@@ -102,14 +105,17 @@ export default function Hero() {
 
       {/* Bottom carousel strip */}
       <motion.div
-        initial={reduce ? false : { opacity: 0, y: 40 }}
+        initial={reduce ? false : { opacity: 0, y: 32 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, delay: 1.1, ease: EASE }}
+        transition={{ duration: 0.55, delay: 0.7, ease: EASE }}
         className="relative mt-6 md:mt-12 mb-10"
         data-cursor="drag"
         aria-hidden
       >
-        <div className="px-6 md:px-10 mb-3 mono" style={{ color: 'var(--ash)', fontSize: 10 }}>
+        <div
+          className="mb-3 mono"
+          style={{ color: 'var(--ash)', fontSize: 10, paddingInline: 'var(--section-x)' }}
+        >
           → leads landing in your queue
         </div>
         <div

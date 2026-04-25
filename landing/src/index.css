@@ -9,6 +9,24 @@
   --ash: #2A2823;
   --orange: #FF5A1F;
   --line: rgba(14, 14, 12, 0.10);
+
+  /* Editorial vertical rhythm */
+  --section-y: clamp(80px, 9vw, 144px);
+  --section-y-tight: clamp(56px, 6vw, 96px);
+  --section-x: clamp(20px, 4vw, 80px);
+}
+
+/* Section rhythm utilities — single source of truth for vertical/horizontal pacing. */
+.section-rhythm {
+  padding-block: var(--section-y);
+  padding-inline: var(--section-x);
+}
+.section-rhythm-tight {
+  padding-block: var(--section-y-tight);
+  padding-inline: var(--section-x);
+}
+.section-x {
+  padding-inline: var(--section-x);
 }
 
 * {

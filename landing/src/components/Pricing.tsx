@@ -1,7 +1,7 @@
 import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 interface Plan {
   id: string;
@@ -118,7 +118,7 @@ export default function Pricing() {
       className="relative w-full"
       style={{ backgroundColor: 'var(--ink)', color: 'var(--cream)' }}
     >
-      <div className="px-6 md:px-10 py-24 md:py-36 max-w-[1600px] mx-auto">
+      <div className="section-rhythm max-w-[1600px] mx-auto">
         <div className="mb-12 md:mb-16 grid md:grid-cols-2 gap-8 items-end">
           <div>
             <div className="mono mb-4" style={{ color: 'rgba(247,241,229,0.6)' }}>
@@ -187,7 +187,7 @@ function CadenceToggle({
           style={{
             padding: '8px 16px',
             color: cadence === c ? 'var(--ink)' : 'rgba(247,241,229,0.7)',
-            transition: 'color .35s',
+            transition: 'color .25s',
           }}
         >
           {c}
@@ -201,7 +201,7 @@ function CadenceToggle({
               layoutId="toggle-pill"
               className="absolute inset-0 rounded-full -z-10"
               style={{ backgroundColor: 'var(--cream)' }}
-              transition={{ duration: 0.4, ease: EASE }}
+              transition={{ duration: 0.3, ease: EASE }}
             />
           )}
         </button>
@@ -251,9 +251,9 @@ function PlanCard({
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={inView ? { opacity: 1, y: 0 } : undefined}
-      transition={{ duration: 0.7, ease: EASE, delay: index * 0.08 }}
+      transition={{ duration: 0.5, ease: EASE, delay: index * 0.05 }}
       className="relative"
       style={{ scale: isFeatured ? 1.02 : 1 }}
     >
@@ -272,7 +272,7 @@ function PlanCard({
             className="absolute top-0 left-0 right-0 h-[3px] origin-left"
             initial={{ scaleX: 0 }}
             animate={inView ? { scaleX: 1 } : undefined}
-            transition={{ duration: 0.9, ease: EASE, delay: 0.4 }}
+            transition={{ duration: 0.55, ease: EASE, delay: 0.25 }}
             style={{ backgroundColor: 'var(--orange)' }}
           />
         )}

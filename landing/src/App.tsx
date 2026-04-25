@@ -29,7 +29,7 @@ export default function App() {
   const [transitionDone, setTransitionDone] = useState(false);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setTransitionDone(true), 600);
+    const t = window.setTimeout(() => setTransitionDone(true), 420);
     return () => window.clearTimeout(t);
   }, []);
 
@@ -62,7 +62,7 @@ export default function App() {
               ctaLabel="See an example brief"
               ctaHref="/auth/signup"
               theme="cream"
-              mock={(step) => <IntakeMock step={step} />}
+              mock={(step, progress) => <IntakeMock step={step} progress={progress} />}
             />
           </Suspense>
 
@@ -96,7 +96,7 @@ export default function App() {
               ctaLabel="See the score model"
               ctaHref="#story"
               theme="cream"
-              mock={(step) => <QualifyMock step={step} />}
+              mock={(step, progress) => <QualifyMock step={step} progress={progress} />}
             />
           </Suspense>
 
@@ -113,7 +113,7 @@ export default function App() {
               ctaLabel="See a sample sequence"
               ctaHref="#story"
               theme="ink"
-              mock={(step) => <SendMock step={step} />}
+              mock={(step, progress) => <SendMock step={step} progress={progress} />}
             />
           </Suspense>
 
@@ -152,7 +152,7 @@ function PageCurtain() {
       initial={{ clipPath: 'inset(0 0 0 0)' }}
       exit={{
         clipPath: 'inset(0 0 100% 0)',
-        transition: { duration: 0.6, ease: [0.65, 0, 0.35, 1] },
+        transition: { duration: 0.45, ease: [0.65, 0, 0.35, 1] },
       }}
     >
       <span className="mono" style={{ color: 'var(--ash)' }}>

@@ -14,9 +14,10 @@ interface CurtainProps {
 export default function Curtain({ reveal }: CurtainProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  // Tightened input range so the reveal completes earlier — feels in-sync, not lagging behind.
   const clip = useTransform(
     scrollYProgress,
-    [0.2, 0.6],
+    [0.25, 0.55],
     ['inset(100% 0 0 0)', 'inset(0% 0 0 0)']
   );
   const baseBg = reveal === 'cream' ? 'var(--ink)' : 'var(--cream)';
@@ -30,7 +31,7 @@ export default function Curtain({ reveal }: CurtainProps) {
     >
       <motion.div
         className="absolute inset-0"
-        style={{ backgroundColor: topBg, clipPath: clip }}
+        style={{ backgroundColor: topBg, clipPath: clip, willChange: 'clip-path' }}
       />
     </div>
   );

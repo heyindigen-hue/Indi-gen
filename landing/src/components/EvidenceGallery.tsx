@@ -2,7 +2,7 @@ import { motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScrol
 import { useEffect, useRef, useState } from 'react';
 import LeadCard from './LeadCard';
 
-const EASE = [0.22, 1, 0.36, 1] as const;
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 const CARDS: Array<{ kind: 'lead' | 'note' | 'metric' | 'reply' | 'inbox'; data: any; caption: string }> = [
   { kind: 'lead', data: { name: 'Marc Kowalski', role: 'Head of Growth', company: 'Northstar', score: 8.9, tag: 'B2B SaaS' }, caption: '01 — first qualified lead, hour 4' },
@@ -72,8 +72,12 @@ export default function EvidenceGallery() {
       <div
         className="sticky top-0 h-screen w-full flex flex-col justify-center overflow-hidden"
         data-cursor="drag"
+        style={{ willChange: 'transform' }}
       >
-        <div className="px-6 md:px-10 mb-10 md:mb-14 flex items-end justify-between gap-6 max-w-[1600px] mx-auto w-full">
+        <div
+          className="mb-10 md:mb-14 flex items-end justify-between gap-6 max-w-[1600px] mx-auto w-full"
+          style={{ paddingInline: 'var(--section-x)' }}
+        >
           <div>
             <div className="mono mb-4" style={{ color: 'var(--ash)' }}>
               EVIDENCE / WHAT YOU WAKE UP TO
@@ -107,9 +111,15 @@ export default function EvidenceGallery() {
           dragConstraints={{ left: -trackWidth, right: 0 }}
           dragElastic={0.05}
           dragMomentum
-          style={{ x, width: 'max-content', cursor: 'grab' }}
+          style={{
+            x,
+            width: 'max-content',
+            cursor: 'grab',
+            paddingInline: 'var(--section-x)',
+            willChange: 'transform',
+          }}
           whileTap={{ cursor: 'grabbing' }}
-          className="flex gap-5 px-6 md:px-10 will-change-transform"
+          className="flex gap-5"
         >
           {CARDS.map((card, i) => (
             <EvidenceCard key={i} card={card} index={i} />
@@ -125,7 +135,7 @@ function EvidenceCard({ card, index }: { card: typeof CARDS[number]; index: numb
   return (
     <motion.div
       whileHover={reduce ? undefined : { scale: 1.03, rotate: index % 2 === 0 ? -1 : 1 }}
-      transition={{ duration: 0.4, ease: EASE }}
+      transition={{ duration: 0.18, ease: EASE }}
       style={{ width: CARD_WIDTH, flexShrink: 0 }}
       className="select-none flex flex-col gap-3 group"
     >
