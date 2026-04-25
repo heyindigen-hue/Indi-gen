@@ -16,10 +16,15 @@ import type { ThemeConfig } from '@/types/sdui';
 import { ThemePreview } from './_theme/ThemePreview';
 
 // ---------------------------------------------------------------------------
-// Preset definitions
+// Preset definitions — warm-light first (production default)
 // ---------------------------------------------------------------------------
 
-const PRESETS: Record<string, ThemeConfig['colors']> = {
+const PRESETS: Record<ThemeConfig['preset'], ThemeConfig['colors']> = {
+  'warm-light': {
+    bg: '#FAF7F2', card: '#FFFFFF', border: '#E8E2D7', text: '#0B0A08',
+    muted: '#6B6256', accent: '#FF4716', success: '#2E7D32',
+    warning: '#C2410C', destructive: '#B91C1C',
+  },
   graphite: {
     bg: '#0f0f0f', card: '#1a1a1a', border: '#2a2a2a', text: '#ffffff',
     muted: '#888888', accent: '#ffffff', success: '#22c55e',
@@ -47,6 +52,7 @@ const COLOR_ROLES: Array<keyof ThemeConfig['colors']> = [
 ];
 
 const PRESET_LABELS: Array<{ key: ThemeConfig['preset']; label: string }> = [
+  { key: 'warm-light', label: 'Warm Light' },
   { key: 'graphite', label: 'Graphite' },
   { key: 'vercel', label: 'Vercel' },
   { key: 'cron', label: 'Cron' },
@@ -60,10 +66,10 @@ const DENSITY_OPTIONS: Array<{ key: ThemeConfig['density']; label: string }> = [
 ];
 
 const DEFAULT_THEME: ThemeConfig = {
-  preset: 'graphite',
-  colors: { ...PRESETS.graphite },
-  font: 'inter',
-  radius: 8,
+  preset: 'warm-light',
+  colors: { ...PRESETS['warm-light'] },
+  font: 'fraunces',
+  radius: 16,
   density: 'comfortable',
 };
 
@@ -83,7 +89,7 @@ function PresetButton({ label, active, colors, onClick }: PresetButtonProps) {
     <button
       onClick={onClick}
       className={[
-        'flex flex-col gap-2 p-3 rounded-lg border text-left transition-all',
+        'flex flex-col gap-2 p-3 rounded-lg border text-left transition-all min-h-[72px]',
         active
           ? 'border-primary ring-1 ring-primary'
           : 'border-border hover:border-muted-foreground',
@@ -137,7 +143,7 @@ function ColorSwatch({ role, value, onChange }: ColorSwatchProps) {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          className="w-7 h-7 rounded border border-border shrink-0 cursor-pointer"
+          className="w-9 h-9 rounded border border-border shrink-0 cursor-pointer"
           style={{ backgroundColor: value }}
           onClick={() => pickerRef.current?.click()}
           aria-label={`Pick color for ${role}`}
@@ -157,7 +163,7 @@ function ColorSwatch({ role, value, onChange }: ColorSwatchProps) {
           key={value}
           onBlur={handleHexBlur}
           maxLength={7}
-          className="w-full h-7 rounded border border-border bg-background px-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
+          className="w-full h-9 rounded border border-border bg-background px-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring"
           aria-label={`${role} hex value`}
         />
       </div>
@@ -222,16 +228,16 @@ export default function MobileUiThemePage() {
   }, []);
 
   return (
-    <div className="flex gap-6 items-start">
+    <div className="flex flex-col xl:flex-row gap-6 items-start">
       {/* Controls column */}
-      <div className="flex-1 min-w-0 flex flex-col gap-6">
+      <div className="flex-1 min-w-0 w-full flex flex-col gap-4 sm:gap-6">
 
         {/* Preset selector */}
-        <section className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
+        <section className="rounded-lg border border-border bg-card p-3 sm:p-4 flex flex-col gap-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Preset
           </p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
             {PRESET_LABELS.map(({ key, label }) => (
               <PresetButton
                 key={key}
@@ -245,11 +251,11 @@ export default function MobileUiThemePage() {
         </section>
 
         {/* Color palette editor */}
-        <section className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
+        <section className="rounded-lg border border-border bg-card p-3 sm:p-4 flex flex-col gap-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Colors
           </p>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-3 sm:gap-x-4 sm:gap-y-4">
             {COLOR_ROLES.map((role) => (
               <ColorSwatch
                 key={role}
@@ -262,15 +268,16 @@ export default function MobileUiThemePage() {
         </section>
 
         {/* Font select */}
-        <section className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
+        <section className="rounded-lg border border-border bg-card p-3 sm:p-4 flex flex-col gap-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Font
           </p>
           <Select value={theme.font} onValueChange={(v) => handleFontChange(v as ThemeConfig['font'])}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full h-11">
               <SelectValue placeholder="Select font" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="fraunces">Fraunces (editorial)</SelectItem>
               <SelectItem value="inter">Inter</SelectItem>
               <SelectItem value="geist">Geist</SelectItem>
               <SelectItem value="system">System Default</SelectItem>
@@ -279,7 +286,7 @@ export default function MobileUiThemePage() {
         </section>
 
         {/* Radius slider */}
-        <section className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
+        <section className="rounded-lg border border-border bg-card p-3 sm:p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Corner Radius
@@ -293,7 +300,7 @@ export default function MobileUiThemePage() {
             step={1}
             value={theme.radius}
             onChange={handleRadiusChange}
-            className="w-full accent-primary"
+            className="w-full accent-primary h-6"
             aria-label="Corner radius"
           />
           <div className="flex justify-between text-[10px] text-muted-foreground">
@@ -303,7 +310,7 @@ export default function MobileUiThemePage() {
         </section>
 
         {/* Density toggle */}
-        <section className="rounded-lg border border-border bg-card p-4 flex flex-col gap-3">
+        <section className="rounded-lg border border-border bg-card p-3 sm:p-4 flex flex-col gap-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Density
           </p>
@@ -313,7 +320,7 @@ export default function MobileUiThemePage() {
                 key={key}
                 size="sm"
                 variant={theme.density === key ? 'default' : 'outline'}
-                className="flex-1"
+                className="flex-1 h-11"
                 onClick={() => handleDensity(key)}
               >
                 {label}
@@ -327,7 +334,7 @@ export default function MobileUiThemePage() {
           <Label className="sr-only" htmlFor="apply-btn">Apply theme</Label>
           <Button
             id="apply-btn"
-            className="w-full gap-2"
+            className="w-full gap-2 h-11"
             onClick={() => applyMutation.mutate()}
             disabled={applyMutation.isPending}
           >
@@ -337,8 +344,8 @@ export default function MobileUiThemePage() {
         </div>
       </div>
 
-      {/* Preview column */}
-      <div className="w-[400px] shrink-0 flex flex-col items-center gap-3 sticky top-6">
+      {/* Preview column — full-width on mobile, sticky sidebar on xl */}
+      <div className="w-full xl:w-[400px] xl:shrink-0 flex flex-col items-center gap-3 xl:sticky xl:top-6">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide self-start">
           Preview
         </p>

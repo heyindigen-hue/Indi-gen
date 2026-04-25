@@ -10,12 +10,12 @@ export function PageHeader({ title, description, subtitle, actions, children }: 
   const sub = subtitle ?? description;
   const right = actions ?? children;
   return (
-    <div className="flex items-start justify-between mb-6">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        {sub && <p className="text-sm text-muted-foreground mt-1">{sub}</p>}
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-lg sm:text-xl font-semibold text-foreground truncate">{title}</h1>
+        {sub && <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{sub}</p>}
       </div>
-      {right && <div className="flex items-center gap-2">{right}</div>}
+      {right && <div className="flex items-center gap-2 flex-wrap shrink-0">{right}</div>}
     </div>
   );
 }

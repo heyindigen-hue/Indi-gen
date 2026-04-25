@@ -65,7 +65,7 @@ export interface PaywallBundle {
 }
 
 export interface ThemeConfig {
-  preset: 'graphite' | 'vercel' | 'cron' | 'custom';
+  preset: 'warm-light' | 'graphite' | 'vercel' | 'cron' | 'custom';
   colors: {
     bg: string;
     card: string;
@@ -77,7 +77,7 @@ export interface ThemeConfig {
     warning: string;
     destructive: string;
   };
-  font: 'inter' | 'geist' | 'system';
+  font: 'inter' | 'fraunces' | 'geist' | 'system';
   radius: number;
   density: 'compact' | 'comfortable' | 'spacious';
 }

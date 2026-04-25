@@ -475,6 +475,58 @@ router.get('/billing/subscriptions', async (req, res) => {
   res.json(rows);
 });
 
+// i18n strings — admin editor read/write
+router.get('/i18n-strings', async (req, res) => {
+  const { locale } = req.query;
+  if (!locale || typeof locale !== 'string') {
+    return res.status(400).json({ error: 'locale query param required' });
+  }
+  const rows = await query(
+    `SELECT key, value, updated_at FROM i18n_strings WHERE locale=$1 ORDER BY key ASC`,
+    [locale]
+  );
+  res.json({ locale, strings: rows.map((r: any) => ({ key: r.key, value: r.value })) });
+});
+
+const i18nStringsSchema = z.object({
+  locale: z.string().min(2),
+  strings: z.array(z.object({ key: z.string().min(1), value: z.string() })),
+});
+
+router.post('/i18n-strings', validateBody(i18nStringsSchema), async (req: any, res) => {
+  const { locale, strings } = req.body as { locale: string; strings: Array<{ key: string; value: string }> };
+  if (!strings.length) return res.json({ ok: true, count: 0 });
+
+  await transaction(async (client) => {
+    for (const { key, value } of strings) {
+      await client.query(
+        `INSERT INTO i18n_strings (locale, key, value, updated_by, updated_at)
+         VALUES ($1,$2,$3,$4,NOW())
+         ON CONFLICT (locale, key) DO UPDATE
+           SET value=EXCLUDED.value, updated_by=EXCLUDED.updated_by, updated_at=NOW()`,
+        [locale, key, value, req.user?.id ?? null]
+      );
+    }
+  });
+  await audit({
+    actorId: req.user?.id ?? null,
+    actorType: 'admin',
+    action: 'admin.i18n_update',
+    targetType: 'i18n_strings',
+    targetId: locale,
+    after: { count: strings.length },
+  });
+  res.json({ ok: true, count: strings.length });
+});
+
+router.delete('/i18n-strings/:locale/:key', async (req: any, res) => {
+  await query(
+    `DELETE FROM i18n_strings WHERE locale=$1 AND key=$2`,
+    [req.params.locale, req.params.key]
+  );
+  res.json({ ok: true });
+});
+
 // SQL playground (read-only)
 router.get('/sql/preview', async (req, res) => {
   const { sql } = req.query;

@@ -42,6 +42,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/store/auth';
 
 const SIDEBAR_KEY = 'leadhangover_sidebar_collapsed';
@@ -166,7 +167,6 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-// Simple placeholder for image/eye icon usage
 function EyeIconPlaceholder(props: IconProps) {
   return (
     <svg
@@ -187,8 +187,16 @@ function EyeIconPlaceholder(props: IconProps) {
   );
 }
 
-export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_KEY) === 'true');
+interface SidebarProps {
+  mode?: 'fixed' | 'drawer';
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ mode = 'fixed', onNavigate }: SidebarProps) {
+  const isDrawer = mode === 'drawer';
+  const [collapsed, setCollapsed] = useState(() =>
+    isDrawer ? false : localStorage.getItem(SIDEBAR_KEY) === 'true',
+  );
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem(EXPANDED_GROUPS_KEY);
@@ -197,12 +205,13 @@ export function Sidebar() {
       return new Set<string>();
     }
   });
+  const [showPlatform, setShowPlatform] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_KEY, String(collapsed));
-  }, [collapsed]);
+    if (!isDrawer) localStorage.setItem(SIDEBAR_KEY, String(collapsed));
+  }, [collapsed, isDrawer]);
 
   useEffect(() => {
     localStorage.setItem(EXPANDED_GROUPS_KEY, JSON.stringify([...expandedGroups]));
@@ -229,28 +238,41 @@ export function Sidebar() {
         .slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase() ?? 'U';
 
+  // In drawer mode the parent <Sheet> handles the box, so we render full-width / never collapsed.
+  const widthClass = isDrawer ? 'w-full' : collapsed ? 'w-14' : 'w-60';
+
+  const handleNav = () => {
+    onNavigate?.();
+  };
+
   return (
     <aside
       className={cn(
-        'flex flex-col bg-card border-r border-border transition-all duration-200 shrink-0',
-        collapsed ? 'w-14' : 'w-60',
+        'flex flex-col bg-card transition-all duration-200 shrink-0',
+        !isDrawer && 'border-r border-border',
+        widthClass,
+        isDrawer ? 'h-full' : 'h-screen',
       )}
     >
-      {/* Logo + toggle */}
+      {/* Logo + collapse toggle (no toggle in drawer mode) */}
       <div className="flex items-center h-topbar px-3 border-b border-border shrink-0">
-        {!collapsed && (
+        {(!collapsed || isDrawer) && (
           <>
             <img src="/brand/logo-dark-256.png" alt="LeadHangover" className="h-8 w-8" />
-            <span className="flex-1 font-semibold text-foreground text-sm tracking-tight">LeadHangover</span>
+            <span className="flex-1 font-semibold text-foreground text-sm tracking-tight ml-2">
+              LeadHangover
+            </span>
           </>
         )}
-        <button
-          onClick={() => setCollapsed((c) => !c)}
-          className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors ml-auto"
-          aria-label="Toggle sidebar"
-        >
-          {collapsed ? <ArrowRightIcon size={16} /> : <FilterIcon size={16} />}
-        </button>
+        {!isDrawer && (
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="h-9 w-9 flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors ml-auto"
+            aria-label="Toggle sidebar"
+          >
+            {collapsed ? <ArrowRightIcon size={16} /> : <FilterIcon size={16} />}
+          </button>
+        )}
       </div>
 
       <ScrollArea className="flex-1 py-2">
@@ -259,18 +281,20 @@ export function Sidebar() {
           <NavLink
             to="/"
             end
+            onClick={handleNav}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-2.5 px-2 rounded-md h-8 text-sm transition-colors',
+                'flex items-center gap-2.5 px-2 rounded-md text-sm transition-colors',
+                isDrawer ? 'h-11' : 'h-9',
                 isActive
-                  ? 'bg-accent text-foreground border-l-2 border-primary pl-[6px]'
+                  ? 'bg-accent text-foreground border-l-[3px] border-primary pl-[5px] font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
-                collapsed && 'justify-center px-0',
+                !isDrawer && collapsed && 'justify-center px-0',
               )
             }
           >
             <HomeIcon size={16} className="shrink-0" />
-            {!collapsed && <span>Dashboard</span>}
+            {(!collapsed || isDrawer) && <span>Dashboard</span>}
           </NavLink>
         </div>
 
@@ -279,19 +303,23 @@ export function Sidebar() {
           {NAV_GROUPS.map((group) => {
             const isExpanded = expandedGroups.has(group.label);
             const GroupIcon = group.icon;
+            const showLabels = !collapsed || isDrawer;
             return (
               <div key={group.label}>
                 <button
-                  onClick={() => !collapsed && toggleGroup(group.label)}
+                  onClick={() => showLabels && toggleGroup(group.label)}
                   className={cn(
-                    'w-full flex items-center gap-2.5 px-2 rounded-md h-8 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors',
-                    collapsed && 'justify-center px-0',
+                    'w-full flex items-center gap-2.5 px-2 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors',
+                    isDrawer ? 'h-11' : 'h-9',
+                    !showLabels && 'justify-center px-0',
                   )}
                 >
                   <GroupIcon size={16} className="shrink-0" />
-                  {!collapsed && (
+                  {showLabels && (
                     <>
-                      <span className="flex-1 text-left">{group.label}</span>
+                      <span className="flex-1 text-left text-[11px] font-semibold uppercase tracking-wider">
+                        {group.label}
+                      </span>
                       {isExpanded ? (
                         <ChevronDownIcon size={14} className="opacity-50" />
                       ) : (
@@ -300,7 +328,7 @@ export function Sidebar() {
                     </>
                   )}
                 </button>
-                {!collapsed && isExpanded && (
+                {showLabels && isExpanded && (
                   <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-2">
                     {group.items.map((item) => {
                       const ItemIcon = item.icon;
@@ -309,11 +337,13 @@ export function Sidebar() {
                           key={item.href}
                           to={item.href}
                           end
+                          onClick={handleNav}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center gap-2 px-2 rounded-md h-8 text-sm transition-colors',
+                              'flex items-center gap-2 px-2 rounded-md text-sm transition-colors',
+                              isDrawer ? 'h-11' : 'h-8',
                               isActive
-                                ? 'bg-accent text-foreground'
+                                ? 'bg-accent text-foreground border-l-[3px] border-primary pl-[5px] font-medium'
                                 : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
                             )
                           }
@@ -330,57 +360,58 @@ export function Sidebar() {
           })}
         </div>
 
-        {/* Platform footer group */}
-        <div className="px-2 mt-2">
-          <button
-            onClick={() => !collapsed && toggleGroup('Platform')}
-            className={cn(
-              'w-full flex items-center gap-2.5 px-2 rounded-md h-8 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors',
-              collapsed && 'justify-center px-0',
+        {/* Platform — collapsed under "More" */}
+        {(!collapsed || isDrawer) && (
+          <div className="px-2 mt-3">
+            <Separator className="my-2" />
+            <button
+              onClick={() => setShowPlatform((v) => !v)}
+              className={cn(
+                'w-full flex items-center gap-2.5 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors',
+                isDrawer ? 'h-11' : 'h-8',
+              )}
+            >
+              <ChartIcon size={14} className="shrink-0" />
+              <span className="flex-1 text-left uppercase tracking-wider font-semibold">More</span>
+              {showPlatform ? (
+                <ChevronDownIcon size={12} className="opacity-50" />
+              ) : (
+                <ChevronRightIcon size={12} className="opacity-50" />
+              )}
+            </button>
+            {showPlatform && (
+              <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-2">
+                {[
+                  { label: 'Logs', href: '/platform/logs', icon: FileTextIcon },
+                  { label: 'Errors', href: '/platform/errors', icon: AlertCircleIcon },
+                  { label: 'Webhooks', href: '/platform/webhooks', icon: ZapIcon },
+                ].map((item) => {
+                  const ItemIcon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.href}
+                      to={item.href}
+                      end
+                      onClick={handleNav}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-2 px-2 rounded-md text-sm transition-colors',
+                          isDrawer ? 'h-11' : 'h-8',
+                          isActive
+                            ? 'bg-accent text-foreground border-l-[3px] border-primary pl-[5px] font-medium'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
+                        )
+                      }
+                    >
+                      <ItemIcon size={14} className="shrink-0" />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
             )}
-          >
-            <ChartIcon size={16} className="shrink-0" />
-            {!collapsed && (
-              <>
-                <span className="flex-1 text-left">Platform</span>
-                {expandedGroups.has('Platform') ? (
-                  <ChevronDownIcon size={14} className="opacity-50" />
-                ) : (
-                  <ChevronRightIcon size={14} className="opacity-50" />
-                )}
-              </>
-            )}
-          </button>
-          {!collapsed && expandedGroups.has('Platform') && (
-            <div className="ml-4 mt-0.5 space-y-0.5 border-l border-border pl-2">
-              {[
-                { label: 'Logs', href: '/platform/logs', icon: FileTextIcon },
-                { label: 'Errors', href: '/platform/errors', icon: AlertCircleIcon },
-                { label: 'Webhooks', href: '/platform/webhooks', icon: ZapIcon },
-              ].map((item) => {
-                const ItemIcon = item.icon;
-                return (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    end
-                    className={({ isActive }) =>
-                      cn(
-                        'flex items-center gap-2 px-2 rounded-md h-8 text-sm transition-colors',
-                        isActive
-                          ? 'bg-accent text-foreground'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-accent/60',
-                      )
-                    }
-                  >
-                    <ItemIcon size={14} className="shrink-0" />
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </ScrollArea>
 
       {/* User profile row */}
@@ -389,21 +420,25 @@ export function Sidebar() {
           <DropdownMenuTrigger asChild>
             <button
               className={cn(
-                'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-accent transition-colors text-left',
-                collapsed && 'justify-center px-0',
+                'w-full flex items-center gap-2.5 px-2 py-2 rounded-md hover:bg-accent transition-colors text-left',
+                !isDrawer && collapsed && 'justify-center px-0',
               )}
             >
               <Avatar className="h-7 w-7 shrink-0">
                 <AvatarImage src={user?.avatar_url ?? undefined} />
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
-              {!collapsed && (
+              {(!collapsed || isDrawer) && (
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium text-foreground truncate">{user?.name ?? user?.email}</div>
+                  <div className="text-xs font-medium text-foreground truncate">
+                    {user?.name ?? user?.email}
+                  </div>
                   <div className="text-xs text-muted-foreground capitalize truncate">{user?.role}</div>
                 </div>
               )}
-              {!collapsed && <ChevronUpIcon size={14} className="text-muted-foreground shrink-0" />}
+              {(!collapsed || isDrawer) && (
+                <ChevronUpIcon size={14} className="text-muted-foreground shrink-0" />
+              )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-52">
@@ -412,7 +447,12 @@ export function Sidebar() {
               <div className="text-xs text-muted-foreground">{user?.email}</div>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
+            <DropdownMenuItem
+              onClick={() => {
+                handleNav();
+                navigate('/settings');
+              }}
+            >
               <SettingsIcon size={16} className="mr-2" />
               Settings
             </DropdownMenuItem>

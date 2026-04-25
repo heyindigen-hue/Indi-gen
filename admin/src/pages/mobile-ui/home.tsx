@@ -3,6 +3,8 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   closestCenter,
@@ -109,6 +111,8 @@ export default function MobileUiHomePage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+    useSensor(KeyboardSensor),
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -207,12 +211,12 @@ export default function MobileUiHomePage() {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 items-start min-h-[860px]">
-        {/* Column 1: Palette */}
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-start lg:min-h-[860px]">
+        {/* Column 1: Palette — collapsible drawer on mobile, sidebar on desktop */}
         <aside
           ref={paletteRef}
           tabIndex={-1}
-          className="w-[252px] shrink-0 rounded-lg border border-border bg-card"
+          className="w-full lg:w-[252px] lg:shrink-0 rounded-lg border border-border bg-card"
           onFocus={() => setFocusPalette(true)}
           onBlur={() => setFocusPalette(false)}
         >
@@ -229,7 +233,7 @@ export default function MobileUiHomePage() {
               className="mt-2 w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
-          <div className="overflow-y-auto max-h-[740px]">
+          <div className="overflow-y-auto max-h-[60vh] lg:max-h-[740px]">
             {filteredCatalog ? (
               <div className="p-2 flex flex-col gap-1">
                 {filteredCatalog.map((entry) => (
@@ -307,8 +311,8 @@ export default function MobileUiHomePage() {
           </DeviceFrame>
         </div>
 
-        {/* Column 3: Inspector */}
-        <aside className="w-[320px] shrink-0 rounded-lg border border-border bg-card self-start sticky top-6">
+        {/* Column 3: Inspector — full-width on mobile, sticky sidebar on desktop */}
+        <aside className="w-full lg:w-[320px] lg:shrink-0 rounded-lg border border-border bg-card self-start lg:sticky lg:top-6">
           <div className="p-3 border-b border-border">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Inspector

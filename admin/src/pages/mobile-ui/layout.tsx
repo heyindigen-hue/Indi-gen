@@ -145,9 +145,20 @@ function MobileUiLayoutInner() {
         description="SDUI manifest editor — configure screens, widgets, and theme"
       />
 
-      <div className="flex gap-6 items-start">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
+        <div className="flex-1 min-w-0 w-full">
           <SubTabNav />
+
+          {/* Mobile-only version controls — collapsed above content */}
+          <details className="lg:hidden mb-4 rounded-lg border border-border bg-card">
+            <summary className="px-4 py-3 cursor-pointer text-xs font-semibold uppercase tracking-wider text-muted-foreground select-none">
+              Version controls
+            </summary>
+            <div className="p-4 pt-0">
+              <VersionPanel />
+            </div>
+          </details>
+
           <Outlet />
         </div>
 

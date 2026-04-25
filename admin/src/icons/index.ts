@@ -48,3 +48,4 @@ export { UploadIcon } from './UploadIcon';
 export { ChevronUpIcon } from './ChevronUpIcon';
 export { ExternalLinkIcon } from './ExternalLinkIcon';
 export { RefreshIcon } from './RefreshIcon';
+export { MenuIcon } from './MenuIcon';

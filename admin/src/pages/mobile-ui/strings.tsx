@@ -25,13 +25,26 @@ interface StringsApiResponse {
 const INITIAL_LOCALES = ['en-IN', 'hi-IN'];
 
 const SAMPLE: StringEntry[] = [
-  { key: 'login.cta', value: 'Get Started' },
+  { key: 'login.cta', value: 'Sign in' },
+  { key: 'login.apple', value: 'Continue with Apple' },
+  { key: 'login.google', value: 'Continue with Google' },
   { key: 'tabs.home', value: 'Home' },
-  { key: 'tabs.explore', value: 'Explore' },
-  { key: 'tabs.alerts', value: 'Alerts' },
-  { key: 'tabs.profile', value: 'Profile' },
+  { key: 'tabs.explore', value: 'Saved' },
+  { key: 'tabs.outreach', value: 'Outreach' },
+  { key: 'tabs.insights', value: 'Insights' },
+  { key: 'tabs.settings', value: 'Settings' },
+  { key: 'home.no_leads', value: 'No leads yet' },
+  { key: 'home.pull_to_refresh', value: 'Pull to refresh' },
+  { key: 'lead.save', value: 'Save' },
+  { key: 'lead.skip', value: 'Skip' },
+  { key: 'lead.contact', value: 'Contact' },
   { key: 'paywall.headline', value: 'Get more leads' },
+  { key: 'common.loading', value: 'Loading...' },
+  { key: 'common.error', value: 'Something went wrong' },
+  { key: 'common.retry', value: 'Retry' },
   { key: 'onboarding.skip', value: 'Skip' },
+  { key: 'onboarding.next', value: 'Next' },
+  { key: 'onboarding.continue', value: 'Continue' },
 ];
 
 // ---- Helpers ----
@@ -397,7 +410,7 @@ export default function StringsPage() {
       {/* Table */}
       <div className="rounded-lg border border-border overflow-hidden">
         {/* Column headers */}
-        <div className="grid grid-cols-[2fr_3fr_auto] gap-0 bg-muted/40 border-b border-border px-4 py-2">
+        <div className="hidden sm:grid grid-cols-[2fr_3fr_auto] gap-0 bg-muted/40 border-b border-border px-4 py-2">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Key</span>
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
             Value — {activeLocale}
@@ -416,15 +429,15 @@ export default function StringsPage() {
             {filteredKeys.map((key) => (
               <div
                 key={key}
-                className="grid grid-cols-[2fr_3fr_auto] gap-0 px-4 py-2 items-center hover:bg-accent/30 transition-colors"
+                className="grid grid-cols-1 sm:grid-cols-[2fr_3fr_auto] gap-1 sm:gap-0 px-3 sm:px-4 py-3 sm:py-2 items-start sm:items-center hover:bg-accent/30 transition-colors"
               >
                 {/* Key — read-only monospace */}
-                <span className="text-xs font-mono text-muted-foreground truncate pr-4" title={key}>
+                <span className="text-xs font-mono text-muted-foreground truncate sm:pr-4" title={key}>
                   {key}
                 </span>
 
                 {/* Value — inline editable */}
-                <div className="pr-4">
+                <div className="sm:pr-4 min-w-0">
                   <InlineEditCell
                     value={currentMap[key] ?? ''}
                     onSave={(value) => handleValueSave(key, value)}
@@ -432,11 +445,11 @@ export default function StringsPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="w-24 flex justify-end">
+                <div className="sm:w-24 flex justify-end">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                    className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                     onClick={() => handleAiTranslate(key)}
                   >
                     <SparkleIcon size={11} />

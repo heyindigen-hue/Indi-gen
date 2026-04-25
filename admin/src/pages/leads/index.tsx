@@ -42,6 +42,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRegisterCommand } from '@/store/commands';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 type Lead = {
   id: string;
@@ -109,6 +110,7 @@ function IntentChip({ label }: { label: string | null }) {
 export default function LeadsPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   const q = params.get('q') ?? '';
   const icp = params.get('icp') ?? '';
@@ -368,10 +370,10 @@ export default function LeadsPage() {
           placeholder="Search name or company..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="w-56 h-8 text-sm"
+          className="flex-1 min-w-[160px] sm:flex-none sm:w-56 h-9 text-sm"
         />
         <Select value={icp || 'all'} onValueChange={(v) => setFilter('icp', v === 'all' ? '' : v)}>
-          <SelectTrigger className="w-36 h-8 text-sm">
+          <SelectTrigger className="w-32 sm:w-36 h-9 text-sm">
             <SelectValue placeholder="ICP type" />
           </SelectTrigger>
           <SelectContent>
@@ -386,7 +388,7 @@ export default function LeadsPage() {
           value={status || 'all'}
           onValueChange={(v) => setFilter('status', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className="w-36 h-8 text-sm">
+          <SelectTrigger className="w-32 sm:w-36 h-9 text-sm">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -402,7 +404,7 @@ export default function LeadsPage() {
           value={scoreMin > 0 ? String(scoreMin) : 'all'}
           onValueChange={(v) => setFilter('score_min', v === 'all' ? '' : v)}
         >
-          <SelectTrigger className="w-32 h-8 text-sm">
+          <SelectTrigger className="w-28 sm:w-32 h-9 text-sm">
             <SelectValue placeholder="Min score" />
           </SelectTrigger>
           <SelectContent>
@@ -416,8 +418,8 @@ export default function LeadsPage() {
         </Select>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-sm gap-1">
-              Saved views
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1">
+              Views
               <ChevronDownIcon size={14} />
             </Button>
           </DropdownMenuTrigger>
@@ -432,7 +434,7 @@ export default function LeadsPage() {
         <Button
           variant="outline"
           size="sm"
-          className="h-8 text-sm ml-auto"
+          className="h-9 text-sm ml-auto hidden sm:inline-flex"
           onClick={() => navigate('/leads/enrichment')}
         >
           Enrichment queue
@@ -441,9 +443,9 @@ export default function LeadsPage() {
 
       {/* Bulk actions */}
       {selectedLeads.length > 0 && (
-        <div className="flex items-center gap-2 mb-3 p-2 bg-muted rounded-md text-sm">
+        <div className="flex flex-wrap items-center gap-2 mb-3 p-2 bg-muted rounded-md text-sm">
           <span className="text-muted-foreground">{selectedLeads.length} selected</span>
-          <div className="flex gap-1 ml-2">
+          <div className="flex gap-1 ml-0 sm:ml-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -491,8 +493,72 @@ export default function LeadsPage() {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-md border">
+      {/* Mobile card list */}
+      {isMobile ? (
+        <div className="space-y-3">
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-md border border-border bg-card p-4">
+                <Skeleton className="h-5 w-2/3 mb-2" />
+                <Skeleton className="h-4 w-full mb-1" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : leads.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+              No leads found
+            </div>
+          ) : (
+            leads.map((lead) => {
+              const initials = (lead.name ?? '?').slice(0, 2).toUpperCase();
+              return (
+                <button
+                  key={lead.id}
+                  type="button"
+                  onClick={() => navigate(`/leads/${lead.id}`)}
+                  className="w-full text-left rounded-md border border-border bg-card p-4 active:bg-accent hover:bg-accent/50 transition-colors min-h-[88px]"
+                >
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-sm truncate">{lead.name ?? '—'}</div>
+                          {lead.headline && (
+                            <div className="text-xs text-muted-foreground truncate mt-0.5">
+                              {lead.headline}
+                            </div>
+                          )}
+                          {lead.company && (
+                            <div className="text-xs text-muted-foreground truncate mt-0.5">
+                              {lead.company}
+                            </div>
+                          )}
+                        </div>
+                        <ScoreBadge score={lead.score} />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        <StatusPill
+                          label={lead.status}
+                          variant={LEAD_STATUS_VARIANTS[lead.status] ?? 'default'}
+                        />
+                        {lead.icp_type && <IcpChip type={lead.icp_type} />}
+                        {lead.intent_label && <IntentChip label={lead.intent_label} />}
+                        <span className="text-[11px] text-muted-foreground ml-auto">
+                          {relTime(new Date(lead.created_at))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      ) : (
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -562,17 +628,18 @@ export default function LeadsPage() {
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Pagination */}
       <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-        <span>
+        <span className="text-xs sm:text-sm">
           Page {page + 1} of {pageCount} — {total.toLocaleString()} total
         </span>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
             size="sm"
-            className="h-8"
+            className="h-9"
             disabled={page === 0}
             onClick={() => setPageParam(page - 1)}
           >
@@ -581,7 +648,7 @@ export default function LeadsPage() {
           <Button
             variant="outline"
             size="sm"
-            className="h-8"
+            className="h-9"
             disabled={page >= pageCount - 1}
             onClick={() => setPageParam(page + 1)}
           >
