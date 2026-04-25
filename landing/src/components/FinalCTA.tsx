@@ -37,7 +37,7 @@ export default function FinalCTA() {
           className="mt-12 md:mt-16 flex flex-col items-center gap-6"
         >
           <a
-            href="/auth/signup"
+            href="/customer/signup"
             className="rounded-full group relative overflow-hidden inline-block"
             style={{
               backgroundColor: 'var(--orange)',

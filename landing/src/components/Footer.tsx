@@ -4,22 +4,48 @@ import FlowerMark from './FlowerMark';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
-const COLUMNS: Array<{ heading: string; links: string[] }> = [
+type FooterLink = { label: string; href: string };
+
+const COLUMNS: Array<{ heading: string; links: FooterLink[] }> = [
   {
     heading: 'Product',
-    links: ['How it works', 'Features', 'Pricing', 'Mobile app', 'Roadmap'],
+    links: [
+      { label: 'How it works', href: '#story' },
+      { label: 'Features', href: '#features' },
+      { label: 'Pricing', href: '#pricing' },
+      { label: 'Mobile app', href: '#mobile' },
+      { label: 'Customer login', href: '/customer/login' },
+    ],
   },
   {
     heading: 'Resources',
-    links: ['Blog', 'Changelog', 'Help center', 'API docs', 'Status'],
+    links: [
+      { label: 'Blog', href: '#' },
+      { label: 'Changelog', href: '#' },
+      { label: 'Help center', href: '#' },
+      { label: 'API docs', href: '#' },
+      { label: 'Status', href: '#' },
+    ],
   },
   {
     heading: 'Company',
-    links: ['About', 'Indigen Services', 'Careers', 'Contact', 'Press kit'],
+    links: [
+      { label: 'About', href: '#' },
+      { label: 'Indigen Services', href: 'https://indigenservices.com' },
+      { label: 'Careers', href: '#' },
+      { label: 'Contact', href: '#' },
+      { label: 'Admin', href: '/admin/' },
+    ],
   },
   {
     heading: 'Legal',
-    links: ['Privacy', 'Terms', 'DPDP', 'Refunds', 'Cookie preferences'],
+    links: [
+      { label: 'Privacy', href: '#' },
+      { label: 'Terms', href: '#' },
+      { label: 'DPDP', href: '#' },
+      { label: 'Refunds', href: '#' },
+      { label: 'Cookie preferences', href: '#' },
+    ],
   },
 ];
 
@@ -157,13 +183,13 @@ export default function Footer() {
               </div>
               <ul className="flex flex-col gap-3">
                 {col.links.map((l) => (
-                  <li key={l}>
+                  <li key={l.label}>
                     <a
-                      href="#"
+                      href={l.href}
                       className="relative group inline-block"
                       style={{ fontSize: 14, color: 'var(--ash)' }}
                     >
-                      <span>{l}</span>
+                      <span>{l.label}</span>
                       <span
                         className="absolute left-0 -bottom-0.5 h-px w-full origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
                         style={{ backgroundColor: 'var(--orange)' }}

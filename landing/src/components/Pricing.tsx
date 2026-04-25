@@ -23,7 +23,7 @@ const FALLBACK: Plan[] = [
     cadence: 'try for 14 days',
     features: ['50 leads / mo', '1 ICP', 'Manual approve', 'Community help'],
     cta: 'Start free',
-    href: '/auth/signup',
+    href: '/customer/signup',
   },
   {
     id: 'starter',
@@ -39,7 +39,7 @@ const FALLBACK: Plan[] = [
       'Email support',
     ],
     cta: 'Start hunting',
-    href: '/auth/signup?plan=starter',
+    href: '/customer/signup?plan=starter',
   },
   {
     id: 'pro',
@@ -57,7 +57,7 @@ const FALLBACK: Plan[] = [
     ],
     featured: true,
     cta: 'Start hunting',
-    href: '/auth/signup?plan=pro',
+    href: '/customer/signup?plan=pro',
   },
   {
     id: 'enterprise',
@@ -101,7 +101,7 @@ export default function Pricing() {
             features: Array.isArray(p.features) ? p.features : [],
             featured: typeof p.featured === 'boolean' ? p.featured : i === 2,
             cta: p.cta ?? 'Choose plan',
-            href: p.href ?? '/auth/signup',
+            href: p.href ?? '/customer/signup',
           }));
           setPlans(normalized);
         }

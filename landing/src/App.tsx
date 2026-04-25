@@ -60,7 +60,7 @@ export default function App() {
               italicTail="you sell to."
               body="Pick an industry, drop a phrase, name your geography. We turn it into a hunting brief Claude can read."
               ctaLabel="See an example brief"
-              ctaHref="/auth/signup"
+              ctaHref="/customer/signup"
               theme="cream"
               mock={(step, progress) => <IntakeMock step={step} progress={progress} />}
             />

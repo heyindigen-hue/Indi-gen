@@ -76,7 +76,7 @@ export default function Hero() {
           </p>
           <div className="flex flex-col gap-3 md:items-end">
             <a
-              href="/auth/signup"
+              href="/customer/signup"
               className="serif group relative inline-flex items-center gap-3"
               style={{ fontSize: 28, fontWeight: 300 }}
             >

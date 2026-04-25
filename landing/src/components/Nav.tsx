@@ -51,14 +51,14 @@ export default function Nav() {
 
         <div className="flex items-center gap-5">
           <a
-            href="/auth/login"
+            href="/customer/login"
             className="hidden md:inline mono"
             style={{ color: 'var(--ash)' }}
           >
             sign in
           </a>
           <a
-            href="/auth/signup"
+            href="/customer/signup"
             className="hidden md:inline-block group relative overflow-hidden rounded-full"
             style={{
               backgroundColor: 'var(--ink)',
@@ -69,6 +69,18 @@ export default function Nav() {
             }}
           >
             <span className="relative inline-block">Start free</span>
+          </a>
+          <span
+            aria-hidden
+            className="hidden md:inline-block w-px h-4"
+            style={{ backgroundColor: 'var(--line)' }}
+          />
+          <a
+            href="/admin/"
+            className="hidden md:inline mono"
+            style={{ color: 'var(--ash)', fontSize: 11 }}
+          >
+            Admin →
           </a>
           <button
             onClick={() => setOpen(!open)}
@@ -115,11 +127,11 @@ export default function Nav() {
             </a>
           ))}
           <div className="h-px my-2" style={{ backgroundColor: 'var(--line)' }} />
-          <a href="/auth/login" className="mono" style={{ color: 'var(--ash)' }}>
+          <a href="/customer/login" className="mono" style={{ color: 'var(--ash)' }}>
             sign in
           </a>
           <a
-            href="/auth/signup"
+            href="/customer/signup"
             className="inline-block w-fit rounded-full"
             style={{
               backgroundColor: 'var(--ink)',
@@ -130,6 +142,9 @@ export default function Nav() {
             }}
           >
             Start free
+          </a>
+          <a href="/admin/" className="mono" style={{ color: 'var(--ash)', fontSize: 11 }}>
+            Admin →
           </a>
         </div>
       </motion.div>
