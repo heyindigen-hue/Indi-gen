@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -6,6 +6,7 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  useDroppable,
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
@@ -16,73 +17,82 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { useManifest } from '@/hooks/useManifest';
+import { useManifestEditor } from '@/context/ManifestEditorContext';
 import { useRegisterCommand } from '@/store/commands';
 import { DeviceFrame } from '@/components/sdui/DeviceFrame';
 import { WidgetPreview } from '@/components/sdui/WidgetPreview';
 import { PaletteItem } from './_home/PaletteItem';
 import { CanvasWidget } from './_home/CanvasWidget';
 import { InspectorForm } from './_home/InspectorForm';
+import {
+  WIDGET_CATALOG,
+  WIDGET_CATALOG_MAP,
+  WIDGET_GROUPS,
+  type WidgetGroup,
+} from '@/components/sdui/widgetCatalog';
 import type { WidgetInstance, WidgetType } from '@/types/sdui';
 
-const WIDGET_TYPES: WidgetType[] = [
-  'TokenBalance',
-  'AnnouncementBanner',
-  'QuickFilters',
-  'LeadSwipeStack',
-  'RecentLeadsCarousel',
-  'ActionButtons',
-  'MetricCard',
-  'CustomHtml',
-  'Divider',
-  'Spacer',
-];
-
-const DEFAULT_PROPS: Record<WidgetType, Record<string, unknown>> = {
-  TokenBalance:        { initialValue: 0 },
-  AnnouncementBanner:  { message: '', dismissable: false },
-  QuickFilters:        { filters: [] },
-  LeadSwipeStack:      { maxCards: 5, showScore: false },
-  RecentLeadsCarousel: { limit: 10 },
-  ActionButtons:       { buttons: [] },
-  MetricCard:          { label: 'Metric', value: '0', trend: 'flat' },
-  CustomHtml:          { html: '' },
-  Divider:             { thickness: 1 },
-  Spacer:              { height: 16 },
-};
-
 function createWidget(type: WidgetType): WidgetInstance {
+  const entry = WIDGET_CATALOG_MAP[type];
   return {
     id: crypto.randomUUID(),
     type,
-    props: { ...DEFAULT_PROPS[type] },
+    props: { ...(entry?.defaultProps ?? {}) },
   };
 }
 
-// Tracks which palette item or canvas item is being dragged
 interface ActiveDrag {
   source: 'palette' | 'canvas';
   widgetType?: WidgetType;
   widgetId?: string;
 }
 
-// The drop indicator index when dragging a palette item over the canvas
 function getInsertIndex(widgets: WidgetInstance[], overId: string | null): number {
-  if (!overId) return widgets.length;
+  if (!overId || overId === 'canvas') return widgets.length;
   const idx = widgets.findIndex((w) => w.id === overId);
   return idx === -1 ? widgets.length : idx;
+}
+
+function CanvasDropZone({ overCanvas }: { overCanvas: boolean }) {
+  const { setNodeRef } = useDroppable({ id: 'canvas' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`
+        flex flex-col items-center justify-center h-[400px] rounded-lg border-2 border-dashed
+        transition-colors text-center px-4
+        ${overCanvas ? 'border-primary bg-primary/5' : 'border-border'}
+      `}
+    >
+      <p className="text-sm text-muted-foreground font-medium">
+        Drag widgets from the palette to build the home screen
+      </p>
+      <p className="text-xs text-muted-foreground mt-1">
+        Widgets will appear in order here
+      </p>
+    </div>
+  );
 }
 
 export default function MobileUiHomePage() {
   const { draft, active } = useManifest();
   const manifest = draft ?? active;
-  const initialWidgets = manifest?.screens?.home?.widgets ?? [];
+  const initialWidgets = (manifest?.screens?.home?.widgets ?? []) as WidgetInstance[];
+  const { setHomeWidgets } = useManifestEditor();
 
   const [widgets, setWidgets] = useState<WidgetInstance[]>(initialWidgets);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const [overCanvasId, setOverCanvasId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [collapsed, setCollapsed] = useState<Set<WidgetGroup>>(new Set());
   const paletteRef = useRef<HTMLDivElement>(null);
   const [focusPalette, setFocusPalette] = useState(false);
+
+  // sync to editor context whenever widgets change
+  useEffect(() => {
+    setHomeWidgets(widgets);
+  }, [widgets, setHomeWidgets]);
 
   useRegisterCommand(
     {
@@ -102,18 +112,14 @@ export default function MobileUiHomePage() {
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    const data = event.active.data.current as { source: 'palette' | 'canvas'; widgetType?: WidgetType; widgetId?: string } | undefined;
+    const data = event.active.data.current as ActiveDrag | undefined;
     if (!data) return;
-    setActiveDrag({ source: data.source, widgetType: data.widgetType, widgetId: data.widgetId });
+    setActiveDrag(data);
   }, []);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const over = event.over;
-    if (!over) {
-      setOverCanvasId(null);
-      return;
-    }
-    setOverCanvasId(String(over.id));
+    setOverCanvasId(over ? String(over.id) : null);
   }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -123,7 +129,7 @@ export default function MobileUiHomePage() {
 
     if (!over) return;
 
-    const activeData = active.data.current as { source: 'palette' | 'canvas'; widgetType?: WidgetType; widgetId?: string } | undefined;
+    const activeData = active.data.current as ActiveDrag | undefined;
     if (!activeData) return;
 
     if (activeData.source === 'palette' && activeData.widgetType) {
@@ -142,7 +148,7 @@ export default function MobileUiHomePage() {
     if (activeData.source === 'canvas') {
       const activeId = String(active.id);
       const overId = String(over.id);
-      if (activeId === overId) return;
+      if (activeId === overId || overId === 'canvas') return;
       setWidgets((prev) => {
         const oldIndex = prev.findIndex((w) => w.id === activeId);
         const newIndex = prev.findIndex((w) => w.id === overId);
@@ -165,17 +171,33 @@ export default function MobileUiHomePage() {
 
   const selectedWidget = widgets.find((w) => w.id === selectedId) ?? null;
 
-  // Widget used for the drag overlay
   const overlayWidget: WidgetInstance | null = (() => {
     if (!activeDrag) return null;
     if (activeDrag.source === 'palette' && activeDrag.widgetType) {
-      return { id: '__overlay__', type: activeDrag.widgetType, props: { ...DEFAULT_PROPS[activeDrag.widgetType] } };
+      const entry = WIDGET_CATALOG_MAP[activeDrag.widgetType];
+      return { id: '__overlay__', type: activeDrag.widgetType, props: { ...(entry?.defaultProps ?? {}) } };
     }
     if (activeDrag.source === 'canvas' && activeDrag.widgetId) {
       return widgets.find((w) => w.id === activeDrag.widgetId) ?? null;
     }
     return null;
   })();
+
+  const toggleGroup = (g: WidgetGroup) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      next.has(g) ? next.delete(g) : next.add(g);
+      return next;
+    });
+
+  const q = search.toLowerCase();
+  const filteredCatalog = q
+    ? WIDGET_CATALOG.filter((e) =>
+        e.label.toLowerCase().includes(q) || e.description.toLowerCase().includes(q),
+      )
+    : null;
+
+  const overCanvas = overCanvasId === 'canvas' || (overCanvasId !== null && widgets.some((w) => w.id === overCanvasId));
 
   return (
     <DndContext
@@ -190,7 +212,7 @@ export default function MobileUiHomePage() {
         <aside
           ref={paletteRef}
           tabIndex={-1}
-          className="w-[240px] shrink-0 rounded-lg border border-border bg-card"
+          className="w-[252px] shrink-0 rounded-lg border border-border bg-card"
           onFocus={() => setFocusPalette(true)}
           onBlur={() => setFocusPalette(false)}
         >
@@ -199,11 +221,53 @@ export default function MobileUiHomePage() {
               Widget Palette
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">Drag onto canvas to add</p>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search widgets…"
+              className="mt-2 w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            />
           </div>
-          <div className="p-2 flex flex-col gap-1 overflow-y-auto max-h-[780px]">
-            {WIDGET_TYPES.map((type) => (
-              <PaletteItem key={type} type={type} focused={focusPalette} />
-            ))}
+          <div className="overflow-y-auto max-h-[740px]">
+            {filteredCatalog ? (
+              <div className="p-2 flex flex-col gap-1">
+                {filteredCatalog.map((entry) => (
+                  <PaletteItem key={entry.type} entry={entry} focused={focusPalette} />
+                ))}
+                {filteredCatalog.length === 0 && (
+                  <p className="text-xs text-muted-foreground px-2 py-4 text-center">No widgets match</p>
+                )}
+              </div>
+            ) : (
+              WIDGET_GROUPS.map((group) => {
+                const entries = WIDGET_CATALOG.filter((e) => e.group === group.id);
+                if (!entries.length) return null;
+                const isCollapsed = collapsed.has(group.id);
+                return (
+                  <div key={group.id} className="border-b border-border last:border-0">
+                    <button
+                      onClick={() => toggleGroup(group.id)}
+                      className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        <span>{group.icon}</span>
+                        <span>{group.label}</span>
+                        <span className="text-[10px] font-normal ml-0.5 opacity-60">({entries.length})</span>
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{isCollapsed ? '▶' : '▼'}</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="px-2 pb-2 flex flex-col gap-1">
+                        {entries.map((entry) => (
+                          <PaletteItem key={entry.type} entry={entry} focused={focusPalette} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </aside>
 
@@ -220,7 +284,7 @@ export default function MobileUiHomePage() {
           <DeviceFrame device="iphone">
             <div className="h-full overflow-y-auto p-2">
               {widgets.length === 0 ? (
-                <CanvasDropZone overCanvasId={overCanvasId} />
+                <CanvasDropZone overCanvas={overCanvas} />
               ) : (
                 <SortableContext
                   items={widgets.map((w) => w.id)}
@@ -265,24 +329,5 @@ export default function MobileUiHomePage() {
         )}
       </DragOverlay>
     </DndContext>
-  );
-}
-
-function CanvasDropZone({ overCanvasId }: { overCanvasId: string | null }) {
-  return (
-    <div
-      className={`
-        flex flex-col items-center justify-center h-[400px] rounded-lg border-2 border-dashed
-        transition-colors text-center px-4
-        ${overCanvasId ? 'border-primary bg-primary/5' : 'border-border'}
-      `}
-    >
-      <p className="text-sm text-muted-foreground font-medium">
-        Drag widgets from the palette to build the home screen
-      </p>
-      <p className="text-xs text-muted-foreground mt-1">
-        Widgets will appear in order here
-      </p>
-    </div>
   );
 }

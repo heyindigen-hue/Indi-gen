@@ -5,6 +5,11 @@ import { validateBody } from '../middleware/validate';
 
 const router = Router();
 
+function flattenManifestRow(r: any) {
+  const { manifest, ...rest } = r;
+  return { ...rest, ...(manifest || {}) };
+}
+
 // Public
 router.get('/ui-manifest', async (req, res) => {
   const { platform = 'mobile', user_id } = req.query;
@@ -33,7 +38,7 @@ router.get('/ui-manifest', async (req, res) => {
       manifestId: manifest.id,
       version: manifest.version,
       platform,
-      experiments: Object.fromEntries(experiments.map(e => [e.key, e.variant])),
+      experiments: Object.fromEntries(experiments.map((e: any) => [e.key, e.variant])),
     },
   });
 });
@@ -49,9 +54,18 @@ router.get('/brand', async (req, res) => {
 });
 
 // Admin
-router.get('/manifests', async (_req, res) => {
-  const rows = await query(`SELECT * FROM ui_manifests ORDER BY created_at DESC`);
-  res.json(rows);
+router.get('/manifests', async (req, res) => {
+  const { platform } = req.query;
+  let rows: any[];
+  if (platform) {
+    rows = await query(
+      `SELECT * FROM ui_manifests WHERE platform=$1 ORDER BY created_at DESC`,
+      [platform]
+    );
+  } else {
+    rows = await query(`SELECT * FROM ui_manifests ORDER BY created_at DESC`);
+  }
+  res.json(rows.map(flattenManifestRow));
 });
 
 const manifestSchema = z.object({
@@ -68,7 +82,7 @@ router.post('/manifests', validateBody(manifestSchema), async (req: any, res) =>
      VALUES ($1,$2,$3,$4,$5) RETURNING *`,
     [name, platform, version, JSON.stringify(content), req.user?.id || null]
   );
-  res.status(201).json(row);
+  res.status(201).json(flattenManifestRow(row));
 });
 
 router.patch('/manifests/:id', async (req: any, res) => {
@@ -85,7 +99,7 @@ router.patch('/manifests/:id', async (req: any, res) => {
     params
   );
   if (!row) return res.status(404).json({ error: 'Manifest not found' });
-  res.json(row);
+  res.json(flattenManifestRow(row));
 });
 
 router.post('/manifests/:id/publish', async (req: any, res) => {
@@ -95,7 +109,7 @@ router.post('/manifests/:id/publish', async (req: any, res) => {
     [req.params.id]
   );
   if (!row) return res.status(404).json({ error: 'Manifest not found' });
-  res.json(row);
+  res.json(flattenManifestRow(row));
 });
 
 router.post('/manifests/:id/rollback', async (req: any, res) => {

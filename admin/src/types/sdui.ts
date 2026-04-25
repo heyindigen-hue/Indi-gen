@@ -8,7 +8,25 @@ export type WidgetType =
   | 'MetricCard'
   | 'CustomHtml'
   | 'Divider'
-  | 'Spacer';
+  | 'Spacer'
+  | 'HeroBanner'
+  | 'ProfileCard'
+  | 'StatGrid'
+  | 'ProposalCard'
+  | 'ReferralBanner'
+  | 'ChartCard'
+  | 'SearchBar'
+  | 'ActivityFeed'
+  | 'LessonCard'
+  | 'StreakCounter'
+  | 'TrendingPhrases'
+  | 'SuggestedLeads'
+  | 'ChannelMix'
+  | 'TokenForecast'
+  | 'VideoCard'
+  | 'TestimonialQuote'
+  | 'FollowupReminder'
+  | 'WhatsNewCard';
 
 export interface WidgetInstance {
   id: string;

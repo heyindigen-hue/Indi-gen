@@ -14,24 +14,15 @@ import type { Manifest } from '@/types/sdui';
 interface ManifestVersionDropdownProps {
   versions: Manifest[];
   activeId: string | null;
+  onSelect: (id: string) => void;
   onPublish: (id: string) => void;
   onRollback: (id: string) => void;
-}
-
-function VersionLabel({ manifest }: { manifest: Manifest }) {
-  return (
-    <span className="flex items-center gap-2">
-      <span>v{manifest.version}</span>
-      {manifest.enabled && (
-        <Badge variant="success" className="text-[10px] px-1.5 py-0">live</Badge>
-      )}
-    </span>
-  );
 }
 
 export function ManifestVersionDropdown({
   versions,
   activeId,
+  onSelect,
   onPublish,
   onRollback,
 }: ManifestVersionDropdownProps) {
@@ -40,16 +31,25 @@ export function ManifestVersionDropdown({
 
   if (versions.length === 0) {
     return (
-      <div className="text-xs text-muted-foreground px-2">No versions</div>
+      <div className="text-xs text-muted-foreground px-2">No versions yet</div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <Select value={activeId ?? ''} onValueChange={() => {}}>
-        <SelectTrigger className="h-8 text-xs w-36">
+    <div className="flex flex-col gap-2">
+      <Select value={activeId ?? ''} onValueChange={onSelect}>
+        <SelectTrigger className="h-8 text-xs w-full">
           <SelectValue placeholder="Select version">
-            {selected ? <VersionLabel manifest={selected} /> : 'Select version'}
+            {selected ? (
+              <span className="flex items-center gap-2">
+                <span>v{selected.version}</span>
+                {selected.enabled && (
+                  <Badge variant="success" className="text-[10px] px-1.5 py-0">live</Badge>
+                )}
+              </span>
+            ) : (
+              'Select version'
+            )}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
@@ -70,11 +70,11 @@ export function ManifestVersionDropdown({
         <Button
           size="sm"
           variant="default"
-          className="h-8 text-xs gap-1.5"
+          className="h-7 text-xs gap-1 w-full"
           onClick={() => onPublish(selected.id)}
         >
-          <UploadIcon size={14} />
-          Publish
+          <UploadIcon size={12} />
+          Publish this version
         </Button>
       )}
 
@@ -82,10 +82,10 @@ export function ManifestVersionDropdown({
         <Button
           size="sm"
           variant="outline"
-          className="h-8 text-xs gap-1.5"
+          className="h-7 text-xs gap-1 w-full"
           onClick={() => onRollback(selected.id)}
         >
-          <RefreshIcon size={14} />
+          <RefreshIcon size={12} />
           Rollback
         </Button>
       )}

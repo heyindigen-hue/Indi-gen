@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Outlet, NavLink } from 'react-router-dom';
 import { CheckIcon, UploadIcon } from '@/icons';
@@ -6,8 +7,10 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { ManifestVersionDropdown } from '@/components/sdui/ManifestVersionDropdown';
 import { Button } from '@/components/ui/button';
 import { useManifest } from '@/hooks/useManifest';
+import { ManifestEditorProvider, useManifestEditor } from '@/context/ManifestEditorContext';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import type { Manifest } from '@/types/sdui';
 
 const SUB_TABS = [
   { label: 'Home', to: '/mobile-ui/home' },
@@ -45,6 +48,11 @@ function SubTabNav() {
 function VersionPanel() {
   const queryClient = useQueryClient();
   const { versions, active, draft } = useManifest();
+  const { getManifestContent, isDirty, markClean } = useManifestEditor();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const currentId = selectedId ?? active?.id ?? draft?.id ?? null;
+  const currentManifest = versions.find((v) => v.id === currentId) ?? null;
 
   const publishMutation = useMutation({
     mutationFn: (id: string) => api.post(`/admin/manifests/${id}/publish`),
@@ -65,22 +73,36 @@ function VersionPanel() {
   });
 
   const saveDraftMutation = useMutation({
-    mutationFn: () => api.post('/admin/manifests/draft'),
+    mutationFn: async () => {
+      const content = getManifestContent();
+      const latestVersion = versions.reduce((max, v) => Math.max(max, v.version), 0);
+
+      if (currentId) {
+        return api.patch<Manifest>(`/admin/manifests/${currentId}`, { content });
+      }
+
+      return api.post<Manifest>('/admin/manifests', {
+        name: `draft-${Date.now()}`,
+        platform: 'mobile',
+        version: latestVersion + 1,
+        content,
+      });
+    },
     onSuccess: () => {
       toast.success('Draft saved');
+      markClean();
       queryClient.invalidateQueries({ queryKey: ['manifests'] });
     },
     onError: () => toast.error('Failed to save draft'),
   });
-
-  const selectedId = active?.id ?? draft?.id ?? null;
 
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Version</p>
       <ManifestVersionDropdown
         versions={versions}
-        activeId={selectedId}
+        activeId={currentId}
+        onSelect={setSelectedId}
         onPublish={(id) => publishMutation.mutate(id)}
         onRollback={(id) => rollbackMutation.mutate(id)}
       />
@@ -89,28 +111,33 @@ function VersionPanel() {
           size="sm"
           variant="default"
           className="w-full gap-1.5 text-xs"
-          onClick={() => selectedId && publishMutation.mutate(selectedId)}
-          disabled={publishMutation.isPending || !selectedId}
+          onClick={() => currentId && publishMutation.mutate(currentId)}
+          disabled={publishMutation.isPending || !currentId}
         >
           <UploadIcon size={14} />
-          {publishMutation.isPending ? 'Publishing...' : 'Publish'}
+          {publishMutation.isPending ? 'Publishing…' : 'Publish'}
         </Button>
         <Button
           size="sm"
-          variant="outline"
+          variant={isDirty ? 'default' : 'outline'}
           className="w-full gap-1.5 text-xs"
           onClick={() => saveDraftMutation.mutate()}
           disabled={saveDraftMutation.isPending}
         >
           <CheckIcon size={14} />
-          {saveDraftMutation.isPending ? 'Saving...' : 'Save Draft'}
+          {saveDraftMutation.isPending ? 'Saving…' : isDirty ? 'Save Draft *' : 'Save Draft'}
         </Button>
       </div>
+      {currentManifest && (
+        <p className="text-[10px] text-muted-foreground text-center">
+          v{currentManifest.version}{currentManifest.enabled ? ' · live' : ' · draft'}
+        </p>
+      )}
     </div>
   );
 }
 
-export default function MobileUiLayout() {
+function MobileUiLayoutInner() {
   return (
     <div>
       <PageHeader
@@ -119,13 +146,11 @@ export default function MobileUiLayout() {
       />
 
       <div className="flex gap-6 items-start">
-        {/* Main content */}
         <div className="flex-1 min-w-0">
           <SubTabNav />
           <Outlet />
         </div>
 
-        {/* Right sticky panel */}
         <aside className="hidden lg:block w-52 shrink-0 sticky top-6">
           <div className="rounded-lg border border-border bg-card p-4">
             <VersionPanel />
@@ -133,5 +158,13 @@ export default function MobileUiLayout() {
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function MobileUiLayout() {
+  return (
+    <ManifestEditorProvider>
+      <MobileUiLayoutInner />
+    </ManifestEditorProvider>
   );
 }
