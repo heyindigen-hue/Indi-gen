@@ -94,11 +94,47 @@ router.get('/me', async (req: any, res) => {
   try {
     const payload = jwt.verify(header.slice(7), config.jwtSecret) as any;
     const user = await queryOne<any>(
-      `SELECT id, email, name, role, avatar_url, company_name, onboarding_completed_at FROM users WHERE id=$1 AND deleted_at IS NULL`,
+      `SELECT id, email, name, phone, role, avatar_url, company_name, onboarding_completed_at FROM users WHERE id=$1 AND deleted_at IS NULL`,
       [payload.id]
     );
     if (!user) return res.status(401).json({ error: 'User not found' });
     res.json({ ...user, needs_onboarding: !user.onboarding_completed_at });
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+});
+
+const patchMeSchema = z.object({
+  name: z.string().min(1).optional(),
+  phone: z.string().optional(),
+  avatar_url: z.string().url().optional(),
+});
+
+router.patch('/me', async (req: any, res) => {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const payload = jwt.verify(header.slice(7), config.jwtSecret) as any;
+    const result = patchMeSchema.safeParse(req.body);
+    if (!result.success) return res.status(400).json({ error: 'ValidationError', issues: result.error.errors });
+
+    const { name, phone, avatar_url } = result.data;
+    const updates: string[] = [];
+    const params: any[] = [];
+
+    if (name !== undefined) { params.push(name); updates.push(`name=$${params.length}`); }
+    if (phone !== undefined) { params.push(phone); updates.push(`phone=$${params.length}`); }
+    if (avatar_url !== undefined) { params.push(avatar_url); updates.push(`avatar_url=$${params.length}`); }
+
+    if (!updates.length) return res.status(400).json({ error: 'No fields to update' });
+
+    params.push(payload.id);
+    const user = await queryOne<any>(
+      `UPDATE users SET ${updates.join(',')}, updated_at=NOW() WHERE id=$${params.length} AND deleted_at IS NULL RETURNING id, email, name, phone, avatar_url`,
+      params
+    );
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }

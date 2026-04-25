@@ -18,6 +18,7 @@ import adminRouter from './routes/admin';
 import proposalsRouter from './routes/proposals';
 import sduiRouter from './routes/sdui';
 import dpdpRouter from './routes/dpdp';
+import meRouter from './routes/me';
 import { attachSSE } from './sse/bus';
 import { startScrapeJobCron } from './cron/scrapeJob';
 
@@ -46,6 +47,7 @@ app.use('/api/public', sduiRouter);
 
 // Auth required
 app.use('/api/me', requireAuth, dpdpRouter);
+app.use('/api/me', requireAuth, meRouter);
 app.use('/api/leads', requireAuth, leadsRouter);
 app.use('/api/scrape', requireAuth, scrapeRouter);
 app.use('/api/billing', requireAuth, billingRouter);
