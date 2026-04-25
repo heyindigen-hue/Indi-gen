@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Linking } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { createMMKV } from 'react-native-mmkv';
+import { MMKV } from 'react-native-mmkv';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 
-const mmkv = createMMKV({ id: 'announcements' });
+const mmkv = new MMKV({ id: 'announcements' });
 
 function isDismissed(id: string): boolean {
   return mmkv.getBoolean(`dismissed_${id}`) ?? false;

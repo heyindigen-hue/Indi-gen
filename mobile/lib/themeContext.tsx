@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useColorScheme } from 'react-native';
-import { createMMKV, type MMKV } from 'react-native-mmkv';
+import { MMKV } from 'react-native-mmkv';
 import { Palette, ThemeMode, palettes, defaultPalette } from './theme';
 
-const storage: MMKV = createMMKV({ id: 'lh-theme' });
+const storage: MMKV = new MMKV({ id: 'lh-theme' });
 
 type ThemeCtxValue = {
   palette: Palette;
