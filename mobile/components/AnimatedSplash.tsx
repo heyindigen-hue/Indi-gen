@@ -1,57 +1,56 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, AccessibilityInfo, Platform } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withDelay,
+  withSpring,
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Ellipse, Circle } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
 
-const PETALS = [0, 45, 90, 135, 180, 225, 270, 315];
-const PETAL_PATH = 'M12 12C10.5 10 10.5 7 12 5.5C13.5 7 13.5 10 12 12';
+const PETAL_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 interface PetalProps {
   angle: number;
   delay: number;
+  reduced: boolean;
 }
 
-function Petal({ angle, delay }: PetalProps) {
-  const opacity = useSharedValue(0);
-  const scale = useSharedValue(0);
+function Petal({ angle, delay, reduced }: PetalProps) {
+  const opacity = useSharedValue(reduced ? 1 : 0);
+  const scale = useSharedValue(reduced ? 1 : 0);
+  const rotate = useSharedValue(reduced ? angle : angle - 30);
 
   useEffect(() => {
-    opacity.value = withDelay(delay, withTiming(1, { duration: 200, easing: Easing.out(Easing.back(1.2)) }));
-    scale.value = withDelay(delay, withTiming(1, { duration: 200, easing: Easing.out(Easing.back(1.2)) }));
-  }, []);
+    if (reduced) return;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 360, easing: Easing.out(Easing.cubic) }));
+    scale.value = withDelay(
+      delay,
+      withSpring(1, { damping: 14, stiffness: 90 })
+    );
+    rotate.value = withDelay(
+      delay,
+      withSpring(angle, { damping: 14, stiffness: 90 })
+    );
+  }, [angle, delay, reduced, opacity, scale, rotate]);
 
-  const animStyle = useAnimatedStyle(() => ({
+  const animatedProps = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ scale: scale.value }],
+    transform: [
+      { rotate: `${rotate.value}deg` },
+      { scale: scale.value },
+    ],
   }));
 
   return (
-    <Animated.View
-      style={[
-        StyleSheet.absoluteFillObject,
-        { alignItems: 'center', justifyContent: 'center' },
-        animStyle,
-      ]}
-    >
-      <Svg width={72} height={72} viewBox="0 0 24 24" fill="none">
-        <Path
-          d={PETAL_PATH}
-          stroke="#FF4716"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-          transform={`rotate(${angle} 12 12)`}
-        />
+    <Animated.View style={[StyleSheet.absoluteFill, animatedProps]}>
+      <Svg width="100%" height="100%" viewBox="-256 -256 512 512">
+        <Ellipse cx={0} cy={-141} rx={36} ry={107} fill="#0E0E0C" />
       </Svg>
     </Animated.View>
   );
@@ -63,27 +62,84 @@ interface Props {
 
 export function AnimatedSplash({ onComplete }: Props) {
   const containerOpacity = useSharedValue(1);
+  const coreScale = useSharedValue(0);
+  const wordOffset = useSharedValue(12);
+  const wordOpacity = useSharedValue(0);
+  const captionOpacity = useSharedValue(0);
+  const [reduced, setReduced] = React.useState(false);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      containerOpacity.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }, (finished) => {
-        if (finished && onComplete) runOnJS(onComplete)();
-      });
-    }, 1800);
-    return () => clearTimeout(timeout);
+    if (Platform.OS !== 'web') {
+      AccessibilityInfo.isReduceMotionEnabled?.().then(setReduced).catch(() => {});
+    }
   }, []);
 
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
+  useEffect(() => {
+    if (reduced) {
+      coreScale.value = 1;
+      wordOpacity.value = 1;
+      wordOffset.value = 0;
+      captionOpacity.value = 1;
+      const timeout = setTimeout(() => {
+        containerOpacity.value = withTiming(0, { duration: 250 }, (finished) => {
+          if (finished && onComplete) runOnJS(onComplete)();
+        });
+      }, 600);
+      return () => clearTimeout(timeout);
+    }
+
+    coreScale.value = withDelay(
+      450,
+      withSpring(1, { damping: 8, stiffness: 180 })
+    );
+    wordOffset.value = withDelay(
+      600,
+      withTiming(0, { duration: 380, easing: Easing.out(Easing.cubic) })
+    );
+    wordOpacity.value = withDelay(
+      600,
+      withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) })
+    );
+    captionOpacity.value = withDelay(
+      900,
+      withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) })
+    );
+
+    const timeout = setTimeout(() => {
+      containerOpacity.value = withTiming(0, { duration: 320, easing: Easing.in(Easing.cubic) }, (finished) => {
+        if (finished && onComplete) runOnJS(onComplete)();
+      });
+    }, 1500);
+    return () => clearTimeout(timeout);
+  }, [reduced]);
+
+  const containerStyle = useAnimatedStyle(() => ({ opacity: containerOpacity.value }));
+  const coreStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: coreScale.value }],
   }));
+  const wordStyle = useAnimatedStyle(() => ({
+    opacity: wordOpacity.value,
+    transform: [{ translateY: wordOffset.value }],
+  }));
+  const captionStyle = useAnimatedStyle(() => ({ opacity: captionOpacity.value }));
 
   return (
-    <Animated.View style={[styles.container, containerStyle]}>
-      <View style={styles.flowerContainer}>
-        {PETALS.map((angle, i) => (
-          <Petal key={angle} angle={angle} delay={i * 50} />
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.container, containerStyle]}
+    >
+      <View style={styles.flowerHolder}>
+        {PETAL_ANGLES.map((angle, i) => (
+          <Petal key={angle} angle={angle} delay={80 + i * 60} reduced={reduced} />
         ))}
+        <Animated.View style={[StyleSheet.absoluteFill, coreStyle, { alignItems: 'center', justifyContent: 'center' }]}>
+          <Svg width="100%" height="100%" viewBox="-256 -256 512 512">
+            <Circle cx={0} cy={0} r={26} fill="#FF5A1F" />
+          </Svg>
+        </Animated.View>
       </View>
+      <Animated.Text style={[styles.wordmark, wordStyle]}>LeadHangover</Animated.Text>
+      <Animated.Text style={[styles.caption, captionStyle]}>wake up to better leads</Animated.Text>
     </Animated.View>
   );
 }
@@ -97,14 +153,32 @@ const styles = StyleSheet.create({
     bottom: 0,
     width,
     height,
-    backgroundColor: '#FAF7F2',
+    backgroundColor: '#F7F1E5',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
   },
-  flowerContainer: {
-    width: 72,
-    height: 72,
+  flowerHolder: {
+    width: 140,
+    height: 140,
     position: 'relative',
+    marginBottom: 26,
+  },
+  wordmark: {
+    fontSize: 28,
+    color: '#0E0E0C',
+    fontFamily: 'Fraunces_600SemiBold',
+    fontStyle: 'italic',
+    letterSpacing: -0.4,
+  },
+  caption: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#2A2823',
+    fontFamily: 'GeistMono_400Regular',
+    letterSpacing: 1.2,
+    textTransform: 'lowercase',
   },
 });
+
+export default AnimatedSplash;
