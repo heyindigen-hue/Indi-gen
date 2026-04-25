@@ -8,9 +8,13 @@ export interface AuthedReq extends Request { user?: AuthPayload; }
 
 export async function requireAuth(req: AuthedReq, res: Response, next: NextFunction) {
   const header = req.headers.authorization || '';
-  if (!header.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  let token = '';
+  if (header.startsWith('Bearer ')) token = header.slice(7);
+  // Allow ?token= query param for SSE/EventSource which can't set headers
+  else if (typeof req.query.token === 'string' && req.query.token) token = req.query.token;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const payload = jwt.verify(header.slice(7), config.jwtSecret) as AuthPayload;
+    const payload = jwt.verify(token, config.jwtSecret) as AuthPayload;
     if (payload.jti) {
       const rev = await query('SELECT revoked_at FROM active_sessions WHERE jti=$1', [payload.jti]);
       if (rev.length && rev[0].revoked_at) return res.status(401).json({ error: 'Session revoked' });
