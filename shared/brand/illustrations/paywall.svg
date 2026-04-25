@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" fill="none">
+  <!-- Background glow -->
+  <circle cx="120" cy="100" r="80" fill="#f3eeff" opacity="0.5"/>
+
+  <!-- Flower bloom (large, centred) -->
+  <!-- Outer petals -->
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#552f83" opacity="0.9"/>
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#552f83" opacity="0.9" transform="rotate(45 120 100)"/>
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#552f83" opacity="0.9" transform="rotate(90 120 100)"/>
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#552f83" opacity="0.9" transform="rotate(135 120 100)"/>
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#7c4db8" opacity="0.7" transform="rotate(22.5 120 100)"/>
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#7c4db8" opacity="0.7" transform="rotate(67.5 120 100)"/>
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#7c4db8" opacity="0.7" transform="rotate(112.5 120 100)"/>
+  <ellipse cx="120" cy="42" rx="12" ry="24" fill="#7c4db8" opacity="0.7" transform="rotate(157.5 120 100)"/>
+
+  <!-- Centre -->
+  <circle cx="120" cy="100" r="18" fill="#f97316"/>
+  <circle cx="120" cy="100" r="11" fill="#fff3e0"/>
+
+  <!-- Rupee symbol in centre -->
+  <text x="120" y="106" text-anchor="middle" font-family="Georgia, serif" font-size="14" font-weight="bold" fill="#f97316">₹</text>
+
+  <!-- Coins falling from petals -->
+  <circle cx="74" cy="58" r="9" fill="#f97316" opacity="0.8"/>
+  <text x="74" y="63" text-anchor="middle" font-family="Georgia, serif" font-size="9" font-weight="bold" fill="#fff">₹</text>
+
+  <circle cx="166" cy="58" r="9" fill="#f97316" opacity="0.6"/>
+  <text x="166" y="63" text-anchor="middle" font-family="Georgia, serif" font-size="9" font-weight="bold" fill="#fff">₹</text>
+
+  <circle cx="68" cy="148" r="7" fill="#f97316" opacity="0.5"/>
+  <text x="68" y="153" text-anchor="middle" font-family="Georgia, serif" font-size="7" font-weight="bold" fill="#fff">₹</text>
+
+  <circle cx="172" cy="148" r="7" fill="#f97316" opacity="0.7"/>
+  <text x="172" y="153" text-anchor="middle" font-family="Georgia, serif" font-size="7" font-weight="bold" fill="#fff">₹</text>
+
+  <!-- Falling dotted lines -->
+  <line x1="74" y1="70" x2="74" y2="90" stroke="#f97316" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.5"/>
+  <line x1="166" y1="70" x2="166" y2="90" stroke="#f97316" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.4"/>
+
+  <!-- Unlock badge -->
+  <rect x="78" y="160" width="84" height="26" rx="13" fill="#552f83"/>
+  <text x="120" y="178" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#fff" font-weight="600">Unlock Pro</text>
+</svg>

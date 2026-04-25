@@ -1,142 +1,214 @@
-You are WORKER Claude on PC2. Core mobile screens done. Build Paywall, Onboarding, and WebView-LinkedIn features.
+You are WORKER Claude on PC2. Major sprint: import old VPS data + add missing features + polish UI. Use **CodeGraph MCP** for codebase nav.
 
-## Context
-- `C:\Users\Indigen-Server-2\Desktop\Indi-gen\mobile`
-- Backend: `POST /api/billing/checkout/topup`, `POST /api/billing/checkout/subscribe`, `GET /api/billing/plans`
-- Cashfree React Native SDK for payments
+## Critical inputs available
 
-## Your Task
+`C:\Users\Indigen-Server-2\Desktop\Indi-gen\import\` contains:
+- `leads.jsonl` (2,783 leads from old production)
+- `contacts.jsonl` (383 contacts)
+- `phrases.jsonl` (427 search phrases — battle-tested)
+- `proposals.jsonl` (6 lead proposals — the proposal builder feature)
+- `outreach_log.jsonl` (200 outreach records)
+- `all_settings.tsv` (44 app_settings rows including API keys, company profile, AI context)
+- `routes/admin/proposal.ts`, `routes/admin/company.ts`, `routes/pitch.ts` (old proposal builder source)
+- `cron/followupJob.ts`, `llm/router.ts`, `scoring/`, `scraper/` directories (old scraper + LLM router)
 
-### 1. Install Cashfree SDK
+## Your Task (huge — go through in order)
+
+### Phase A — Pull latest + read context
 ```
-npx expo install react-native-cashfree-pg-sdk
-```
-
-### 2. `mobile/app/paywall.tsx` — Token bundles + subscription tiers
-Modal presentation. Bottom sheet style (90% snap).
-
-Layout:
-```
-┌─────────────────────────────────┐
-│  ✕                              │
-│  [Token icon]                   │
-│  Get more leads                 │
-│  Subtitle from manifest          │
-├─────────────────────────────────┤
-│  TOKEN BUNDLES                   │
-│  ┌──┐ ┌──┐ ┌──┐                 │
-│  │100│ │500│ │2000│             │
-│  │₹499│ │₹1999│ │₹5999│          │
-│  │    │ │ POP│ │ SAVE│          │
-│  └──┘ └──┘ └──┘                 │
-│  [Buy 500 tokens] (primary CTA)  │
-├─────────────────────────────────┤
-│  OR SUBSCRIBE                    │
-│  [Starter] [Pro ★]               │
-├─────────────────────────────────┤
-│  Terms · Privacy · Restore       │
-└─────────────────────────────────┘
+cd C:\Users\Indigen-Server-2\Desktop\Indi-gen
+git pull --rebase origin master
 ```
 
-- Read `paywall` config from manifest
-- Bundle cards: selectable, highlighted when selected
-- Primary CTA changes based on selection: "Buy N tokens" or "Subscribe"
-- Uses Cashfree drop-in checkout
+Read `import/all_settings.tsv` to understand the keys we're importing (especially `claude_api_key`, `apify_token`, `apify_tokens`, `signalhire_api_key`, `gemini_api_key`, `aws_bedrock_api_key`, `linkedin_access_token`, `linkedin_refresh_token`, `company_profile` JSON, all `ai_context_*` and `ai_company_*`).
 
-### 3. Cashfree integration — `mobile/lib/payments.ts`
-```typescript
-import { CFPaymentGatewayService } from 'react-native-cashfree-pg-sdk';
-import { CFSession, CFEnvironment, CFDropCheckoutPayment, CFThemeBuilder, CFPaymentComponentBuilder, CFPaymentComponent } from 'cashfree-pg-api-contract';
-import { api } from './api';
+### Phase B — Import data into NEW Postgres (running on EC2)
 
-export async function startTokenTopup(bundleId: string) {
-  // 1. Create order on backend
-  const { data: order } = await api.post('/billing/checkout/topup', { bundle_id: bundleId });
-  // order shape: { order_id, order_token, amount, currency }
+Cannot run on EC2 directly. Instead:
+1. Write `scripts/import_old_data.ts` in `server/` that reads JSONL files from `/import/` directory and INSERTs into the new schema.
+2. Map old schema → new schema. Old `leads` columns may differ — handle gracefully (set NULL for missing, drop unknown columns).
+3. Filter leads on import: only import `score >= 4` or with `intent_label='BUYER_PROJECT'` to keep quality high.
+4. Match leads against the company profile (Indigen Services AI/SaaS dev agency) — already pre-filtered in old DB so this is mostly preserved.
+5. Same for contacts (foreign-key to leads), phrases, proposals, outreach_log.
 
-  // 2. Build session
-  const session = new CFSession(
-    order.order_token,
-    order.order_id,
-    CFEnvironment.SANDBOX, // switch to PRODUCTION for live
-  );
+For settings — write a one-off SQL migration (`db/migrations/002_import_old_settings.sql`) that INSERTs the API keys + company_profile + ai_context_* into `app_settings`. Mark API keys as `is_secret=TRUE`. Keys to import:
+- `claude_api_key`, `gemini_api_key`, `aws_bedrock_api_key`
+- `apify_token`, `apify_tokens` (JSON multi-key)
+- `signalhire_api_key`, `signalhire_credits_remaining`
+- `linkedin_access_token`, `linkedin_refresh_token`, `linkedin_li_at`, `linkedin_jsessionid`, `linkedin_bcookie`, `linkedin_bscookie`
+- `company_profile` (JSON: name/tagline/website/email/city/state)
+- `ai_context_pitch`, `ai_context_ideal_clients`, `ai_context_banned_phrases`, `ai_context_case_studies`, `ai_context_signature`, `ai_context_writing_style`
+- `schedule_cron` (default '0 */12 * * *')
 
-  const theme = new CFThemeBuilder()
-    .setBackgroundColor('#08090B')
-    .setPrimaryTextColor('#F7F8F8')
-    .setNavigationBarBackgroundColor('#111113')
-    .setNavigationBarTextColor('#F7F8F8')
-    .setButtonBackgroundColor('#7170FF')
-    .setButtonTextColor('#FFFFFF')
-    .build();
+This migration should ONLY be applied on EC2 (which has the running DB). Don't run it locally on PC2 — just write and commit.
 
-  const paymentComponents = new CFPaymentComponentBuilder()
-    .add(CFPaymentComponent.CFPaymentModes.UPI)
-    .add(CFPaymentComponent.CFPaymentModes.CARD)
-    .add(CFPaymentComponent.CFPaymentModes.NB)
-    .add(CFPaymentComponent.CFPaymentModes.WALLET)
-    .build();
+### Phase C — Build the **Proposal Builder** feature
 
-  const dropPayment = new CFDropCheckoutPayment(session, paymentComponents, theme);
+Port from `import/routes/admin/proposal.ts` and `import/routes/pitch.ts`:
 
-  CFPaymentGatewayService.setCallback({
-    onVerify(orderId) { console.log('Payment verified', orderId); },
-    onError(error, orderId) { console.log('Payment error', error, orderId); },
-  });
+1. **Schema**: add `lead_proposals` table to `db/migrations/003_proposal_builder.sql`:
+   ```sql
+   CREATE TABLE lead_proposals (
+     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+     lead_id UUID REFERENCES leads(id) ON DELETE CASCADE,
+     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+     status TEXT DEFAULT 'draft', -- draft | sent | accepted | rejected
+     title TEXT,
+     scope JSONB, -- {deliverables: [], timeline: '', team: ''}
+     pricing JSONB, -- {currency, total, milestones: []}
+     content_md TEXT, -- markdown body
+     pdf_url TEXT,
+     sent_at TIMESTAMPTZ,
+     viewed_at TIMESTAMPTZ,
+     accepted_at TIMESTAMPTZ,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   CREATE INDEX ON lead_proposals (lead_id, status);
+   ```
 
-  CFPaymentGatewayService.doPayment(dropPayment);
-}
+2. **Backend routes** in `server/src/routes/proposals.ts`:
+   - `GET /api/admin/leads/:lead_id/proposals` (list)
+   - `POST /api/admin/leads/:lead_id/proposals/generate` (calls Claude with company context + lead profile, returns draft proposal markdown + suggested pricing)
+   - `PATCH /api/admin/proposals/:id` (edit title/scope/pricing/content)
+   - `POST /api/admin/proposals/:id/send` (mark sent, optional email via Resend)
+   - `GET /api/admin/proposals/:id/pdf` (render PDF via @react-pdf/renderer or puppeteer)
 
-export async function startSubscription(planId: string) {
-  const { data } = await api.post('/billing/checkout/subscribe', { plan_id: planId });
-  // Open authorization_link in webview or browser
-  return data;
-}
-```
+3. **Admin page** `admin/src/pages/leads/proposals.tsx`:
+   - List view: all proposals across leads, filter by status
+   - Detail/edit view: side-by-side markdown editor + live preview
+   - "Generate with AI" button → calls `/generate` with current company context
+   - "Send" with email subject + body
+   - Activity timeline (sent / viewed / accepted)
 
-### 4. `mobile/app/onboarding.tsx` — Multi-step onboarding
-Read `onboarding_steps` from manifest, render one step at a time with:
-- Progress dots at top (active/inactive)
-- Title + body + optional input (chip-select/text/skip/animated)
-- Swipe-left gesture to go back, Next button to advance
-- Last step ("done") triggers first scrape then redirects to (tabs)
+4. **Mobile**: add a "Proposals" tab item in lead detail screen showing proposals for that lead. Tap → opens proposal preview with native share button.
 
-Gestures: use `Gesture.Pan()` for swipe-back with threshold.
+### Phase D — Fix the 15+ missing admin routes
 
-### 5. `mobile/app/webview-linkedin.tsx` — In-app LinkedIn browser
-- WebView (`react-native-webview`) pointed at `https://linkedin.com`
-- Floating action button "Add this lead" (always visible)
-- When pressed, inject JS into WebView to extract: URL, name, headline, company, latest post content
-- Show confirmation sheet with extracted data + Save button
-- Save calls POST `/api/leads/manual`
+The audit found these 404s. Add aliases or new routes in `server/src/routes/admin.ts`:
+- `GET /admin/feature-flags` → mirror of `feature_flags`
+- `GET /admin/audit-log` → mirror of `audit`
+- `GET /admin/breaches` → mirror of `breach`
+- `GET /admin/admin-users` (NEW route — list users with role IN ('admin','super_admin'))
+- `POST /admin/admin-users/invite`
+- `GET /admin/api-keys`, `POST /admin/api-keys`, `DELETE /admin/api-keys/:id`
+- `GET /admin/sessions`, `GET /admin/sessions?user_id=:id`, `DELETE /admin/sessions/:id`
+- `GET /admin/settings/brand`, `/settings/company`, `/settings/legal`, `/settings/maintenance` (return subset of app_settings filtered by category)
+- `GET /admin/dpdp/consent-stats`, `/dpdp/consent-timeline`
+- `POST /admin/erasure-requests/:id/preview`, `/queue`, `/verify`, `/receipt`
+- `GET /admin/phrases` → mirror of search_phrases
+- `GET /admin/integrations` → list of provider configs
+- `POST /admin/integrations/:provider/test` (test connection per provider)
+- `GET /api/billing/subscriptions` → list user's subscriptions
+- Remove the duplicate `leads_today/leadsToday` etc. — pick snake_case only
 
-Install: `npx expo install react-native-webview`
+### Phase E — Landing page
 
-### 6. Settings expansion — `mobile/app/(tabs)/settings.tsx`
-- Account card (avatar, name, email, plan, edit profile)
-- Billing row → /paywall
-- Tokens row showing balance + history
-- Preferences: Notifications toggle, Haptics toggle, Theme switcher (if manifest permits)
-- Legal: ToS, Privacy, DPDP (opens WebView to settings.legal URLs from manifest)
-- **DANGER** section:
-  - "Export my data" (calls GET /api/me/data-export, shares JSON file)
-  - "Delete my account" (DPDP erasure — opens confirm flow, POST /api/me/erasure-request)
-- Support: email + version footer
+Create `admin/public/index.html` proxy via nginx that serves a static landing page at `/`.
 
-### 7. Onboarding first-scrape flow
-After final onboarding step, trigger a kickoff scrape in the background:
-```ts
-await api.post('/scrape', { phrases: selectedPhrases, limit: 25 });
-```
-While scraping, show a full-screen loader with progress animation. Poll `/scrape/jobs/:id` every 3s. When complete, navigate to Home tab which now shows real leads.
+Actually simpler: create a `landing/` folder at project root with a static HTML/CSS site (no React build needed). nginx config serves it at `https://leadgen.indigenservices.com/` while admin moves to `/app/`.
 
-### 8. Verify + commit
-```
-cd C:\Users\Indigen-Server-2\Desktop\Indi-gen\mobile
-npx tsc --noEmit
-git add -A
-git commit -m "feat(mobile): paywall w/ Cashfree, onboarding flow, LinkedIn WebView, settings w/ DPDP"
-git push origin master
-```
+The landing page should have:
+- Hero: "LeadHangover — Wake up to better leads" + flower logo + orange accents + Fraunces serif
+- Stats strip: "2,783 leads scraped · 85% qualification rate · 12s/lead"
+- 3-column feature grid: AI filtering · LinkedIn-first · Cashfree + INR billing
+- Pricing: 4 plans (Free / Starter ₹1,499 / Pro ₹4,999 / Enterprise) — fetch from `/api/billing/plans` at runtime
+- "Sign in" + "Start free trial" CTAs (link to `/app/login`)
+- Footer: links + legal + brand
 
-Autonomous. No expo start.
+Use the same custom 50 icons + flower logo. Pure HTML+CSS+vanilla JS, no React, very fast.
+
+Update nginx config (`deploy/nginx-prod.conf`) to:
+- `/app/*` → admin SPA
+- `/api/*`, `/webhook/*` → server (unchanged)
+- `/` → static landing in `/usr/share/nginx/landing/`
+
+Or simpler: add the landing as a route inside admin that's exposed publicly without auth. Pick whichever is simpler and works.
+
+### Phase F — Illustrations + Logo
+
+The flower logo we already have. ALSO create **5 SVG illustrations** for the marketing/empty states, matching the warm-light theme + flower-petal aesthetic:
+
+1. `illustrations/empty-leads.svg` — magnifying glass with petals around it (empty state for "no leads yet")
+2. `illustrations/onboarding-icp.svg` — abstract people icons in petal arrangement
+3. `illustrations/paywall.svg` — flower bloom with coins falling
+4. `illustrations/scrape-running.svg` — animated petal spinner (CSS animation)
+5. `illustrations/error.svg` — wilted flower for error states
+6. `illustrations/success.svg` — bloomed flower with sparkles
+
+Save under `shared/brand/illustrations/`. Each ~2-4 KB SVG.
+
+Use them in:
+- Mobile: empty state of Home tab when no leads, paywall hero, onboarding screens, success/error toasts
+- Admin: empty states of Leads/Users/Audit, login page header (logo already there but make bigger + tagline)
+
+### Phase G — Login page enhancement
+
+`admin/src/pages/Login.tsx`:
+- Add the flower logo SVG large at top (centered, 120×120px, animated subtle pulse)
+- Tagline below: "Wake up to better leads"
+- Background: subtle scattered flower petals SVG pattern (very faint, opacity 0.05)
+- Bottom: "By signing in you agree to Terms · Privacy · DPDP"
+
+### Phase H — LinkedIn-only focus
+
+User said "we will be focusing only on linkedin platform right now no other platform". Remove platform configs that aren't LinkedIn:
+- In `db/seed.sql`, remove `platform_*` settings except `platform_linkedin_enabled`
+- In admin Sources page, hide non-LinkedIn sources or show as "coming soon"
+- In Integrations sidebar, keep: LinkedIn (links to Scrapers), Anthropic, SignalHire, Apify (multi-key), Cashfree, Resend, WhatsApp. Hide: Slack, Discord, PostHog, Sentry (mark as "coming soon" badge)
+
+### Phase I — Mobile features comparison
+
+The old app had: `nurture_queue`, `followup_queue`, `contact_hunt_queue`, `push_tokens`, `lead_proposals`. The new app is missing these. ADD to mobile:
+
+1. **Push notifications**: install `expo-notifications`. Add `/api/me/push-token` endpoint. Mobile registers token on login.
+2. **Followup queue tab section**: under Outreach tab, add a "Follow-up" filter showing leads needing follow-up (last touched > 7 days, no reply).
+3. **Proposals**: in lead detail, add "Proposals" sub-section.
+
+### Phase J — Comparison chart
+
+Write `docs/old_vs_new.md` markdown with a feature comparison table:
+
+| Feature | Old (lead-hunter) | New (LeadHangover) | Status |
+|---|---|---|---|
+| Scraper | LinkedIn via cookies | LinkedIn via linkedin-api lib | ✅ both |
+| Filter | Claude Haiku batch | Claude Haiku batch | ✅ ported |
+| Proposal Builder | Yes (lead_proposals table) | being added in this task | ✅ |
+| Push notifications | Yes (push_tokens) | being added | ✅ |
+| Followup queue | Yes (followup_queue) | being added | ✅ |
+| Multi-Apify-key rotation | Yes (apify_tokens JSON) | needs port | ✅ |
+| AI context (pitch/clients/style) | 6 fields | 2 fields | ⚠️ porting more |
+| Multi-platform sources | 7 platforms (LI, IG, Reddit, ...) | LinkedIn only (per user) | ✅ |
+| Mobile app | None | Full SDUI mobile | NEW |
+| Admin panel | Basic | Full enterprise admin | NEW |
+| Landing page | None | being added | NEW |
+| Server-driven UI | None | Full SDUI manifest system | NEW |
+| White-label | No | Yes | NEW |
+| DPDP compliance | No | Yes (erasure + breach) | NEW |
+| Cashfree payments | No | Yes (subs + topups + tokens ledger) | NEW |
+| GST invoices | No | Yes | NEW |
+| Custom icons | No | 50 flower-aesthetic icons | NEW |
+| Animated splash | No | Yes (Reanimated petals) | NEW |
+| Light + dark theme | Dark only | Both, light default | NEW |
+
+### Phase K — Test, commit, push
+
+1. `cd server && npx tsc --noEmit` — must pass
+2. `cd admin && npx tsc --noEmit` — must pass
+3. `cd mobile && npx tsc --noEmit` — must pass
+4. Stage all changes:
+   ```
+   git add -A
+   git -c user.email=worker@pc2.local -c user.name='PC2 Worker' commit -m 'feat: import old VPS data + proposal builder + landing + illustrations + missing routes + LinkedIn focus'
+   git push origin master
+   ```
+
+## Hard rules
+- Use sonnet model + high effort: invoke `claude` is already running for you. Just code thoroughly.
+- Do NOT start dev servers
+- Do NOT run the import script — write it and let me run it on EC2
+- Do NOT delete the old `import/` directory after using it
+- Do NOT add Liveblocks, AI copilot in admin, SQL playground (per simplicity rule)
+- Use CodeGraph MCP to find existing code — `grep -rn` is wasteful
+
+This is a big task. Take time, do it right.

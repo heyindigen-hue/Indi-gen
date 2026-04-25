@@ -2,7 +2,9 @@ import { Stack } from 'expo-router';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { GeistMono_400Regular } from '@expo-google-fonts/geist-mono';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import * as Notifications from 'expo-notifications';
+import { useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -11,8 +13,37 @@ import { ThemeProvider } from '../lib/themeContext';
 import { useManifest } from '../lib/useManifest';
 import { AnimatedSplash } from '../components/AnimatedSplash';
 import { useTheme } from '../lib/themeContext';
+import { api } from '../lib/api';
 
 SplashScreen.preventAutoHideAsync();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+async function registerPushToken() {
+  if (Platform.OS === 'web') return;
+  try {
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    const finalStatus =
+      existing === 'granted'
+        ? existing
+        : (await Notifications.requestPermissionsAsync()).status;
+    if (finalStatus !== 'granted') return;
+
+    const tokenData = await Notifications.getExpoPushTokenAsync();
+    await api.post('/me/push-token', {
+      token: tokenData.data,
+      platform: Platform.OS as 'android' | 'ios',
+    });
+  } catch {
+    // Non-fatal: push token registration failure should not crash the app
+  }
+}
 
 const qc = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -20,6 +51,16 @@ const qc = new QueryClient({
 
 function AppContent() {
   const { palette } = useTheme();
+  const notifListener = useRef<any>(null);
+
+  useEffect(() => {
+    registerPushToken();
+    notifListener.current = Notifications.addNotificationReceivedListener(() => {});
+    return () => {
+      if (notifListener.current) Notifications.removeNotificationSubscription(notifListener.current);
+    };
+  }, []);
+
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }}>
       <Stack.Screen name="(auth)" />

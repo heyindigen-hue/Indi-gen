@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none">
+  <style>
+    .petal-spin { transform-origin: 120px 100px; animation: spin 2s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .petal-spin-slow { transform-origin: 120px 100px; animation: spin 3s linear infinite reverse; }
+  </style>
+
+  <!-- Outer spinning petals -->
+  <g class="petal-spin">
+    <ellipse cx="120" cy="46" rx="9" ry="20" fill="#552f83" opacity="0.8"/>
+    <ellipse cx="120" cy="46" rx="9" ry="20" fill="#552f83" opacity="0.8" transform="rotate(60 120 100)"/>
+    <ellipse cx="120" cy="46" rx="9" ry="20" fill="#552f83" opacity="0.8" transform="rotate(120 120 100)"/>
+    <ellipse cx="120" cy="46" rx="9" ry="20" fill="#552f83" opacity="0.8" transform="rotate(180 120 100)"/>
+    <ellipse cx="120" cy="46" rx="9" ry="20" fill="#552f83" opacity="0.8" transform="rotate(240 120 100)"/>
+    <ellipse cx="120" cy="46" rx="9" ry="20" fill="#552f83" opacity="0.8" transform="rotate(300 120 100)"/>
+  </g>
+
+  <!-- Inner counter-spinning petals -->
+  <g class="petal-spin-slow">
+    <ellipse cx="120" cy="65" rx="6" ry="14" fill="#7c4db8" opacity="0.6"/>
+    <ellipse cx="120" cy="65" rx="6" ry="14" fill="#7c4db8" opacity="0.6" transform="rotate(60 120 100)"/>
+    <ellipse cx="120" cy="65" rx="6" ry="14" fill="#7c4db8" opacity="0.6" transform="rotate(120 120 100)"/>
+    <ellipse cx="120" cy="65" rx="6" ry="14" fill="#7c4db8" opacity="0.6" transform="rotate(180 120 100)"/>
+    <ellipse cx="120" cy="65" rx="6" ry="14" fill="#7c4db8" opacity="0.6" transform="rotate(240 120 100)"/>
+    <ellipse cx="120" cy="65" rx="6" ry="14" fill="#7c4db8" opacity="0.6" transform="rotate(300 120 100)"/>
+  </g>
+
+  <!-- Centre -->
+  <circle cx="120" cy="100" r="18" fill="#f97316"/>
+  <circle cx="120" cy="100" r="11" fill="#fff3e0"/>
+
+  <!-- Lightning bolt -->
+  <path d="M117 93 l-2 8 h4 l-2 8" stroke="#f97316" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Caption -->
+  <rect x="64" y="152" width="112" height="22" rx="11" fill="#f3eeff"/>
+  <text x="120" y="168" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#552f83" font-weight="600">Scraping leads…</text>
+</svg>

@@ -15,6 +15,7 @@ import scrapeRouter from './routes/scrape';
 import billingRouter from './routes/billing';
 import webhooksRouter from './routes/webhooks';
 import adminRouter from './routes/admin';
+import proposalsRouter from './routes/proposals';
 import sduiRouter from './routes/sdui';
 import dpdpRouter from './routes/dpdp';
 import { attachSSE } from './sse/bus';
@@ -51,6 +52,7 @@ app.use('/api/billing', requireAuth, billingRouter);
 
 // Admin
 app.use("/api/admin", requireAuth, requireAdmin, adminRouter);
+app.use("/api/admin", requireAuth, requireAdmin, proposalsRouter);
 app.use("/api/admin", requireAuth, requireAdmin, sduiRouter);
 app.use("/api/admin", requireAuth, requireAdmin, dpdpRouter);
 

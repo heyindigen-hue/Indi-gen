@@ -200,6 +200,66 @@ router.post('/:id/drafts', async (req: any, res) => {
   res.json({ drafts, cached: false });
 });
 
+// List outreach items for the mobile Outreach tab (aggregated view across all leads)
+router.get('/outreach', async (req: any, res) => {
+  const { status } = req.query;
+  const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+
+  const statusFilter: Record<string, string[]> = {
+    pending: ['draft'],
+    sent: ['sent', 'delivered', 'opened'],
+    replied: ['replied'],
+  };
+
+  const allowedStatuses = status && statusFilter[status as string]
+    ? statusFilter[status as string]
+    : ['draft', 'sent', 'delivered', 'opened', 'replied'];
+
+  const ownerClause = isAdmin ? '' : 'AND ol.user_id=$2';
+  const params: any[] = [allowedStatuses];
+  if (!isAdmin) params.push(req.user.id);
+
+  const rows = await query(
+    `SELECT ol.id, l.id AS "leadId", COALESCE(l.name, l.linkedin_url) AS "leadName",
+            (l.profile_data->>'profile_photo_url') AS "leadAvatar",
+            ol.channel, ol.status, ol.sent_at AS "sentAt", LEFT(ol.message, 120) AS preview
+     FROM outreach_log ol
+     JOIN leads l ON l.id = ol.lead_id
+     WHERE ol.status = ANY($1) ${ownerClause}
+     ORDER BY ol.sent_at DESC NULLS LAST
+     LIMIT 100`,
+    params
+  );
+  res.json(rows);
+});
+
+// Follow-up queue: leads sent to > 7 days ago with no reply
+router.get('/outreach/follow-up', async (req: any, res) => {
+  const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+  const ownerClause = isAdmin ? '' : 'AND ol.user_id=$1';
+  const params: any[] = isAdmin ? [] : [req.user.id];
+
+  const rows = await query(
+    `SELECT DISTINCT ON (ol.lead_id)
+            ol.id, l.id AS "leadId", COALESCE(l.name, l.linkedin_url) AS "leadName",
+            (l.profile_data->>'profile_photo_url') AS "leadAvatar",
+            ol.channel, ol.status, ol.sent_at AS "sentAt", LEFT(ol.message, 120) AS preview
+     FROM outreach_log ol
+     JOIN leads l ON l.id = ol.lead_id
+     WHERE ol.status IN ('sent', 'delivered', 'opened')
+       AND ol.sent_at < NOW() - INTERVAL '7 days'
+       ${ownerClause}
+       AND NOT EXISTS (
+         SELECT 1 FROM outreach_log r
+         WHERE r.lead_id = ol.lead_id AND r.status = 'replied'
+       )
+     ORDER BY ol.lead_id, ol.sent_at DESC
+     LIMIT 100`,
+    params
+  );
+  res.json(rows);
+});
+
 router.post('/:id/feedback', validateBody(feedbackSchema), async (req: any, res) => {
   const { rejected, reason } = req.body;
   const verdict = rejected ? 'rejected' : 'approved';

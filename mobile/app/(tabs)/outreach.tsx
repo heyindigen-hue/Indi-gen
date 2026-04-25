@@ -16,7 +16,7 @@ import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
 import { Avatar } from '../../components/ui/Avatar';
 
-type OutreachTab = 'pending' | 'sent' | 'replied';
+type OutreachTab = 'pending' | 'sent' | 'replied' | 'follow_up';
 
 type OutreachItem = {
   id: string;
@@ -47,6 +47,7 @@ const TABS: { key: OutreachTab; label: string }[] = [
   { key: 'pending', label: 'Pending' },
   { key: 'sent', label: 'Sent' },
   { key: 'replied', label: 'Replied' },
+  { key: 'follow_up', label: 'Follow-up' },
 ];
 
 const STATUS_COLORS: Record<OutreachItem['status'], string> = {
@@ -106,6 +107,10 @@ function EmptyState({ tab, palette }: { tab: OutreachTab; palette: any }) {
     replied: {
       icon: <SparkleIcon size={40} color={palette.muted} strokeWidth={1.5} />,
       text: 'No replies yet. Keep reaching out!',
+    },
+    follow_up: {
+      icon: <SparkleIcon size={40} color={palette.muted} strokeWidth={1.5} />,
+      text: 'No leads need following up right now.',
     },
   };
   const { icon, text } = messages[tab];
@@ -172,8 +177,12 @@ export default function OutreachScreen() {
 
   const { data, isLoading } = useQuery<OutreachItem[]>({
     queryKey: ['outreach', tab],
-    queryFn: () =>
-      api.get('/leads/outreach', { params: { status: tab } }).then((r) => r.data),
+    queryFn: () => {
+      if (tab === 'follow_up') {
+        return api.get('/leads/outreach/follow-up').then((r) => r.data);
+      }
+      return api.get('/leads/outreach', { params: { status: tab } }).then((r) => r.data);
+    },
     staleTime: 2 * 60 * 1000,
   });
 

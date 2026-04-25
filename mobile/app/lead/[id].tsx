@@ -24,6 +24,7 @@ import {
   PhoneIcon,
   LinkIcon,
   PenLineIcon,
+  FileTextIcon,
 } from '../../components/icons';
 
 import { useTheme } from '../../lib/themeContext';
@@ -318,6 +319,88 @@ function NotesSection({ leadId, initialNotes }: NotesSectionProps) {
   );
 }
 
+// ── Proposals Section ──
+
+type MobileProposal = {
+  id: string;
+  status: string;
+  title?: string;
+  pdf_url?: string;
+  sent_at?: string;
+  created_at: string;
+};
+
+type ProposalsSectionProps = {
+  leadId: string;
+};
+
+function ProposalsSection({ leadId }: ProposalsSectionProps) {
+  const { palette, radius } = useTheme();
+
+  const { data: proposals = [], isLoading } = useQuery<MobileProposal[]>({
+    queryKey: ['lead-proposals-mobile', leadId],
+    queryFn: () => api.get(`/admin/leads/${leadId}/proposals`).then((r: any) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return <ActivityIndicator size="small" color={palette.primary} />;
+  }
+
+  if (proposals.length === 0) {
+    return (
+      <Text style={{ color: palette.muted, fontSize: 13 }}>
+        No proposals yet. Generate one from the admin panel.
+      </Text>
+    );
+  }
+
+  return (
+    <View style={{ gap: 8 }}>
+      {proposals.map((p) => (
+        <View
+          key={p.id}
+          style={{
+            backgroundColor: palette.card,
+            borderColor: palette.border,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderRadius: radius,
+            padding: 12,
+            gap: 4,
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: palette.text, fontSize: 14, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+              {p.title || 'Proposal'}
+            </Text>
+            <View
+              style={{
+                backgroundColor: p.status === 'accepted' ? palette.success + '22' : palette.primary + '18',
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 99,
+                marginLeft: 8,
+              }}
+            >
+              <Text style={{ fontSize: 11, color: p.status === 'accepted' ? palette.success : palette.primary, fontWeight: '600' }}>
+                {p.status}
+              </Text>
+            </View>
+          </View>
+          <Text style={{ color: palette.muted, fontSize: 12 }}>
+            {p.sent_at ? `Sent ${new Date(p.sent_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}` : `Created ${new Date(p.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}`}
+          </Text>
+          {p.pdf_url ? (
+            <Pressable onPress={() => { haptic.light(); Linking.openURL(p.pdf_url!); }}>
+              <Text style={{ color: palette.primary, fontSize: 12, fontWeight: '600' }}>View PDF ↗</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // --- Sticky Header ---
 
 type StickyHeaderProps = {
@@ -525,6 +608,15 @@ export default function LeadDetailScreen() {
         {/* Timeline */}
         <View style={styles.section}>
           <TimelineAccordion leadId={id!} />
+        </View>
+
+        {/* Proposals */}
+        <View style={styles.section}>
+          <SectionHeader
+            icon={<FileTextIcon size={16} color={palette.muted} />}
+            title="Proposals"
+          />
+          <ProposalsSection leadId={id!} />
         </View>
 
         <NotesSection leadId={id!} initialNotes={lead.notes ?? ''} />

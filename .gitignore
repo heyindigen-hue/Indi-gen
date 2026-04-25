@@ -68,3 +68,10 @@ dist/
 *.rej
 coverage/
 .nyc_output/
+
+# Import data — contains real lead data and credentials; kept locally only
+import/
+
+# Mobile build artifacts/logs
+mobile/apk2_log_*.txt
+mobile/apk2_view*.json

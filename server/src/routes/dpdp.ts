@@ -165,4 +165,27 @@ router.post('/breach/:id/report-pdf', async (req: any, res) => {
   res.json({ ok: true, message: 'PDF generation queued (DPB report generation will be implemented in a future task)', breachId: req.params.id });
 });
 
+// Push notification token registration
+const pushTokenSchema = z.object({
+  token: z.string().min(1),
+  platform: z.enum(['android', 'ios', 'web']).optional(),
+});
+
+router.post('/push-token', validateBody(pushTokenSchema), async (req: any, res) => {
+  const { token, platform } = req.body;
+  await query(
+    `UPDATE users SET push_token=$1, push_platform=$2, push_token_updated_at=NOW() WHERE id=$3`,
+    [token, platform ?? null, req.user.id]
+  );
+  res.json({ ok: true });
+});
+
+router.delete('/push-token', async (req: any, res) => {
+  await query(
+    `UPDATE users SET push_token=NULL, push_platform=NULL, push_token_updated_at=NOW() WHERE id=$1`,
+    [req.user.id]
+  );
+  res.json({ ok: true });
+});
+
 export default router;

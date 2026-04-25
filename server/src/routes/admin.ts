@@ -233,6 +233,248 @@ router.post('/approvals/:id/reject', async (_req, res) => {
   res.status(501).json({ error: 'Approval queue not implemented' });
 });
 
+// ── Aliases and missing routes ────────────────────────────────────────────────
+
+// feature-flags alias
+router.get('/feature-flags', async (_req, res) => {
+  const rows = await query(`SELECT * FROM feature_flags ORDER BY id ASC`);
+  res.json(rows);
+});
+
+// audit-log alias
+router.get('/audit-log', async (req, res) => {
+  const { actor, action, limit = '50', offset = '0' } = req.query;
+  const conditions: string[] = [];
+  const params: any[] = [];
+  if (actor) { params.push(actor); conditions.push(`actor_id=$${params.length}`); }
+  if (action) { params.push(`%${action}%`); conditions.push(`action ILIKE $${params.length}`); }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  params.push(parseInt(limit as string), parseInt(offset as string));
+  const rows = await query(
+    `SELECT * FROM audit_log ${where} ORDER BY created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+  res.json(rows);
+});
+
+// breaches
+router.get('/breaches', async (_req, res) => {
+  const rows = await query(`SELECT * FROM breach_log ORDER BY created_at DESC LIMIT 100`);
+  res.json(rows);
+});
+
+// admin-users — users with admin roles
+router.get('/admin-users', async (_req, res) => {
+  const rows = await query(
+    `SELECT id, email, name, role, last_login_at, created_at FROM users WHERE role IN ('admin','super_admin') AND deleted_at IS NULL ORDER BY created_at DESC`
+  );
+  res.json(rows);
+});
+
+const inviteSchema = z.object({ email: z.string().email(), role: z.string().min(1) });
+router.post('/admin-users/invite', validateBody(inviteSchema), async (req: any, res) => {
+  const { email, role } = req.body;
+  const token = require('crypto').randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+  await query(
+    `INSERT INTO admin_invites (email, role_id, invited_by, token, expires_at) VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT DO NOTHING`,
+    [email, role, req.user.id, token, expires]
+  );
+  await audit({ actorId: req.user.id, actorType: 'admin', action: 'admin.invite_sent', targetType: 'user', targetId: email });
+  res.json({ ok: true, token, expires_at: expires });
+});
+
+// API keys management
+router.get('/api-keys', async (_req, res) => {
+  const rows = await query(
+    `SELECT id, user_id, name, key_prefix, scopes, last_used_at, expires_at, revoked_at, created_at FROM api_keys ORDER BY created_at DESC`
+  );
+  res.json(rows);
+});
+
+const apiKeyCreateSchema = z.object({ user_id: z.string().uuid().optional(), name: z.string().min(1), scopes: z.array(z.string()).optional() });
+router.post('/api-keys', validateBody(apiKeyCreateSchema), async (req: any, res) => {
+  const { name, scopes = ['read:leads'], user_id } = req.body;
+  const rawKey = require('crypto').randomBytes(32).toString('hex');
+  const prefix = 'lh_' + rawKey.substring(0, 8);
+  const hash = require('crypto').createHash('sha256').update(rawKey).digest('hex');
+  const row = await query(
+    `INSERT INTO api_keys (user_id, name, key_prefix, key_hash, scopes) VALUES ($1,$2,$3,$4,$5) RETURNING id, name, key_prefix, scopes, created_at`,
+    [user_id || req.user.id, name, prefix, hash, scopes]
+  );
+  res.status(201).json({ ...row[0], key: `${prefix}.${rawKey}` });
+});
+
+router.delete('/api-keys/:id', async (req: any, res) => {
+  await query(`UPDATE api_keys SET revoked_at=NOW() WHERE id=$1`, [req.params.id]);
+  await audit({ actorId: req.user.id, actorType: 'admin', action: 'admin.api_key_revoke', targetType: 'api_key', targetId: req.params.id });
+  res.json({ ok: true });
+});
+
+// Sessions management
+router.get('/sessions', async (req, res) => {
+  const { user_id, limit = '50', offset = '0' } = req.query;
+  const conditions = ['revoked_at IS NULL'];
+  const params: any[] = [];
+  if (user_id) { params.push(user_id); conditions.push(`user_id=$${params.length}`); }
+  params.push(parseInt(limit as string), parseInt(offset as string));
+  const rows = await query(
+    `SELECT s.*, u.email FROM active_sessions s JOIN users u ON u.id=s.user_id WHERE ${conditions.join(' AND ')} ORDER BY s.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+  res.json(rows);
+});
+
+router.delete('/sessions/:id', async (req: any, res) => {
+  await query(`UPDATE active_sessions SET revoked_at=NOW() WHERE id=$1`, [req.params.id]);
+  await audit({ actorId: req.user.id, actorType: 'admin', action: 'admin.session_revoke', targetType: 'session', targetId: req.params.id });
+  res.json({ ok: true });
+});
+
+// Settings by category
+router.get('/settings/brand', async (_req, res) => {
+  const rows = await query(`SELECT key, value, is_secret, updated_at FROM app_settings WHERE category='brand' ORDER BY key`);
+  res.json(rows.map((r: any) => ({ ...r, value: r.is_secret ? '***' : r.value })));
+});
+
+router.get('/settings/company', async (_req, res) => {
+  const rows = await query(`SELECT key, value, is_secret, updated_at FROM app_settings WHERE category='company' ORDER BY key`);
+  res.json(rows.map((r: any) => ({ ...r, value: r.is_secret ? '***' : r.value })));
+});
+
+router.get('/settings/legal', async (_req, res) => {
+  const rows = await query(`SELECT key, value, is_secret, updated_at FROM app_settings WHERE category='legal' ORDER BY key`);
+  res.json(rows.map((r: any) => ({ ...r, value: r.is_secret ? '***' : r.value })));
+});
+
+router.get('/settings/maintenance', async (_req, res) => {
+  const rows = await query(`SELECT key, value, is_secret, updated_at FROM app_settings WHERE category='maintenance' ORDER BY key`);
+  res.json(rows.map((r: any) => ({ ...r, value: r.is_secret ? '***' : r.value })));
+});
+
+// DPDP consent stats
+router.get('/dpdp/consent-stats', async (_req, res) => {
+  const [total, byPurpose] = await Promise.all([
+    query(`SELECT COUNT(*)::int AS total FROM consent_records`),
+    query(`SELECT purpose, action, COUNT(*)::int AS cnt FROM consent_records GROUP BY purpose, action ORDER BY purpose`),
+  ]);
+  res.json({ total: total[0]?.total || 0, by_purpose: byPurpose });
+});
+
+router.get('/dpdp/consent-timeline', async (_req, res) => {
+  const rows = await query(
+    `SELECT date_trunc('day', created_at) AS day, COUNT(*)::int AS cnt
+     FROM consent_records
+     WHERE created_at > NOW() - INTERVAL '30 days'
+     GROUP BY 1 ORDER BY 1`
+  );
+  res.json(rows);
+});
+
+// Erasure request actions
+router.post('/erasure-requests/:id/preview', async (req, res) => {
+  const er = await query(`SELECT * FROM erasure_requests WHERE id=$1`, [req.params.id]);
+  if (!er.length) return res.status(404).json({ error: 'Not found' });
+  const [leads, contacts, sessions] = await Promise.all([
+    query(`SELECT COUNT(*)::int AS cnt FROM leads WHERE owner_id=$1`, [er[0].user_id]),
+    query(`SELECT COUNT(*)::int AS cnt FROM contacts c JOIN leads l ON l.id=c.lead_id WHERE l.owner_id=$1`, [er[0].user_id]),
+    query(`SELECT COUNT(*)::int AS cnt FROM active_sessions WHERE user_id=$1`, [er[0].user_id]),
+  ]);
+  res.json({ leads: leads[0].cnt, contacts: contacts[0].cnt, sessions: sessions[0].cnt });
+});
+
+router.post('/erasure-requests/:id/queue', async (req: any, res) => {
+  await query(`UPDATE erasure_requests SET status='queued' WHERE id=$1`, [req.params.id]);
+  await audit({ actorId: req.user.id, actorType: 'admin', action: 'admin.erasure_queued', targetType: 'erasure_request', targetId: req.params.id });
+  res.json({ ok: true });
+});
+
+router.post('/erasure-requests/:id/verify', async (req: any, res) => {
+  await query(`UPDATE erasure_requests SET status='verified' WHERE id=$1`, [req.params.id]);
+  res.json({ ok: true });
+});
+
+router.post('/erasure-requests/:id/receipt', async (req, res) => {
+  const er = await query(`SELECT * FROM erasure_requests WHERE id=$1`, [req.params.id]);
+  if (!er.length) return res.status(404).json({ error: 'Not found' });
+  res.json({ id: er[0].id, status: er[0].status, requested_at: er[0].requested_at, processed_at: er[0].processed_at, receipt_issued_at: new Date().toISOString() });
+});
+
+// Search phrases (admin view)
+router.get('/phrases', async (req, res) => {
+  const { q, limit = '100', offset = '0' } = req.query;
+  const conditions: string[] = [];
+  const params: any[] = [];
+  if (q) { params.push(`%${q}%`); conditions.push(`phrase ILIKE $${params.length}`); }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  params.push(parseInt(limit as string), parseInt(offset as string));
+  const rows = await query(
+    `SELECT * FROM search_phrases ${where} ORDER BY total_new_leads DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+  res.json(rows);
+});
+
+// Integrations
+router.get('/integrations', async (_req, res) => {
+  const keys = [
+    'apify_token', 'apify_tokens', 'signalhire_api_key', 'signalhire_credits_remaining',
+    'linkedin_access_token', 'claude_api_key', 'gemini_api_key', 'aws_bedrock_api_key',
+  ];
+  const rows = await query(`SELECT key, value, is_secret, category, updated_at FROM app_settings WHERE key = ANY($1::text[])`, [keys]);
+  const providers = [
+    { id: 'linkedin', label: 'LinkedIn', enabled: true, keys: ['linkedin_access_token'] },
+    { id: 'apify', label: 'Apify', enabled: true, keys: ['apify_token', 'apify_tokens'] },
+    { id: 'signalhire', label: 'SignalHire', enabled: true, keys: ['signalhire_api_key'] },
+    { id: 'anthropic', label: 'Anthropic', enabled: true, keys: ['claude_api_key'] },
+    { id: 'gemini', label: 'Gemini', enabled: false, keys: ['gemini_api_key'] },
+  ];
+  const settingMap: Record<string, any> = Object.fromEntries(rows.map((r: any) => [r.key, r]));
+  res.json(providers.map(p => ({
+    ...p,
+    configured: p.keys.some(k => settingMap[k]?.value && settingMap[k].value !== ''),
+    last_updated: p.keys.map(k => settingMap[k]?.updated_at).filter(Boolean).sort().pop() || null,
+  })));
+});
+
+router.post('/integrations/:provider/test', async (req, res) => {
+  const { provider } = req.params;
+  try {
+    if (provider === 'anthropic') {
+      const key = await getSetting('claude_api_key');
+      if (!key) return res.json({ ok: false, error: 'No API key configured' });
+      const r = await fetch('https://api.anthropic.com/v1/models', {
+        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      });
+      return res.json({ ok: r.ok, status: r.status });
+    }
+    if (provider === 'apify') {
+      const key = await getSetting('apify_token');
+      if (!key) return res.json({ ok: false, error: 'No token configured' });
+      const r = await fetch(`https://api.apify.com/v2/users/me?token=${key}`);
+      return res.json({ ok: r.ok, status: r.status });
+    }
+    res.json({ ok: true, message: 'Test not implemented for this provider — credentials present' });
+  } catch (e: any) {
+    res.json({ ok: false, error: e.message });
+  }
+});
+
+// Billing subscriptions (admin view — all users)
+router.get('/billing/subscriptions', async (req, res) => {
+  const { limit = '50', offset = '0' } = req.query;
+  const rows = await query(
+    `SELECT s.*, p.name AS plan_name, u.email AS user_email
+     FROM subscriptions s
+     JOIN subscription_plans p ON p.id=s.plan_id
+     JOIN users u ON u.id=s.user_id
+     ORDER BY s.created_at DESC LIMIT $1 OFFSET $2`,
+    [parseInt(limit as string), parseInt(offset as string)]
+  );
+  res.json(rows);
+});
+
 // SQL playground (read-only)
 router.get('/sql/preview', async (req, res) => {
   const { sql } = req.query;

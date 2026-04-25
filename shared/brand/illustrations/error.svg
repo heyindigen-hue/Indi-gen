@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" fill="none">
+  <!-- Background -->
+  <circle cx="120" cy="100" r="72" fill="#fff4f4" opacity="0.7"/>
+
+  <!-- Wilted stem -->
+  <path d="M120 148 Q118 120 116 100 Q115 90 118 80" stroke="#7c4db8" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+  <!-- Drooping wilted petals -->
+  <!-- Left drooping petal -->
+  <path d="M118 80 Q94 68 82 80 Q94 90 118 80" fill="#552f83" opacity="0.5"/>
+  <!-- Upper left drooping petal -->
+  <path d="M118 80 Q100 52 110 44 Q120 56 118 80" fill="#7c4db8" opacity="0.45"/>
+  <!-- Top drooping petal -->
+  <path d="M118 80 Q118 50 126 44 Q132 56 118 80" fill="#552f83" opacity="0.5"/>
+  <!-- Upper right drooping petal -->
+  <path d="M118 80 Q138 52 148 46 Q146 60 118 80" fill="#7c4db8" opacity="0.45"/>
+  <!-- Right drooping petal -->
+  <path d="M118 80 Q148 68 158 82 Q146 92 118 80" fill="#552f83" opacity="0.5"/>
+
+  <!-- Wilted centre -->
+  <circle cx="118" cy="80" r="11" fill="#d1a0a0"/>
+  <circle cx="118" cy="80" r="6" fill="#f0d0d0"/>
+
+  <!-- X mark in centre -->
+  <line x1="114" y1="76" x2="122" y2="84" stroke="#c0504d" stroke-width="2" stroke-linecap="round"/>
+  <line x1="122" y1="76" x2="114" y2="84" stroke="#c0504d" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Fallen petals on ground -->
+  <ellipse cx="90" cy="152" rx="10" ry="5" fill="#7c4db8" opacity="0.2" transform="rotate(-20 90 152)"/>
+  <ellipse cx="148" cy="155" rx="8" ry="4" fill="#552f83" opacity="0.2" transform="rotate(15 148 155)"/>
+  <ellipse cx="116" cy="158" rx="7" ry="4" fill="#7c4db8" opacity="0.15" transform="rotate(-5 116 158)"/>
+
+  <!-- Caption -->
+  <rect x="72" y="165" width="96" height="22" rx="11" fill="#fef2f2"/>
+  <text x="120" y="181" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#c0504d" font-weight="600">Something went wrong</text>
+</svg>
