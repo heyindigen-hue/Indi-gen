@@ -48,6 +48,7 @@ app.use('/api/public', sduiRouter);
 // Auth required
 app.use('/api/me', requireAuth, dpdpRouter);
 app.use('/api/me', requireAuth, meRouter);
+app.use('/api/users/me', requireAuth, meRouter);
 app.use('/api/leads', requireAuth, leadsRouter);
 app.use('/api/scrape', requireAuth, scrapeRouter);
 app.use('/api/billing', requireAuth, billingRouter);

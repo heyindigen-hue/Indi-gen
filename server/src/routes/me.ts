@@ -70,6 +70,48 @@ router.get('/company-profile', async (req: any, res) => {
   res.json({ ...data, name: data.name ?? user.company_name ?? '' });
 });
 
+// ── Customer onboarding (PATCH alias used by customer/src/pages/Onboarding.tsx) ─
+
+const onboardingPatchSchema = z.object({
+  company_name: z.string().min(1),
+  tagline: z.string().optional(),
+  website: z.string().optional(),
+  description: z.string().optional(),
+  ideal_clients: z.array(z.string()).optional(),
+  industries: z.array(z.string()).optional(),
+  geography: z.array(z.string()).optional(),
+  search_phrases: z.array(z.string()).optional(),
+  budget_signals: z.array(z.string()).optional(),
+  plan: z.string().optional(),
+});
+
+router.patch('/onboarding', validateBody(onboardingPatchSchema), async (req: any, res) => {
+  const { company_name, search_phrases = [], plan, ...rest } = req.body;
+  const company_data = JSON.stringify({ ...rest, plan, search_phrases });
+  await query(
+    `UPDATE users SET company_name=$1, company_data=$2,
+       onboarding_completed_at=COALESCE(onboarding_completed_at, NOW()),
+       updated_at=NOW()
+     WHERE id=$3`,
+    [company_name, company_data, req.user.id]
+  );
+  for (const phrase of search_phrases) {
+    if (typeof phrase === 'string' && phrase.trim()) {
+      await query(
+        `INSERT INTO search_phrases (phrase, user_id, enabled)
+         VALUES ($1, $2, TRUE)
+         ON CONFLICT (phrase) DO UPDATE SET user_id=$2, enabled=TRUE`,
+        [phrase.trim(), req.user.id]
+      );
+    }
+  }
+  const updated = await queryOne<any>(
+    `SELECT id, email, name, phone, role, avatar_url, company_name, onboarding_completed_at FROM users WHERE id=$1`,
+    [req.user.id]
+  );
+  res.json({ ...updated, needs_onboarding: !updated.onboarding_completed_at });
+});
+
 // ── Notification preferences ──────────────────────────────────────────────────
 
 router.get('/notification-prefs', async (req: any, res) => {
