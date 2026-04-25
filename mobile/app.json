@@ -12,7 +12,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#FF4716"
     },
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.leadhangover.app"

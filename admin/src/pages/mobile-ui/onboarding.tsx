@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   DndContext,
   PointerSensor,
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { PlusIcon, CheckIcon } from '@/icons';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { useManifest } from '@/hooks/useManifest';
 import type { OnboardingStep } from '@/types/sdui';
 import { StepCard } from './_onboarding/StepCard';
 
@@ -40,11 +41,26 @@ function normaliseOrders(steps: OnboardingStep[]): OnboardingStep[] {
 
 export default function MobileUiOnboardingPage() {
   const queryClient = useQueryClient();
+  const { draft, active, isLoading } = useManifest();
+  const manifest = draft ?? active;
 
-  const [steps, setSteps] = useState<OnboardingStep[]>([createStep(0)]);
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set([steps[0].id]),
-  );
+  const [steps, setSteps] = useState<OnboardingStep[]>([]);
+  const [initialised, setInitialised] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (initialised || isLoading) return;
+    const loaded = (manifest?.screens?.onboarding?.onboarding ?? []) as OnboardingStep[];
+    if (loaded.length > 0) {
+      setSteps(loaded);
+      setExpandedIds(new Set([loaded[0].id]));
+    } else {
+      const first = createStep(0);
+      setSteps([first]);
+      setExpandedIds(new Set([first.id]));
+    }
+    setInitialised(true);
+  }, [manifest, isLoading, initialised]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
