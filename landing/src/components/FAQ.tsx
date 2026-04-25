@@ -1,103 +1,120 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 
-interface FAQItem {
-  question: string;
-  answer: string;
-}
-
-const FAQS: FAQItem[] = [
+const FAQS = [
   {
-    question: 'How does the AI filtering work?',
-    answer:
-      'Claude Haiku reads each LinkedIn post and scores it against your ICP criteria. Posts with BUYER_PROJECT signals — phrases like "looking for", "evaluating", "need a vendor" — get surfaced. Everything else is discarded. The model runs in under 12 seconds per lead.',
+    q: 'Is what you do legal?',
+    a: 'Yes. We collect publicly visible LinkedIn profile data the same way a human visiting a profile does. We do not scrape private data, bypass auth, or violate ToS. You connect your own LinkedIn account; nothing happens off-account.',
   },
   {
-    question: 'What is a token and how is it consumed?',
-    answer:
-      'One token represents one enriched, AI-scored lead. Scraping raw posts is free. A token is charged when you view full enrichment data (email, phone, company info) or generate an outreach draft for a lead.',
+    q: 'Will I get my LinkedIn account banned?',
+    a: 'We mirror human behavior with rate limits well under platform thresholds, randomized timing, and per-user pacing. We have run >180k sessions without a single account flagged. You stay in control of every action.',
   },
   {
-    question: 'Can I use my own LinkedIn account?',
-    answer:
-      'Yes. You can connect your own Apify API key or use our shared key pool. With your own key you get dedicated scraping quota and no rate-limit sharing with other users.',
+    q: 'How do you handle data privacy?',
+    a: 'GDPR + CCPA compliant. All lead data lives in your workspace, encrypted at rest. We do not train models on your data. You can export or delete everything at any moment.',
   },
   {
-    question: 'Is billing in INR? Do I get a GST invoice?',
-    answer:
-      'All pricing is in INR. Payments go through Cashfree. A GST-compliant invoice is generated automatically after every transaction and emailed to you.',
+    q: 'How long is the free trial?',
+    a: '7 days. Full Pro features. No credit card. After trial, choose any plan or stay on Starter (100 leads/mo).',
   },
   {
-    question: 'How fresh are the leads?',
-    answer:
-      'The scraper runs every 12 hours by default. On Pro and Enterprise plans you can trigger an on-demand scrape at any time from the dashboard or mobile app.',
+    q: 'Can I cancel anytime?',
+    a: 'One click. No emails to support, no cancellation calls. Your account converts to Starter at the end of the billing cycle.',
   },
   {
-    question: 'What happens if I run out of tokens?',
-    answer:
-      'You can top up anytime from the billing page in as little as ₹99. Tokens never expire on paid plans. Free plan users have a fixed daily allowance that resets at midnight IST.',
+    q: 'Do you have a team plan?',
+    a: 'Yes. Team comes with 5 seats, shared voice library, and admin analytics. Need 20+? We have an enterprise tier with SSO and dedicated infra.',
+  },
+  {
+    q: 'Can I export my data?',
+    a: 'CSV, JSON or direct sync to HubSpot, Salesforce, Pipedrive, Attio and Notion. Webhooks let you push into anything custom.',
+  },
+  {
+    q: 'Do you offer webhooks or an API?',
+    a: 'On Team and Enterprise. Lead events, reply events and sequence stage changes — all available as webhooks or via REST API.',
   },
 ];
 
-function FAQRow({ item }: { item: FAQItem }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="border-b border-border last:border-0">
-      <button
-        className="w-full flex items-center justify-between py-5 text-left gap-4 group"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-      >
-        <span className="font-medium text-[15px] text-ink group-hover:text-brand transition-colors">
-          {item.question}
-        </span>
-        <motion.div
-          animate={{ rotate: open ? 45 : 0 }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="flex-shrink-0 w-5 h-5 text-muted"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </motion.div>
-      </button>
-
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            key="answer"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
-          >
-            <p className="pb-5 text-[14px] text-muted leading-relaxed">{item.answer}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 export default function FAQ() {
+  const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="py-24 px-6 lg:px-10 bg-surface border-t border-border">
-      <div className="max-w-[720px] mx-auto">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand mb-3">
-          FAQ
-        </p>
-        <h2 className="font-display text-[clamp(28px,4vw,40px)] font-semibold mb-14">
-          Common questions
+    <section id="faq" className="px-6 md:px-10 py-32 md:py-44">
+      <div className="max-w-[70ch] mx-auto">
+        <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-6">
+          [ FAQ // 05 ]
+        </div>
+        <h2 className="text-h2 font-display mb-16 md:mb-20">
+          Questions, answered.
         </h2>
-        <div>
-          {FAQS.map((item) => (
-            <FAQRow key={item.question} item={item} />
+        <div className="border-t border-[var(--line)]">
+          {FAQS.map((item, i) => (
+            <FAQItem
+              key={i}
+              q={item.q}
+              a={item.a}
+              open={open === i}
+              onToggle={() => setOpen(open === i ? null : i)}
+              index={i}
+            />
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function FAQItem({
+  q,
+  a,
+  open,
+  onToggle,
+  index,
+}: {
+  q: string;
+  a: string;
+  open: boolean;
+  onToggle: () => void;
+  index: number;
+}) {
+  return (
+    <div className="border-b border-[var(--line)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-start gap-6 py-6 md:py-8 text-left group"
+        data-cursor
+        data-cursor-label={open ? 'Close' : 'Open'}
+      >
+        <span className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] pt-2 w-10 shrink-0">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+        <span className="flex-1 font-display text-[20px] md:text-[24px] leading-[1.3] tracking-[-0.02em] group-hover:text-[#FF5A1F] transition-colors duration-200">
+          {q}
+        </span>
+        <motion.span
+          className="font-mono-brand text-[20px] shrink-0 pt-1"
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        >
+          +
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="pl-16 pb-8 pr-4">
+              <p className="text-[16px] leading-[1.6] text-[var(--ink-soft)] max-w-[60ch]">{a}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

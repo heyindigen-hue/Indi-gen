@@ -1,199 +1,203 @@
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import MagneticPill from './MagneticPill';
 
 interface Plan {
   id: string;
   name: string;
-  price_inr: number;
-  tokens?: number;
-  description: string;
+  price: number | string;
+  cadence: string;
   features: string[];
-  popular?: boolean;
+  featured?: boolean;
+  cta?: string;
 }
 
-const DEFAULT_PLANS: Plan[] = [
-  {
-    id: 'free',
-    name: 'Free',
-    price_inr: 0,
-    description: 'Get started with manual searches and basic lead scoring.',
-    features: ['10 leads / day', '3 saved queries', 'AI scoring', 'Mobile app access'],
-  },
+const FALLBACK_PLANS: Plan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    price_inr: 1499,
-    tokens: 500,
-    description: 'Daily automated scrapes + full AI filtering.',
-    features: ['50 leads / day', '10 saved queries', 'Full AI scoring', 'SignalHire enrichment', 'WhatsApp outreach drafts'],
+    price: 0,
+    cadence: 'free for 7 days',
+    features: ['100 leads / mo', '1 sequence', 'Manual approve', 'Email support'],
+    cta: 'Start free',
   },
   {
     id: 'pro',
     name: 'Pro',
-    price_inr: 4999,
-    tokens: 2000,
-    description: 'Unlimited scraping, proposals, and priority support.',
-    features: ['Unlimited leads', 'Unlimited saved queries', 'AI Proposal Builder', 'Company intelligence', 'Multi-key rotation', 'Priority support'],
-    popular: true,
+    price: 49,
+    cadence: 'per month',
+    features: ['1,500 leads / mo', '5 sequences', 'Auto-approve rules', 'Claude voice match', 'CRM sync', 'Priority support'],
+    featured: true,
+    cta: 'Start hunting',
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price_inr: -1,
-    description: 'Dedicated scraper, custom ICP rules, SLA, and team access.',
-    features: ['Everything in Pro', 'Custom ICP training', 'Dedicated Apify account', 'Team seats', 'SLA + onboarding', 'White-label option'],
+    id: 'team',
+    name: 'Team',
+    price: 199,
+    cadence: 'per month, 5 seats',
+    features: ['Unlimited leads', 'Unlimited sequences', 'Shared voice library', 'Team analytics', 'Webhooks + API', 'Dedicated success manager'],
+    cta: 'Talk to sales',
   },
 ];
 
-function SpotlightCard({
-  plan,
-  hoveredId,
-  onHover,
-  onLeave,
-}: {
-  plan: Plan;
-  hoveredId: string | null;
-  onHover: (id: string) => void;
-  onLeave: () => void;
-}) {
-  const cx = useMotionValue(0);
-  const cy = useMotionValue(0);
-  const scx = useSpring(cx, { stiffness: 200, damping: 20 });
-  const scy = useSpring(cy, { stiffness: 200, damping: 20 });
-
-  const isHovered = hoveredId === plan.id;
-  const isMuted = hoveredId !== null && !isHovered;
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    cx.set(e.clientX - rect.left);
-    cy.set(e.clientY - rect.top);
-  };
-
-  const priceStr =
-    plan.price_inr < 0
-      ? 'Custom'
-      : plan.price_inr === 0
-      ? '₹0'
-      : `₹${plan.price_inr.toLocaleString('en-IN')}`;
-
-  const ctaHref =
-    plan.id === 'enterprise' ? 'mailto:hello@indigenservices.com' : '/app/login';
-  const ctaLabel =
-    plan.id === 'enterprise' ? 'Contact sales' : plan.price_inr === 0 ? 'Get started' : 'Start trial';
-
-  return (
-    <motion.div
-      className={`relative rounded-2xl border p-7 overflow-hidden cursor-default ${
-        plan.popular
-          ? 'border-brand ring-1 ring-brand/20'
-          : 'border-border'
-      }`}
-      animate={{
-        opacity: isMuted ? 0.7 : 1,
-        scale: isHovered ? 1.02 : 1,
-        y: isHovered ? -8 : 0,
-        boxShadow: isHovered
-          ? '0 20px 50px rgba(11,10,8,0.12)'
-          : '0 0 0 transparent',
-      }}
-      transition={{ type: 'spring', stiffness: 250, damping: 22 }}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => onHover(plan.id)}
-      onMouseLeave={onLeave}
-    >
-      {/* Cursor spotlight (Pattern 20) */}
-      {isHovered && (
-        <motion.div
-          className="absolute inset-0 pointer-events-none rounded-2xl"
-          style={{
-            background: `radial-gradient(240px circle at ${scx.get()}px ${scy.get()}px, rgba(255,71,22,0.10), transparent 60%)`,
-          }}
-        />
-      )}
-
-      {plan.popular && (
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-brand text-white text-[11px] font-semibold tracking-wide rounded-full">
-          Most popular
-        </div>
-      )}
-
-      <div className="mb-5">
-        <h3 className="font-display italic text-[18px] font-semibold text-ink mb-1">{plan.name}</h3>
-        <div className="font-display font-semibold text-[36px] leading-none text-ink mb-1">
-          {priceStr}
-          {plan.price_inr > 0 && (
-            <span className="text-[14px] font-body font-normal text-muted ml-1">/ mo</span>
-          )}
-        </div>
-        {plan.tokens && (
-          <p className="text-[12px] font-mono-brand text-brand">{plan.tokens.toLocaleString()} tokens</p>
-        )}
-        <p className="text-[13px] text-muted mt-2 leading-snug">{plan.description}</p>
-      </div>
-
-      <ul className="space-y-2 mb-7">
-        {plan.features.map((f) => (
-          <li key={f} className="flex items-center gap-2.5 text-[13px] text-ink">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF4716" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            {f}
-          </li>
-        ))}
-      </ul>
-
-      <motion.a
-        href={ctaHref}
-        className={`block w-full py-2.5 text-center rounded-full text-[14px] font-semibold transition-colors ${
-          plan.popular
-            ? 'bg-brand text-white hover:bg-terra'
-            : 'border border-border text-ink hover:border-ink'
-        }`}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        {ctaLabel}
-      </motion.a>
-    </motion.div>
-  );
-}
-
 export default function Pricing() {
-  const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [plans, setPlans] = useState<Plan[]>(FALLBACK_PLANS);
 
   useEffect(() => {
+    let cancelled = false;
     fetch('/api/billing/plans')
-      .then((r) => r.ok ? r.json() : null)
-      .then((data: Plan[] | null) => {
-        if (Array.isArray(data) && data.length > 0) setPlans(data);
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const list = Array.isArray(data) ? data : data?.plans;
+        if (Array.isArray(list) && list.length) {
+          const normalized: Plan[] = list.map((p: any, i: number) => ({
+            id: p.id ?? String(i),
+            name: p.name ?? p.title ?? 'Plan',
+            price: p.price ?? p.amount ?? 0,
+            cadence: p.cadence ?? p.interval ?? 'per month',
+            features: Array.isArray(p.features) ? p.features : [],
+            featured: typeof p.featured === 'boolean' ? p.featured : i === 1,
+            cta: p.cta ?? 'Choose plan',
+          }));
+          setPlans(normalized);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        // keep fallback
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
-    <section id="pricing" className="py-24 px-6 lg:px-10 bg-[#FFF8F5]">
-      <div className="max-w-[1100px] mx-auto">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand mb-3">
-          Simple pricing
-        </p>
-        <h2 className="font-display text-[clamp(28px,4vw,42px)] font-semibold mb-16">
-          Start free, scale as you grow
+    <section id="pricing" className="px-6 md:px-10 py-32 md:py-44">
+      <div className="max-w-[1600px] mx-auto">
+        <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-6">
+          [ PRICING // 04 ]
+        </div>
+        <h2 className="text-h2 font-display max-w-[18ch] mb-16 md:mb-24">
+          Simple. No seat tax. Cancel anytime.
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {plans.map((plan) => (
-            <SpotlightCard
-              key={plan.id}
-              plan={plan}
-              hoveredId={hoveredId}
-              onHover={setHoveredId}
-              onLeave={() => setHoveredId(null)}
-            />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 items-stretch">
+          {plans.map((p, i) => (
+            <PlanCard key={p.id} plan={p} index={i} />
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function PlanCard({ plan, index }: { plan: Plan; index: number }) {
+  const [hover, setHover] = useState(false);
+  const isFeatured = plan.featured;
+  return (
+    <motion.div
+      className="relative"
+      initial={{ opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.7, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {isFeatured && (
+        <motion.div
+          className="absolute -top-3.5 right-6 z-10 origin-center"
+          animate={{ rotate: [-4, -3, -4, -5, -4] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <span className="inline-block bg-[#FF5A1F] text-[#14140F] font-mono-brand text-[10px] uppercase tracking-[0.12em] px-3 py-1.5 rounded-full">
+            [ MOST POPULAR ]
+          </span>
+        </motion.div>
+      )}
+      <div
+        className={`rounded-3xl p-8 md:p-10 h-full flex flex-col gap-8 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          isFeatured
+            ? 'bg-[#14140F] text-[#F4F1EA]'
+            : `bg-[#F4F1EA] text-[#14140F] ${hover ? 'border-2' : 'border'} border-[rgba(20,20,15,0.18)]`
+        }`}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{ padding: !isFeatured && hover ? 'calc(2rem - 1px) calc(2.5rem - 1px)' : undefined }}
+      >
+        <div>
+          <div
+            className={`font-mono-brand text-[12px] uppercase tracking-[0.12em] mb-4 ${
+              isFeatured ? 'text-[rgba(244,241,234,0.6)]' : 'text-[var(--ink-soft)]'
+            }`}
+          >
+            [ {plan.name.toUpperCase()} ]
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="font-display font-medium tracking-[-0.04em]" style={{ fontSize: 'clamp(48px, 6vw, 72px)' }}>
+              {typeof plan.price === 'number' ? (plan.price === 0 ? 'Free' : `$${plan.price}`) : plan.price}
+            </span>
+            {typeof plan.price === 'number' && plan.price !== 0 && (
+              <span className="font-mono-brand text-[12px] uppercase tracking-[0.12em] opacity-60">/ mo</span>
+            )}
+          </div>
+          <div className={`mt-2 font-mono-brand text-[11px] uppercase tracking-[0.12em] ${isFeatured ? 'opacity-60' : 'text-[var(--ink-soft)]'}`}>
+            {plan.cadence}
+          </div>
+        </div>
+
+        <div className={`h-px ${isFeatured ? 'bg-[rgba(244,241,234,0.18)]' : 'bg-[var(--line)]'}`} />
+
+        <ul className="flex flex-col gap-3 flex-1">
+          {plan.features.map((f, i) => (
+            <Feature
+              key={i}
+              text={f}
+              index={i}
+              hover={hover}
+              isFeatured={!!isFeatured}
+            />
+          ))}
+        </ul>
+
+        <div className="pt-2">
+          <MagneticPill
+            href={isFeatured ? '/auth/signup' : plan.id === 'team' ? 'mailto:book@leadhangover.com' : '/auth/signup'}
+            variant={isFeatured ? 'inverse' : 'primary'}
+            size="lg"
+            cursorLabel="Choose"
+          >
+            {plan.cta || 'Choose plan'}
+          </MagneticPill>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function Feature({
+  text,
+  index,
+  hover,
+  isFeatured,
+}: {
+  text: string;
+  index: number;
+  hover: boolean;
+  isFeatured: boolean;
+}) {
+  return (
+    <motion.li
+      className="flex items-start gap-3 text-[14px] leading-[1.5]"
+    >
+      <motion.span
+        className="font-mono-brand text-[14px] mt-px"
+        animate={{
+          color: isFeatured ? '#FF5A1F' : hover ? '#FF5A1F' : 'rgba(20,20,15,0.4)',
+        }}
+        transition={{ duration: 0.25, delay: hover ? index * 0.06 : 0 }}
+      >
+        ✓
+      </motion.span>
+      <span className={isFeatured ? 'text-[rgba(244,241,234,0.85)]' : 'text-[var(--ink)]'}>{text}</span>
+    </motion.li>
   );
 }

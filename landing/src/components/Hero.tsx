@@ -1,265 +1,195 @@
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-  type Variants,
-} from 'framer-motion';
-import { useEffect } from 'react';
-import FlowerMark from './FlowerMark';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { useForceField } from '../lib/useForceField';
+import MagneticPill from './MagneticPill';
 
-const HEADLINE = 'Find buyers, not noise.';
-const HEADLINE_WORDS = HEADLINE.split(' ');
+const HEADLINE_WORDS = ['Wake', 'up', 'to', 'better', 'leads.'];
 
-const containerVariants: Variants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-  },
-};
+const SUBTITLE_LINES = [
+  'We hunt LinkedIn while you sleep,',
+  'score every lead with Claude,',
+  "and draft outreach that doesn't sound like a bot.",
+];
 
-const wordVariants: Variants = {
-  hidden: {
-    y: 28,
-    opacity: 0,
-    clipPath: 'inset(0 0 100% 0)',
-  },
-  show: {
-    y: 0,
-    opacity: 1,
-    clipPath: 'inset(0 0 0% 0)',
-    transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] },
-  },
-};
+const EYEBROW = '[ LH-001 // LINKEDIN LEAD HUNTING ]';
 
-const subtitleVariants: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, delay: 0.55, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-const ctaVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, delay: 0.7, ease: [0.22, 1, 0.36, 1] },
-  },
-};
+const TICKER_ITEMS = [
+  'Sarah Chen — Director of Sales — qualified 2m ago — added to sequence',
+  'Raj Patel — VP Engineering — score 9.2 — DM drafted',
+  'Maya Singh — Founder, Acme — match: SaaS+India — outreach sent',
+  'Daniel Okafor — Head of RevOps — qualified 4m ago — reviewing',
+  'Aiko Tanaka — Director of Growth — score 8.7 — DM drafted',
+  'Lukas Bauer — VP Sales — match: B2B+EMEA — outreach sent',
+];
 
 export default function Hero() {
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
+  const [eyebrowText, setEyebrowText] = useState('');
+  const [showHeadline, setShowHeadline] = useState(false);
+  const [showSubtitle, setShowSubtitle] = useState(false);
+  const [showCTA, setShowCTA] = useState(false);
+  const [showTicker, setShowTicker] = useState(false);
 
-  const springConfig = { stiffness: 150, damping: 25 };
-  const mx = useSpring(mouseX, springConfig);
-  const my = useSpring(mouseY, springConfig);
+  const headlineRef = useForceField<HTMLHeadingElement>({
+    radius: 180,
+    strength: 18,
+    selector: '.char',
+    enabled: showHeadline,
+  });
 
-  const frontX = useTransform(mx, [-1, 1], [-8, 8]);
-  const frontY = useTransform(my, [-1, 1], [-8, 8]);
-  const backX = useTransform(mx, [-1, 1], [18, -18]);
-  const backY = useTransform(my, [-1, 1], [18, -18]);
-
+  // Eyebrow typewriter
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      mouseX.set((e.clientX - cx) / cx);
-      mouseY.set((e.clientY - cy) / cy);
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setEyebrowText(EYEBROW.slice(0, i));
+      if (i >= EYEBROW.length) clearInterval(interval);
+    }, 18);
+    const t1 = setTimeout(() => setShowHeadline(true), 350);
+    const t2 = setTimeout(() => setShowSubtitle(true), 900);
+    const t3 = setTimeout(() => setShowCTA(true), 1250);
+    const t4 = setTimeout(() => setShowTicker(true), 1400);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
     };
-    window.addEventListener('mousemove', handler);
-    return () => window.removeEventListener('mousemove', handler);
-  }, [mouseX, mouseY]);
+  }, []);
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-[60px]">
-      {/* Gradient backdrop */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#FFF5EF] via-cream to-cream pointer-events-none" />
+    <section
+      id="top"
+      className="relative pt-36 md:pt-44 pb-12 md:pb-20 px-6 md:px-10 overflow-hidden min-h-screen flex flex-col"
+    >
+      {/* Eyebrow */}
+      <div className="max-w-[1600px] mx-auto w-full">
+        <div className="font-mono-brand text-[12px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mb-8 md:mb-12 h-[14px]">
+          {eyebrowText}
+          <span className="inline-block w-[7px] h-[12px] -mb-px ml-0.5 align-middle bg-[var(--ink)] animate-pulse" />
+        </div>
+      </div>
 
-      {/* Cursor-aware parallax flowers (Pattern 3) */}
-      <motion.div
-        className="absolute top-[10%] right-[6%] opacity-[0.12] pointer-events-none"
-        style={{ x: backX, y: backY }}
-      >
-        <FlowerMark size={220} />
-      </motion.div>
-      <motion.div
-        className="absolute bottom-[12%] left-[4%] opacity-[0.08] pointer-events-none"
-        style={{ x: frontX, y: frontY }}
-      >
-        <FlowerMark size={140} />
-      </motion.div>
+      {/* Headline */}
+      <div className="max-w-[1600px] mx-auto w-full">
+        <h1
+          ref={headlineRef}
+          className="text-hero font-display text-[#14140F] force-field select-none"
+          aria-label={HEADLINE_WORDS.join(' ')}
+        >
+          {HEADLINE_WORDS.map((word, wi) => (
+            <span key={wi} className="word">
+              <WordReveal word={word} delay={wi * 0.07} active={showHeadline} />
+              {wi < HEADLINE_WORDS.length - 1 && <span className="char">&nbsp;</span>}
+            </span>
+          ))}
+        </h1>
+      </div>
 
-      <div className="relative max-w-[1200px] mx-auto px-6 lg:px-10 py-20 w-full grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-12 items-center">
-
-        {/* Left column */}
-        <div>
-          {/* Eyebrow chip */}
-          <motion.div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-brand-soft rounded-full text-[12px] font-semibold text-terra tracking-wide mb-7"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-brand" />
-            Wake up to better leads
-          </motion.div>
-
-          {/* Brand logo — prominent display */}
-          <motion.div
-            className="mb-6"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: '#FF4716',
-              borderRadius: '50%',
-              width: 100,
-              height: 100,
-              boxShadow: '0 8px 32px rgba(255,71,22,0.35)',
-            }}>
-              <FlowerMark size={72} animated />
-            </div>
-          </motion.div>
-
-          {/* H1 — word-by-word ink-flow reveal (Pattern 1) */}
-          <motion.h1
-            className="font-display text-[clamp(44px,6vw,72px)] font-semibold italic leading-[1.05] mb-6"
-            style={{ color: '#0B0A08' }}
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-          >
-            {HEADLINE_WORDS.map((word, i) => (
-              <motion.span
-                key={i}
-                variants={wordVariants}
-                className="inline-block mr-[0.22em]"
-                style={
-                  word === 'buyers,' || word === 'noise.'
-                    ? { color: '#FF4716', animationDelay: '0.15s' }
-                    : {}
-                }
-              >
-                {word}
-              </motion.span>
+      {/* Subtitle + CTA + ticker */}
+      <div className="max-w-[1600px] mx-auto w-full mt-10 md:mt-16 flex-1 flex flex-col">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
+          <div className="md:col-span-7 lg:col-span-6">
+            {SUBTITLE_LINES.map((line, i) => (
+              <div key={i} className="overflow-hidden">
+                <motion.p
+                  className="text-body-l text-[#14140F]"
+                  initial={{ y: '110%' }}
+                  animate={{ y: showSubtitle ? '0%' : '110%' }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: i * 0.08 }}
+                >
+                  {line}
+                </motion.p>
+              </div>
             ))}
-          </motion.h1>
-
-          {/* Subtitle */}
-          <motion.p
-            className="text-[17px] text-muted leading-relaxed max-w-[480px] mb-8"
-            variants={subtitleVariants}
-            initial="hidden"
-            animate="show"
-          >
-            AI-filtered LinkedIn leads delivered every 12 hours.
-            <br />
-            We score, enrich, and draft outreach. You hit send.
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div
-            className="flex flex-wrap gap-3 mb-9"
-            variants={ctaVariants}
-            initial="hidden"
-            animate="show"
-          >
-            <motion.a
-              href="/app/login"
-              className="inline-flex items-center gap-2 px-7 py-3.5 bg-brand text-white text-[15px] font-semibold rounded-full"
-              whileHover={{ scale: 1.02, boxShadow: '0 6px 28px rgba(255,71,22,0.4)' }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+          </div>
+          <div className="md:col-span-5 lg:col-span-4 lg:col-start-9 flex flex-col gap-3 items-start">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: showCTA ? 1 : 0, scale: showCTA ? 1 : 0.92 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              Start free trial
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </motion.a>
-            <motion.a
-              href="#how-it-works"
-              className="inline-flex items-center gap-2 px-7 py-3.5 border border-border text-[15px] font-medium text-ink rounded-full hover:border-ink transition-colors"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
+              <MagneticPill href="/auth/signup" size="lg" cursorLabel="Start">
+                Start hunting
+              </MagneticPill>
+            </motion.div>
+            <motion.div
+              className="font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)] mt-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: showCTA ? 1 : 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              Watch demo
-            </motion.a>
-          </motion.div>
-
-          {/* Trust strip */}
-          <motion.p
-            className="text-[12px] text-muted"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9, duration: 0.5 }}
-          >
-            Used by 8 founders shipping ~50 leads/day ·{' '}
-            <span className="font-semibold font-mono-brand text-ink">₹0</span> fixed cost
-          </motion.p>
+              [ free for 7 days // no card ]
+            </motion.div>
+          </div>
         </div>
 
-        {/* Right column — hero illustration */}
+        {/* Ticker */}
         <motion.div
-          className="relative flex justify-center"
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-16 md:mt-20 lg:mt-24 -mx-6 md:-mx-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: showTicker ? 0.6 : 0 }}
+          transition={{ duration: 0.8 }}
         >
-          {/* Bloom flower — slow rotation */}
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center opacity-20"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-          >
-            <FlowerMark size={320} animated />
-          </motion.div>
-
-          {/* Main illustration */}
-          <motion.img
-            src="/illustrations/hero-onboarding.svg"
-            alt="LeadHangover dashboard preview"
-            className="relative w-full max-w-[420px] rounded-2xl"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          />
-
-          {/* Floating small petals */}
-          {[
-            { x: '-10%', y: '5%', size: 28, delay: 0 },
-            { x: '90%', y: '20%', size: 20, delay: 0.3 },
-            { x: '85%', y: '70%', size: 16, delay: 0.6 },
-          ].map((petal, i) => (
-            <motion.div
-              key={i}
-              className="absolute pointer-events-none"
-              style={{ left: petal.x, top: petal.y }}
-              animate={{ y: [-4, 4, -4], rotate: [0, 15, 0] }}
-              transition={{
-                duration: 4 + i,
-                repeat: Infinity,
-                delay: petal.delay,
-                ease: 'easeInOut',
-              }}
-            >
-              <FlowerMark size={petal.size} />
-            </motion.div>
-          ))}
+          <div className="border-y border-[var(--line)] py-3.5 overflow-hidden relative">
+            <div className="marquee-track">
+              {[0, 1].map((dup) => (
+                <div key={dup} className="flex items-center gap-12 pr-12 shrink-0" aria-hidden={dup === 1}>
+                  <Ticker />
+                </div>
+              ))}
+            </div>
+            <style>{`
+              .marquee-track { animation: lh-marquee 40s linear infinite; }
+              @keyframes lh-marquee {
+                from { transform: translateX(0); }
+                to { transform: translateX(-50%); }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .marquee-track { animation: none; }
+              }
+            `}</style>
+          </div>
         </motion.div>
       </div>
 
-      {/* Bottom fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-cream to-transparent pointer-events-none" />
+      {/* Bottom hint */}
+      <div className="max-w-[1600px] mx-auto w-full mt-8 md:mt-12 flex items-center justify-between font-mono-brand text-[11px] uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+        <span>↓ Scroll</span>
+        <span className="hidden md:inline">[ v1.0 // april 2026 ]</span>
+      </div>
     </section>
+  );
+}
+
+function WordReveal({ word, delay, active }: { word: string; delay: number; active: boolean }) {
+  return (
+    <span className="inline-block overflow-hidden align-bottom" style={{ paddingBottom: '0.08em' }}>
+      <motion.span
+        className="inline-block"
+        initial={{ y: '110%' }}
+        animate={{ y: active ? '0%' : '110%' }}
+        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay }}
+      >
+        {word.split('').map((ch, i) => (
+          <span key={`${ch}-${i}`} className="char">
+            {ch}
+          </span>
+        ))}
+      </motion.span>
+    </span>
+  );
+}
+
+function Ticker() {
+  return (
+    <>
+      {TICKER_ITEMS.map((item, i) => (
+        <span key={i} className="font-mono-brand text-[12px] tracking-[0.04em] uppercase whitespace-nowrap text-[var(--ink-soft)]">
+          <span className="text-[var(--accent)] mr-3">{'>>>'}</span>
+          {item}
+        </span>
+      ))}
+    </>
   );
 }
