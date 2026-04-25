@@ -8,8 +8,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "preflight": "node preflight.js",
-    "eas-build-pre-install": "node preflight.js"
+    "preflight": "node preflight.js --phase=local",
+    "eas-build-pre-install": "node preflight.js --phase=pre",
+    "eas-build-post-install": "node preflight.js --phase=post"
   },
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",
