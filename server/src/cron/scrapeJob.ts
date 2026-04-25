@@ -4,6 +4,8 @@ import { query } from '../db/client';
 import { config } from '../config';
 import { logger } from '../logger';
 import { refundTokens } from '../services/tokens';
+import { scrapeAllLeads } from '../scraper';
+import { autoRetireDudPhrases } from '../scraper/phrases';
 
 async function pollRunningJobs(): Promise<void> {
   const runs = await query(
@@ -11,14 +13,20 @@ async function pollRunningJobs(): Promise<void> {
   );
 
   for (const run of runs) {
-    const runLog = run.run_log ? (typeof run.run_log === 'string' ? JSON.parse(run.run_log) : run.run_log) : {};
+    const runLog = run.run_log
+      ? typeof run.run_log === 'string'
+        ? JSON.parse(run.run_log)
+        : run.run_log
+      : {};
     const externalJobId: string | undefined = runLog.job_id;
     const tokenReserve: number = runLog.token_reserve || 0;
 
-    if (!externalJobId) continue;
+    if (!externalJobId) continue; // not a SignalHire-backed job
 
     try {
-      const resp = await axios.get(`${config.scraperServiceUrl}/scrape/jobs/${externalJobId}`, { timeout: 5000 });
+      const resp = await axios.get(`${config.scraperServiceUrl}/scrape/jobs/${externalJobId}`, {
+        timeout: 5000,
+      });
       const scraperData = resp.data;
 
       if (scraperData.status === 'completed') {
@@ -79,7 +87,11 @@ async function timeoutStaleJobs(): Promise<void> {
   );
 
   for (const run of stale) {
-    const runLog = run.run_log ? (typeof run.run_log === 'string' ? JSON.parse(run.run_log) : run.run_log) : {};
+    const runLog = run.run_log
+      ? typeof run.run_log === 'string'
+        ? JSON.parse(run.run_log)
+        : run.run_log
+      : {};
     const tokenReserve: number = runLog.token_reserve || 0;
 
     if (tokenReserve > 0) {
@@ -90,19 +102,70 @@ async function timeoutStaleJobs(): Promise<void> {
         idempotencyKey: `scrape:timeout:${run.id}`,
       });
     }
-    await query(`UPDATE scraper_runs SET status='failed', error_msg='timed out', finished_at=NOW() WHERE id=$1`, [run.id]);
+    await query(
+      `UPDATE scraper_runs SET status='failed', error_msg='timed out', finished_at=NOW() WHERE id=$1`,
+      [run.id]
+    );
     logger.warn({ runId: run.id }, 'Scrape job timed out');
   }
 }
 
+async function runLinkedInRubricScrape(): Promise<void> {
+  try {
+    const result = await scrapeAllLeads({ triggerSource: 'cron' });
+    logger.info(
+      {
+        runId: result.run_id,
+        status: result.status,
+        postsFound: result.posts_found,
+        leadsAdded: result.leads_added,
+        apifySpendUsd: result.apify_spend_usd,
+        keyLabel: result.apify_key_label,
+      },
+      'LinkedIn rubric scrape: cron run finished'
+    );
+  } catch (err: any) {
+    logger.error({ err: err.message }, 'LinkedIn rubric scrape: cron run errored');
+  }
+}
+
+async function runPhraseAutoRetire(): Promise<void> {
+  try {
+    const retired = await autoRetireDudPhrases();
+    if (retired) logger.info({ retired }, 'Phrase rotation: auto-retired dud phrases');
+  } catch (err: any) {
+    logger.error({ err: err.message }, 'Phrase auto-retire errored');
+  }
+}
+
 export function startScrapeJobCron(): void {
+  // SignalHire-backed legacy: poll running jobs every 2 minutes
   cron.schedule('*/2 * * * *', async () => {
-    try { await pollRunningJobs(); } catch (e: any) { logger.error({ err: e.message }, 'Scrape poll cron error'); }
+    try {
+      await pollRunningJobs();
+    } catch (e: any) {
+      logger.error({ err: e.message }, 'Scrape poll cron error');
+    }
   });
 
+  // SignalHire-backed legacy: timeout stale jobs every 30 minutes
   cron.schedule('*/30 * * * *', async () => {
-    try { await timeoutStaleJobs(); } catch (e: any) { logger.error({ err: e.message }, 'Scrape timeout cron error'); }
+    try {
+      await timeoutStaleJobs();
+    } catch (e: any) {
+      logger.error({ err: e.message }, 'Scrape timeout cron error');
+    }
   });
+
+  // Apify rubric scraper — fires every 12 hours (07:00 IST + 19:00 IST → 01:30 UTC + 13:30 UTC)
+  // node-cron doesn't honor IST natively; using UTC approximation that lands inside IST scraping window
+  if (process.env.SCRAPE_LINKEDIN_RUBRIC_DISABLED !== '1') {
+    cron.schedule('30 1,13 * * *', runLinkedInRubricScrape);
+    logger.info('LinkedIn rubric scrape scheduled at 01:30 UTC + 13:30 UTC (07:00 + 19:00 IST)');
+  }
+
+  // Phrase auto-retire — once a day at 04:00 UTC (09:30 IST)
+  cron.schedule('0 4 * * *', runPhraseAutoRetire);
 
   logger.info('Scrape job cron started');
 }
