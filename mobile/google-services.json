@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "561765519580",
+    "project_id": "leadhangover",
+    "storage_bucket": "leadhangover.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:561765519580:android:862f73dc4b4a1256392419",
+        "android_client_info": {
+          "package_name": "com.leadhangover.indigen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvT15Rn5cLYpEkYxVdhbgsRGiqKMJ_TBQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
