@@ -99,11 +99,28 @@ router.post('/cashfree', express.raw({ type: '*/*' }), async (req, res) => {
   res.json({ ok: true });
 });
 
-router.post('/signalhire', express.json({ limit: '2mb' }), async (req, res) => {
-  const results = Array.isArray(req.body) ? req.body : [req.body];
-  const { handleCallback } = await import('../enrichment/signalHire');
-  await handleCallback(results);
-  res.json({ ok: true });
+// SignalHire (and many webhook senders) do a HEAD/GET preflight to verify the
+// callback URL is alive before they bother sending the actual POST. Always
+// answer 200 for those — silently failing the preflight made SignalHire skip
+// every async callback.
+router.head('/signalhire', (_req, res) => res.status(200).end());
+router.get('/signalhire', (_req, res) => res.json({ ok: true, endpoint: 'signalhire-webhook' }));
+
+router.post('/signalhire', express.json({ limit: '4mb' }), async (req, res) => {
+  try {
+    const results = Array.isArray(req.body) ? req.body : [req.body];
+    logger.info(
+      { count: results.length, sample: results[0] ? Object.keys(results[0]) : [] },
+      'SignalHire callback received'
+    );
+    const { handleCallback } = await import('../enrichment/signalHire');
+    await handleCallback(results);
+    res.json({ ok: true, processed: results.length });
+  } catch (err: any) {
+    logger.error({ err: err.message }, 'SignalHire webhook handler crashed');
+    // Still 200 so SignalHire doesn't retry-storm us
+    res.status(200).json({ ok: false, error: err.message });
+  }
 });
 
 export default router;
