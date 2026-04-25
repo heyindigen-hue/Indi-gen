@@ -24,7 +24,7 @@ export function DeltaBadge({ value, suffix = '%' }: DeltaBadgeProps) {
         {!isPositive && !isNegative && <rect x="1" y="3" width="6" height="2" fill="currentColor" />}
       </svg>
       {isPositive ? '+' : ''}
-      {value.toFixed(1)}
+      {(value ?? 0).toFixed(1)}
       {suffix}
     </span>
   );

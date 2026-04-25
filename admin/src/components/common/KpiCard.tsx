@@ -60,7 +60,7 @@ export function KpiCard({ title, value, change, sparkline, icon: Icon, loading }
           {isNegative && <ArrowRightIcon size={12} className="rotate-90" />}
           <span>
             {isPositive ? '+' : ''}
-            {change.value.toFixed(1)}%
+            {(change.value ?? 0).toFixed(1)}%
           </span>
           {change.label && <span className="text-muted-foreground ml-0.5">{change.label}</span>}
         </div>

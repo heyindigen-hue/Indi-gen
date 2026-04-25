@@ -83,47 +83,47 @@ export default function Dashboard() {
   const kpiCards = [
     {
       title: 'MRR',
-      value: stats ? formatINR(stats.mrr) : '—',
+      value: stats ? formatINR(stats?.mrr) : '—',
       change: stats ? { value: stats.mrr_wow, label: 'WoW' } : undefined,
       sparkline: stats?.mrr_sparkline,
       icon: ChartIcon,
     },
     {
       title: 'Active Users (DAU)',
-      value: stats ? stats.dau.toLocaleString() : '—',
+      value: stats ? stats?.dau?.toLocaleString() ?? "—" : '—',
       change: stats ? { value: stats.dau_wow, label: '7d' } : undefined,
       icon: UsersIcon,
     },
     {
       title: 'Leads Today',
-      value: stats ? stats.leads_today.toLocaleString() : '—',
+      value: stats ? stats?.leads_today?.toLocaleString() ?? "—" : '—',
       icon: LeadIcon,
     },
     {
       title: 'New Signups',
-      value: stats ? stats.signups_today.toLocaleString() : '—',
+      value: stats ? stats?.signups_today?.toLocaleString() ?? "—" : '—',
       change: stats ? { value: stats.signups_wow, label: 'WoW' } : undefined,
       icon: UserIcon,
     },
     {
       title: 'Token Burn Today',
-      value: stats ? stats.token_burn_today.toLocaleString() : '—',
+      value: stats ? stats?.token_burn_today?.toLocaleString() ?? "—" : '—',
       icon: ZapIcon,
     },
     {
       title: 'LLM Cost Today',
-      value: stats ? formatINR(stats.llm_cost_today_inr) : '—',
+      value: stats ? formatINR(stats?.llm_cost_today_inr ?? 0) : '—',
       icon: CashIcon,
     },
     {
       title: 'Scrape Success (24h)',
-      value: stats ? `${stats.scrape_success_rate.toFixed(1)}%` : '—',
+      value: stats ? `${(stats?.scrape_success_rate ?? 0).toFixed(1)}%` : '—',
       change: stats ? { value: stats.scrape_success_change } : undefined,
       icon: CheckIcon,
     },
     {
       title: 'Open Tickets',
-      value: stats ? stats.open_tickets.toLocaleString() : '—',
+      value: stats ? stats?.open_tickets?.toLocaleString() ?? "—" : '—',
       icon: TagIcon,
     },
   ];

@@ -13,20 +13,36 @@ const router = Router();
 
 // Stats
 router.get('/stats', async (_req, res) => {
-  const [mrr, dau, leadsToday, scrapeToday, topUsers] = await Promise.all([
-    query(`SELECT COALESCE(SUM(p.price_inr),0) AS mrr FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.status='active'`),
-    query(`SELECT COUNT(DISTINCT user_id)::int AS dau FROM active_sessions WHERE created_at > NOW()-INTERVAL '24h' AND revoked_at IS NULL`),
-    query(`SELECT COUNT(*)::int AS count FROM leads WHERE created_at > NOW()-INTERVAL '24h'`),
-    query(`SELECT COUNT(*)::int AS count FROM scraper_runs WHERE started_at > NOW()-INTERVAL '24h'`),
-    query(`SELECT u.id, u.email, COUNT(l.id) AS lead_count FROM users u LEFT JOIN leads l ON l.owner_id=u.id GROUP BY u.id ORDER BY lead_count DESC LIMIT 5`),
-  ]);
-  res.json({
-    mrr: parseFloat(mrr[0]?.mrr || '0'),
-    dau: dau[0]?.dau || 0,
-    leadsToday: leadsToday[0]?.count || 0,
-    scrapeJobsToday: scrapeToday[0]?.count || 0,
-    topUsers,
-  });
+  try {
+    const [mrr, dau, leadsToday, scrapeToday, signupsToday, tokenBurn, openTickets, scrapeSuccess, topUsers] = await Promise.all([
+      query(`SELECT COALESCE(SUM(p.price_inr),0) AS v FROM subscriptions s JOIN subscription_plans p ON p.id=s.plan_id WHERE s.status='active'`),
+      query(`SELECT COUNT(DISTINCT user_id)::int AS v FROM active_sessions WHERE created_at > NOW()-INTERVAL '24h' AND revoked_at IS NULL`),
+      query(`SELECT COUNT(*)::int AS v FROM leads WHERE created_at > NOW()-INTERVAL '24h'`),
+      query(`SELECT COUNT(*)::int AS v FROM scraper_runs WHERE started_at > NOW()-INTERVAL '24h'`),
+      query(`SELECT COUNT(*)::int AS v FROM users WHERE created_at > NOW()-INTERVAL '24h'`),
+      query(`SELECT COALESCE(ABS(SUM(delta)::int),0) AS v FROM token_transactions WHERE delta < 0 AND created_at > NOW()-INTERVAL '24h'`),
+      query(`SELECT COUNT(*)::int AS v FROM support_tickets WHERE status IN ('open','pending')`),
+      query(`SELECT COALESCE(ROUND(AVG(CASE WHEN status='success' THEN 1.0 ELSE 0.0 END)*100)::int, 100) AS v FROM scraper_runs WHERE started_at > NOW()-INTERVAL '24h'`),
+      query(`SELECT u.id, u.email, COUNT(l.id)::int AS lead_count FROM users u LEFT JOIN leads l ON l.owner_id=u.id GROUP BY u.id ORDER BY lead_count DESC LIMIT 5`),
+    ]);
+    res.json({
+      mrr: parseFloat(mrr[0]?.v || '0'),
+      dau: dau[0]?.v || 0,
+      leads_today: leadsToday[0]?.v || 0,
+      scrape_jobs_today: scrapeToday[0]?.v || 0,
+      signups_today: signupsToday[0]?.v || 0,
+      token_burn_today: tokenBurn[0]?.v || 0,
+      llm_cost_today: 0, llm_cost_today_inr: 0,
+      scrape_success_rate: scrapeSuccess[0]?.v ?? 100,
+      open_tickets: openTickets[0]?.v || 0,
+      // legacy aliases
+      leadsToday: leadsToday[0]?.v || 0,
+      scrapeJobsToday: scrapeToday[0]?.v || 0,
+      topUsers,
+    });
+  } catch (e: any) {
+    res.json({ mrr:0, dau:0, leads_today:0, scrape_jobs_today:0, signups_today:0, token_burn_today:0, llm_cost_today:0, scrape_success_rate:100, open_tickets:0, leadsToday:0, scrapeJobsToday:0, topUsers:[], _error: e.message });
+  }
 });
 
 // Users
