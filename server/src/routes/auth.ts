@@ -48,7 +48,21 @@ router.post('/login', authLimit, validateBody(loginSchema), async (req, res) => 
   await query('UPDATE users SET last_login_at=NOW() WHERE id=$1', [user.id]);
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role, jti }, config.jwtSecret, { expiresIn: '30d' });
   const needsOnboarding = !user.onboarding_completed_at;
-  res.json({ token, needs_onboarding: needsOnboarding, user: { id: user.id, email: user.email, role: user.role, name: user.name, needs_onboarding: needsOnboarding } });
+  res.json({
+    token,
+    needs_onboarding: needsOnboarding,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      avatar_url: user.avatar_url || null,
+      company_name: user.company_name || null,
+      onboarding_completed_at: user.onboarding_completed_at || null,
+      needs_onboarding: needsOnboarding,
+    },
+  });
 });
 
 router.post('/signup', authLimit, validateBody(signupSchema), async (req, res) => {
@@ -57,7 +71,7 @@ router.post('/signup', authLimit, validateBody(signupSchema), async (req, res) =
   if (existing) return res.status(409).json({ error: 'Email already registered' });
   const hash = await bcrypt.hash(password, 10);
   const user = await queryOne<any>(
-    `INSERT INTO users (email, password_hash, name, phone) VALUES ($1,$2,$3,$4) RETURNING id, email, name, role`,
+    `INSERT INTO users (email, password_hash, name, phone) VALUES ($1,$2,$3,$4) RETURNING id, email, name, role, phone, avatar_url, company_name, onboarding_completed_at`,
     [email, hash, name || null, phone || null]
   );
   await grantTokens({
@@ -80,7 +94,11 @@ router.post('/signup', authLimit, validateBody(signupSchema), async (req, res) =
   const jti = await createSession(user.id, req.ip, req.get('user-agent') || undefined);
   const token = jwt.sign({ id: user.id, email: user.email, role: user.role, jti }, config.jwtSecret, { expiresIn: '30d' });
   await audit({ actorId: user.id, action: 'user.signup', targetType: 'user', targetId: user.id, ip: req.ip || undefined });
-  res.status(201).json({ token, user });
+  res.status(201).json({
+    token,
+    needs_onboarding: true,
+    user: { ...user, needs_onboarding: true },
+  });
 });
 
 router.post('/logout', async (req: any, res) => {
