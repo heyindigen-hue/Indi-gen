@@ -5,6 +5,7 @@ import { validateBody } from '../middleware/validate';
 import { audit } from '../services/audit';
 import { enrichLead, batchEnrich } from '../enrichment/signalHire';
 import { generateDrafts, translateToEnglish, type LeadForDraft } from '../services/draftService';
+import { generateProposal } from '../services/proposalService';
 
 const router = Router();
 
@@ -27,6 +28,7 @@ const feedbackSchema = z.object({
   reason: z.string().optional(),
 });
 const draftsBodySchema = z.object({ force: z.boolean().optional() });
+const proposalBodySchema = z.object({ force: z.boolean().optional() });
 const translateSchema = z.object({ text: z.string().min(1).max(8000) });
 const userUnqualifiedSchema = z.object({ reason: z.string().optional() });
 
@@ -420,6 +422,54 @@ router.post('/:id/drafts', validateBody(draftsBodySchema), async (req: any, res)
   );
 
   res.json({ ...drafts, cached: false });
+});
+
+router.post('/:id/proposal', validateBody(proposalBodySchema), async (req: any, res) => {
+  const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+  const lead = await queryOne<any>(
+    `SELECT l.* FROM leads l WHERE l.id=$1 ${isAdmin ? '' : 'AND l.owner_id=$2'}`,
+    isAdmin ? [req.params.id] : [req.params.id, req.user.id]
+  );
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+  const force = req.body?.force === true;
+  if (!force) {
+    const cached = await queryOne<any>(
+      `SELECT ai_content, created_at FROM lead_proposals
+        WHERE lead_id=$1
+          AND ai_content IS NOT NULL
+          AND created_at > NOW() - INTERVAL '7 days'
+        ORDER BY created_at DESC LIMIT 1`,
+      [req.params.id]
+    );
+    if (cached?.ai_content) {
+      const payload = typeof cached.ai_content === 'string' ? JSON.parse(cached.ai_content) : cached.ai_content;
+      if (payload?.tiers?.length) {
+        return res.json({ ...payload, cached: true, cached_at: cached.created_at });
+      }
+    }
+  }
+
+  const payload = await generateProposal({
+    id: lead.id,
+    name: lead.name,
+    headline: lead.headline,
+    company: lead.company,
+    post_text: lead.post_text,
+    intent_label: lead.intent_label,
+    intent_reason: lead.intent_reason,
+    icp_type: lead.icp_type,
+    profile_data: lead.profile_data,
+  });
+
+  const title = `Proposal for ${lead.company || lead.name || 'Lead'}`;
+  await queryOne<any>(
+    `INSERT INTO lead_proposals (lead_id, user_id, status, title, ai_content, created_at, updated_at)
+     VALUES ($1,$2,'draft',$3,$4::jsonb,NOW(),NOW()) RETURNING id`,
+    [req.params.id, req.user.id, title, JSON.stringify(payload)]
+  );
+
+  res.json({ ...payload, cached: false });
 });
 
 router.post('/:id/mark-unqualified', validateBody(userUnqualifiedSchema), async (req: any, res) => {

@@ -168,6 +168,12 @@ export default function LeadDetailScreen() {
     router.push(`/lead/${id}/drafts` as any);
   }, [id]);
 
+  const onOpenPitch = useCallback(() => {
+    if (!id) return;
+    haptic.medium();
+    router.push(`/lead/${id}/pitch` as any);
+  }, [id]);
+
   const onSendChannel = useCallback(
     async (channel: Channel) => {
       const text = channel === 'whatsapp' ? drafts?.whatsapp : channel === 'email' ? drafts?.email : drafts?.linkedin;
@@ -464,15 +470,32 @@ export default function LeadDetailScreen() {
           </>
         ) : null}
 
-        {/* AI Drafts entry — full-width orange CTA */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+        {/* AI Drafts + Generate proposal entry — twin CTAs */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24, flexDirection: 'row', gap: 10 }}>
           <Pressable
             onPress={onOpenDrafts}
-            style={[styles.draftsCta, { backgroundColor: palette.primary }]}
+            style={[styles.draftsCta, { backgroundColor: palette.primary, flex: 1 }]}
           >
-            <SparkleIcon size={18} color={palette.primaryFg} />
-            <Text style={{ color: palette.primaryFg, fontSize: 15, fontFamily: 'Inter_700Bold' }}>
-              AI Message Drafts
+            <SparkleIcon size={16} color={palette.primaryFg} />
+            <Text style={{ color: palette.primaryFg, fontSize: 13.5, fontFamily: 'Inter_700Bold' }}>
+              AI Drafts
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={onOpenPitch}
+            style={[
+              styles.draftsCta,
+              {
+                backgroundColor: 'transparent',
+                borderColor: palette.text,
+                borderWidth: 1.5,
+                flex: 1,
+              },
+            ]}
+          >
+            <SparkleIcon size={16} color={palette.text} />
+            <Text style={{ color: palette.text, fontSize: 13.5, fontFamily: 'Inter_700Bold' }}>
+              Generate proposal
             </Text>
           </Pressable>
         </View>

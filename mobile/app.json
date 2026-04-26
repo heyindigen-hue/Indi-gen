@@ -2,7 +2,7 @@
   "expo": {
     "name": "LeadHangover",
     "slug": "leadhangover",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "scheme": "leadhangover",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
