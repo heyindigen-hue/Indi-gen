@@ -79,7 +79,8 @@ function AppContent({ bootState }: { bootState: BootState }) {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="lead/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="lead/[id]/index" options={{ presentation: 'card' }} />
+        <Stack.Screen name="lead/[id]/drafts" options={{ presentation: 'card' }} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
         <Stack.Screen name="onboarding" />
       </Stack>

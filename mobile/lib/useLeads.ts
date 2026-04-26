@@ -1,12 +1,22 @@
 import { useQuery, useMutation, useQueryClient, InfiniteData } from '@tanstack/react-query';
 import { api } from './api';
 
+export type DraftSet = {
+  whatsapp?: string;
+  email_subject?: string;
+  email_body?: string;
+  linkedin_dm?: string;
+  cached?: boolean;
+  cached_at?: string;
+};
+
 export type Lead = {
   id: string;
   name?: string;
   headline?: string;
   company?: string;
   linkedin_url?: string;
+  linkedin_urn?: string;
   post_text?: string;
   post_url?: string;
   score?: number;
@@ -15,7 +25,9 @@ export type Lead = {
   notes?: string;
   intent_label?: string;
   intent_confidence?: number;
-  drafts_cache?: { email?: string; linkedin?: string; whatsapp?: string } | null;
+  intent_reason?: string;
+  drafts_cache?: DraftSet | null;
+  drafts_cached_at?: string;
   enrichment_status?: string;
   profile_data?: { profile_photo_url?: string; [k: string]: any };
   created_at?: string;
@@ -149,18 +161,91 @@ export function useEnrichLead() {
   });
 }
 
+// Legacy 3-field shape kept for compatibility with the inline lead-detail draft tabs.
 export type Drafts = { email?: string; linkedin?: string; whatsapp?: string };
 
-export function useLeadDrafts(id: string | undefined, cached?: Drafts | null) {
+function adaptToLegacyDrafts(d: DraftSet | null | undefined): Drafts {
+  if (!d) return {};
+  return {
+    email: d.email_body || '',
+    linkedin: d.linkedin_dm || '',
+    whatsapp: d.whatsapp || '',
+  };
+}
+
+export function useLeadDrafts(id: string | undefined, cached?: Drafts | DraftSet | null) {
   return useQuery<Drafts>({
     queryKey: ['lead-drafts', id],
     queryFn: async () => {
-      const res = await api.post<{ drafts: string[] }>(`/leads/${id}/drafts`);
-      const [email, linkedin, whatsapp] = res.data.drafts ?? [];
-      return { email, linkedin, whatsapp };
+      const res = await api.post<DraftSet & { cached?: boolean }>(`/leads/${id}/drafts`, {});
+      return adaptToLegacyDrafts(res.data);
     },
     enabled: !!id,
-    initialData: cached && (cached.email || cached.linkedin || cached.whatsapp) ? cached : undefined,
+    initialData: (() => {
+      if (!cached) return undefined;
+      const c = cached as any;
+      if (c.email_body || c.linkedin_dm || c.whatsapp) {
+        return adaptToLegacyDrafts(c);
+      }
+      if (c.email || c.linkedin || c.whatsapp) {
+        return c as Drafts;
+      }
+      return undefined;
+    })(),
     staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useFullDraftSet(id: string | undefined, cached?: DraftSet | null) {
+  return useQuery<DraftSet>({
+    queryKey: ['lead-drafts-full', id],
+    queryFn: async () => {
+      const res = await api.post<DraftSet & { cached?: boolean; cached_at?: string }>(
+        `/leads/${id}/drafts`,
+        {}
+      );
+      return res.data;
+    },
+    enabled: !!id,
+    initialData: cached || undefined,
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useRegenerateDrafts() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await api.post<DraftSet>(`/leads/${id}/drafts`, { force: true });
+      return { id, drafts: res.data };
+    },
+    onSuccess: ({ id, drafts }) => {
+      qc.setQueryData(['lead-drafts-full', id], drafts);
+      qc.setQueryData(['lead-drafts', id], adaptToLegacyDrafts(drafts));
+      qc.invalidateQueries({ queryKey: ['lead', id] });
+    },
+  });
+}
+
+export function useMarkUnqualified() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      await api.post(`/leads/${id}/mark-unqualified`, reason ? { reason } : {});
+      return id;
+    },
+    onSuccess: (id) => {
+      qc.invalidateQueries({ queryKey: ['lead', id] });
+      qc.invalidateQueries({ queryKey: ['leads'] });
+    },
+  });
+}
+
+export function useTranslate() {
+  return useMutation({
+    mutationFn: async (text: string) => {
+      const res = await api.post<{ translated: string }>(`/leads/translate`, { text });
+      return res.data.translated;
+    },
   });
 }

@@ -43,6 +43,15 @@ type LeadsPage = {
 type SortKey = 'score' | 'recent';
 type StatusKey = 'all' | 'New' | 'Contacted' | 'Qualified' | 'Skip';
 type IcpKey = 'all' | 'D2C' | 'SaaS' | 'Services';
+type CategoryKey =
+  | 'All'
+  | 'Shopify'
+  | 'SaaS'
+  | 'AI'
+  | 'Mobile'
+  | 'Web'
+  | 'Design'
+  | 'Social Media';
 
 const PAGE = 20;
 
@@ -59,6 +68,17 @@ const ICP_FILTERS: { id: IcpKey; label: string }[] = [
   { id: 'D2C', label: 'D2C' },
   { id: 'SaaS', label: 'SaaS' },
   { id: 'Services', label: 'Services' },
+];
+
+const CATEGORY_FILTERS: CategoryKey[] = [
+  'All',
+  'Shopify',
+  'SaaS',
+  'AI',
+  'Mobile',
+  'Web',
+  'Design',
+  'Social Media',
 ];
 
 function daysAgo(iso?: string | null): string {
@@ -94,18 +114,20 @@ export default function LeadsTab() {
   const [sort, setSort] = useState<SortKey>('score');
   const [statusFilter, setStatusFilter] = useState<StatusKey>('all');
   const [icpFilter, setIcpFilter] = useState<IcpKey>('all');
+  const [category, setCategory] = useState<CategoryKey>('All');
 
   const queryKey = useMemo(
-    () => ['leads', 'tab', sort, statusFilter, icpFilter] as const,
-    [sort, statusFilter, icpFilter]
+    () => ['leads', 'tab', sort, statusFilter, icpFilter, category] as const,
+    [sort, statusFilter, icpFilter, category]
   );
 
   const params = useMemo(() => {
     const p: Record<string, string | number> = { limit: PAGE, platform: 'linkedin' };
     if (statusFilter !== 'all') p.status = statusFilter;
     if (icpFilter !== 'all') p.icp_type = icpFilter;
+    if (category !== 'All') p.category = category;
     return p;
-  }, [statusFilter, icpFilter]);
+  }, [statusFilter, icpFilter, category]);
 
   const {
     data,
@@ -227,6 +249,22 @@ export default function LeadsTab() {
         <View style={{ flex: 1 }} />
         <FilterIcon size={16} color={palette.muted} strokeWidth={1.6} />
       </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipRow}
+      >
+        {CATEGORY_FILTERS.map((c) => (
+          <FilterChip
+            key={`c-${c}`}
+            label={c}
+            active={category === c}
+            palette={palette}
+            onPress={() => setCategory(c)}
+          />
+        ))}
+      </ScrollView>
 
       <ScrollView
         horizontal

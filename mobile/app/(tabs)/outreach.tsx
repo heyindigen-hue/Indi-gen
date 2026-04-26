@@ -1,134 +1,234 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   Pressable,
   ActivityIndicator,
   StyleSheet,
-  Animated,
+  RefreshControl,
+  Linking,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BookmarkIcon, SendIcon, SparkleIcon } from '../../components/icons';
 import { useTheme } from '../../lib/themeContext';
 import { api } from '../../lib/api';
+import { useUpdateLeadStatus } from '../../lib/useLeads';
 import { Avatar } from '../../components/ui/Avatar';
+import { haptic } from '../../lib/haptics';
+import { BookmarkIcon, MailIcon, PhoneIcon, XIcon, SparkleIcon } from '../../components/icons';
 
-type OutreachTab = 'pending' | 'sent' | 'replied' | 'follow_up';
+type BucketKey = 'act_today' | 'hot' | 'follow_up';
 
-type OutreachItem = {
+type BucketLead = {
   id: string;
-  leadId: string;
-  leadName: string;
-  leadAvatar?: string;
-  channel: 'whatsapp' | 'email' | 'linkedin';
-  status: 'draft' | 'sent' | 'delivered' | 'opened' | 'replied';
-  sentAt?: string;
-  preview?: string;
+  name: string;
+  headline?: string | null;
+  company?: string | null;
+  score?: number;
+  status?: string;
+  intent_label?: string | null;
+  intent_confidence?: number | null;
+  last_outreach_at?: string | null;
+  profile_photo_url?: string | null;
+  contact_count?: number;
 };
 
-function formatRelativeDate(iso: string): string {
-  const now = Date.now();
-  const date = new Date(iso).getTime();
-  const diff = now - date;
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-const TABS: { key: OutreachTab; label: string }[] = [
-  { key: 'pending', label: 'Pending' },
-  { key: 'sent', label: 'Sent' },
-  { key: 'replied', label: 'Replied' },
-  { key: 'follow_up', label: 'Follow-up' },
-];
-
-const STATUS_COLORS: Record<OutreachItem['status'], string> = {
-  draft: 'muted',
-  sent: 'blue',
-  delivered: 'purple',
-  opened: 'orange',
-  replied: 'green',
+type BucketsResponse = {
+  act_today: BucketLead[];
+  hot: BucketLead[];
+  follow_up: BucketLead[];
 };
 
-function getStatusBg(status: OutreachItem['status']): string {
-  const map: Record<OutreachItem['status'], string> = {
-    draft: '#8A8F9830',
-    sent: '#4F8BFF30',
-    delivered: '#9B59B630',
-    opened: '#F2C94C30',
-    replied: '#4CB78230',
-  };
-  return map[status] ?? '#8A8F9830';
+const BUCKET_META: Record<BucketKey, { title: string; subtitle: string; tint: 'success' | 'warning' | 'primary' }> = {
+  act_today: { title: 'Act today', subtitle: 'Hot prospects with verified contact info', tint: 'success' },
+  hot: { title: 'Hot', subtitle: 'Score ≥ 7 — strike while the post is fresh', tint: 'primary' },
+  follow_up: { title: 'Follow up', subtitle: 'Contacted 3+ days ago, no reply yet', tint: 'warning' },
+};
+
+function relTime(iso?: string | null): string {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
 }
 
-function getStatusFg(status: OutreachItem['status'], palette: any): string {
-  const map: Record<OutreachItem['status'], string> = {
-    draft: palette.muted,
-    sent: '#4F8BFF',
-    delivered: '#9B59B6',
-    opened: palette.warning,
-    replied: palette.success,
-  };
-  return map[status] ?? palette.muted;
+async function loadContact(leadId: string, type: 'email' | 'phone'): Promise<string | null> {
+  try {
+    const res = await api.get<{ contacts?: Array<{ type: string; value: string; rating?: string | null }> }>(
+      `/leads/${leadId}`
+    );
+    const contacts = res.data?.contacts ?? [];
+    const verified = contacts.find((c) => c.type === type && c.rating === 'verified');
+    return (verified ?? contacts.find((c) => c.type === type))?.value ?? null;
+  } catch {
+    return null;
+  }
 }
 
-function ChannelBadge({ channel, palette }: { channel: OutreachItem['channel']; palette: any }) {
-  const config = {
-    whatsapp: { label: 'WA', bg: '#25D36630', fg: '#25D366' },
-    email: { label: 'Email', bg: '#4F8BFF30', fg: '#4F8BFF' },
-    linkedin: { label: 'LI', bg: '#0A66C230', fg: '#0A66C2' },
-  };
-  const c = config[channel];
+export default function OutreachScreen() {
+  const { palette, radius } = useTheme();
+  const insets = useSafeAreaInsets();
+  const qc = useQueryClient();
+  const statusMut = useUpdateLeadStatus();
+
+  const { data, isLoading, isRefetching, refetch } = useQuery<BucketsResponse>({
+    queryKey: ['outreach', 'buckets'],
+    queryFn: () => api.get<BucketsResponse>('/leads/outreach-buckets').then((r) => r.data),
+    staleTime: 60_000,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      qc.invalidateQueries({ queryKey: ['outreach', 'buckets'] });
+    }, [qc])
+  );
+
+  const onWhatsApp = useCallback(async (leadId: string) => {
+    haptic.medium();
+    const phone = await loadContact(leadId, 'phone');
+    if (!phone) return Alert.alert('No phone', 'Enrich the lead to unlock WhatsApp.');
+    const num = phone.replace(/[^\d]/g, '');
+    Linking.openURL(`whatsapp://send?phone=${num}`).catch(() =>
+      Linking.openURL(`https://wa.me/${num}`).catch(() => {})
+    );
+  }, []);
+
+  const onEmail = useCallback(async (leadId: string) => {
+    haptic.medium();
+    const email = await loadContact(leadId, 'email');
+    if (!email) return Alert.alert('No email', 'Enrich the lead to unlock email.');
+    Linking.openURL(`mailto:${email}`).catch(() => {});
+  }, []);
+
+  const onSave = useCallback(
+    (leadId: string) => {
+      haptic.success();
+      statusMut.mutate({ id: leadId, status: 'Saved' });
+    },
+    [statusMut]
+  );
+
+  const onSkip = useCallback(
+    (leadId: string) => {
+      haptic.light();
+      statusMut.mutate({ id: leadId, status: 'Skip' });
+    },
+    [statusMut]
+  );
+
+  const totals = useMemo(() => {
+    return {
+      act_today: data?.act_today?.length ?? 0,
+      hot: data?.hot?.length ?? 0,
+      follow_up: data?.follow_up?.length ?? 0,
+    };
+  }, [data]);
+
   return (
-    <View style={[styles.channelBadge, { backgroundColor: c.bg }]}>
-      <Text style={[styles.channelBadgeText, { color: c.fg }]}>{c.label}</Text>
+    <View style={[styles.root, { backgroundColor: palette.bg, paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: palette.text, fontFamily: 'Fraunces_600SemiBold' }]}>
+          Outreach Hub
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: palette.muted }]}>
+          {totals.act_today + totals.hot + totals.follow_up} prospects waiting
+        </Text>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator color={palette.primary} size="large" />
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={palette.primary}
+              colors={[palette.primary]}
+            />
+          }
+        >
+          {(['act_today', 'hot', 'follow_up'] as BucketKey[]).map((key) => {
+            const leads = data?.[key] ?? [];
+            const meta = BUCKET_META[key];
+            const tintColor =
+              meta.tint === 'success' ? palette.success : meta.tint === 'warning' ? palette.warning : palette.primary;
+            return (
+              <View key={key} style={{ marginTop: 18 }}>
+                <View style={styles.bucketHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.bucketTitle, { color: palette.text }]}>{meta.title}</Text>
+                    <Text style={[styles.bucketSubtitle, { color: palette.muted }]}>{meta.subtitle}</Text>
+                  </View>
+                  <View style={[styles.bucketCount, { backgroundColor: tintColor + '22', borderColor: tintColor + '55' }]}>
+                    <Text style={[styles.bucketCountText, { color: tintColor }]}>{leads.length}</Text>
+                  </View>
+                </View>
+
+                {leads.length === 0 ? (
+                  <View style={[styles.empty, { backgroundColor: palette.card, borderColor: palette.border, borderRadius: radius }]}>
+                    <SparkleIcon size={28} color={palette.muted} strokeWidth={1.4} />
+                    <Text style={{ color: palette.muted, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+                      Nothing here yet — fresh leads land overnight.
+                    </Text>
+                  </View>
+                ) : (
+                  leads.map((lead) => (
+                    <BucketCard
+                      key={lead.id}
+                      lead={lead}
+                      tint={tintColor}
+                      onTap={() => router.push(`/lead/${lead.id}` as any)}
+                      onWhatsApp={() => onWhatsApp(lead.id)}
+                      onEmail={() => onEmail(lead.id)}
+                      onSave={() => onSave(lead.id)}
+                      onSkip={() => onSkip(lead.id)}
+                    />
+                  ))
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 }
 
-function EmptyState({ tab, palette }: { tab: OutreachTab; palette: any }) {
-  const messages: Record<OutreachTab, { icon: React.ReactNode; text: string }> = {
-    pending: {
-      icon: <BookmarkIcon size={40} color={palette.muted} strokeWidth={1.5} />,
-      text: 'No drafts pending. Go save some leads!',
-    },
-    sent: {
-      icon: <SendIcon size={40} color={palette.muted} strokeWidth={1.5} />,
-      text: 'No messages sent yet.',
-    },
-    replied: {
-      icon: <SparkleIcon size={40} color={palette.muted} strokeWidth={1.5} />,
-      text: 'No replies yet. Keep reaching out!',
-    },
-    follow_up: {
-      icon: <SparkleIcon size={40} color={palette.muted} strokeWidth={1.5} />,
-      text: 'No leads need following up right now.',
-    },
-  };
-  const { icon, text } = messages[tab];
-  return (
-    <View style={styles.emptyState}>
-      {icon}
-      <Text style={[styles.emptyText, { color: palette.muted }]}>{text}</Text>
-    </View>
-  );
-}
-
-function OutreachCard({ item, palette, radius }: { item: OutreachItem; palette: any; radius: number }) {
-  const statusBg = getStatusBg(item.status);
-  const statusFg = getStatusFg(item.status, palette);
+function BucketCard({
+  lead,
+  tint,
+  onTap,
+  onWhatsApp,
+  onEmail,
+  onSave,
+  onSkip,
+}: {
+  lead: BucketLead;
+  tint: string;
+  onTap: () => void;
+  onWhatsApp: () => void;
+  onEmail: () => void;
+  onSave: () => void;
+  onSkip: () => void;
+}) {
+  const { palette, radius } = useTheme();
+  const score = lead.score ?? 0;
 
   return (
     <Pressable
-      onPress={() => router.push(`/lead/${item.leadId}` as any)}
+      onPress={onTap}
       style={({ pressed }) => [
         styles.card,
         {
@@ -139,227 +239,192 @@ function OutreachCard({ item, palette, radius }: { item: OutreachItem; palette: 
         },
       ]}
     >
-      <Avatar uri={item.leadAvatar} name={item.leadName} size={44} />
-      <View style={styles.cardBody}>
-        <View style={styles.cardRow}>
-          <Text style={[styles.cardName, { color: palette.text }]} numberOfLines={1}>
-            {item.leadName}
-          </Text>
-          <ChannelBadge channel={item.channel} palette={palette} />
-        </View>
-        {item.preview ? (
-          <Text style={[styles.cardPreview, { color: palette.muted }]} numberOfLines={1}>
-            {item.preview}
-          </Text>
-        ) : null}
-        <View style={styles.cardFooter}>
-          <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
-            <Text style={[styles.statusText, { color: statusFg }]}>
-              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+      <View style={styles.cardTop}>
+        <Avatar uri={lead.profile_photo_url ?? undefined} name={lead.name} size={44} />
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={styles.cardTitleRow}>
+            <Text style={[styles.cardName, { color: palette.text }]} numberOfLines={1}>
+              {lead.name || 'Unknown'}
             </Text>
+            <View style={[styles.scorePill, { backgroundColor: tint + '20', borderColor: tint + '55' }]}>
+              <Text style={[styles.scoreText, { color: tint }]}>{score.toFixed(0)}</Text>
+            </View>
           </View>
-          {item.sentAt ? (
-            <Text style={[styles.cardDate, { color: palette.muted }]}>
-              {formatRelativeDate(item.sentAt)}
+          {lead.headline ? (
+            <Text style={[styles.cardHeadline, { color: palette.muted }]} numberOfLines={1}>
+              {lead.headline}
             </Text>
           ) : null}
+          <View style={styles.cardMeta}>
+            {lead.company ? (
+              <Text style={[styles.metaText, { color: palette.text }]} numberOfLines={1}>
+                {lead.company}
+              </Text>
+            ) : null}
+            {lead.last_outreach_at ? (
+              <Text style={[styles.metaText, { color: palette.muted }]} numberOfLines={1}>
+                · last reached {relTime(lead.last_outreach_at)}
+              </Text>
+            ) : null}
+          </View>
         </View>
+      </View>
+
+      <View style={styles.cardActions}>
+        <Pressable
+          onPress={onWhatsApp}
+          hitSlop={6}
+          style={[styles.iconBtn, { backgroundColor: '#25D366' }]}
+        >
+          <PhoneIcon size={14} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 11, fontFamily: 'Inter_600SemiBold' }}>WA</Text>
+        </Pressable>
+        <Pressable
+          onPress={onEmail}
+          hitSlop={6}
+          style={[styles.iconBtn, { backgroundColor: '#4F8BFF' }]}
+        >
+          <MailIcon size={14} color="#fff" />
+          <Text style={{ color: '#fff', fontSize: 11, fontFamily: 'Inter_600SemiBold' }}>Email</Text>
+        </Pressable>
+        <Pressable
+          onPress={onSave}
+          hitSlop={6}
+          style={[styles.iconBtn, { borderColor: palette.text, borderWidth: 1, backgroundColor: 'transparent' }]}
+        >
+          <BookmarkIcon size={14} color={palette.text} />
+          <Text style={{ color: palette.text, fontSize: 11, fontFamily: 'Inter_600SemiBold' }}>Save</Text>
+        </Pressable>
+        <Pressable
+          onPress={onSkip}
+          hitSlop={6}
+          style={[styles.iconBtn, { borderColor: palette.muted, borderWidth: 1, backgroundColor: 'transparent' }]}
+        >
+          <XIcon size={14} color={palette.muted} />
+          <Text style={{ color: palette.muted, fontSize: 11, fontFamily: 'Inter_600SemiBold' }}>Skip</Text>
+        </Pressable>
       </View>
     </Pressable>
   );
 }
 
-export default function OutreachScreen() {
-  const { palette, radius } = useTheme();
-  const insets = useSafeAreaInsets();
-  const qc = useQueryClient();
-  const [tab, setTab] = useState<OutreachTab>('pending');
-
-  const { data, isLoading } = useQuery<OutreachItem[]>({
-    queryKey: ['outreach', tab],
-    queryFn: () => {
-      if (tab === 'follow_up') {
-        return api.get('/leads/outreach/follow-up').then((r) => r.data);
-      }
-      return api.get('/leads/outreach', { params: { status: tab } }).then((r) => r.data);
-    },
-    staleTime: 2 * 60 * 1000,
-  });
-
-  useFocusEffect(
-    useCallback(() => {
-      qc.invalidateQueries({ queryKey: ['outreach', tab] });
-    }, [tab, qc])
-  );
-
-  const items = data ?? [];
-
-  return (
-    <View style={[styles.root, { backgroundColor: palette.bg, paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: palette.text }]}>Outreach</Text>
-      </View>
-
-      {/* Segmented control */}
-      <View style={[styles.segmented, { backgroundColor: palette.card, borderColor: palette.border }]}>
-        {TABS.map(({ key, label }) => {
-          const active = tab === key;
-          return (
-            <Pressable
-              key={key}
-              onPress={() => setTab(key)}
-              style={[
-                styles.segTab,
-                active && { backgroundColor: palette.primary, borderRadius: radius - 4 },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.segTabText,
-                  { color: active ? palette.primaryFg : palette.muted },
-                  active && { fontWeight: '700' },
-                ]}
-              >
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* List */}
-      {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator color={palette.primary} size="large" />
-        </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={<EmptyState tab={tab} palette={palette} />}
-          renderItem={({ item }) => (
-            <OutreachCard item={item} palette={palette} radius={radius} />
-          )}
-        />
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
+  root: { flex: 1 },
   header: {
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 4,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    fontFamily: 'Inter_700Bold',
+    fontSize: 26,
+    letterSpacing: -0.5,
   },
-  segmented: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 3,
-  },
-  segTab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 7,
-  },
-  segTabText: {
+  headerSubtitle: {
     fontSize: 13,
-    fontWeight: '500',
-    fontFamily: 'Inter_500Medium',
+    marginTop: 2,
+    fontFamily: 'Inter_400Regular',
   },
-  loaderContainer: {
+  loading: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    gap: 10,
-  },
-  card: {
+  bucketHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 14,
-    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
     gap: 12,
   },
-  cardBody: {
-    flex: 1,
-    gap: 4,
+  bucketTitle: {
+    fontSize: 17,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
   },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardName: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Inter_600SemiBold',
-    flex: 1,
-    marginRight: 8,
-  },
-  cardPreview: {
+  bucketSubtitle: {
     fontSize: 12,
     fontFamily: 'Inter_400Regular',
+    marginTop: 2,
     lineHeight: 16,
   },
-  cardFooter: {
+  bucketCount: {
+    minWidth: 32,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bucketCountText: {
+    fontSize: 13,
+    fontFamily: 'Inter_700Bold',
+  },
+  empty: {
+    marginHorizontal: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    alignItems: 'center',
+    borderWidth: 0.5,
+  },
+  card: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    padding: 14,
+    borderWidth: 0.5,
+    gap: 12,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 2,
+    gap: 8,
   },
-  statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+  cardName: {
+    flex: 1,
+    fontSize: 14.5,
     fontFamily: 'Inter_600SemiBold',
   },
-  cardDate: {
-    fontSize: 11,
-    fontFamily: 'Inter_400Regular',
-  },
-  channelBadge: {
-    paddingHorizontal: 6,
+  scorePill: {
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 999,
+    borderWidth: 1,
   },
-  channelBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+  scoreText: {
+    fontSize: 12,
     fontFamily: 'Inter_700Bold',
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyText: {
-    fontSize: 14,
+  cardHeadline: {
+    fontSize: 12,
+    marginTop: 3,
     fontFamily: 'Inter_400Regular',
-    textAlign: 'center',
-    maxWidth: 240,
-    lineHeight: 20,
+  },
+  cardMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 2,
+  },
+  metaText: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  iconBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
 });

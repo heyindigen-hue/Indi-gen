@@ -8,16 +8,26 @@ import {
   RefreshControl,
   Linking,
   StyleSheet,
-  Share,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
-import { useTheme } from '../../lib/themeContext';
-import { useLead, useLeadDrafts, useUpdateLeadStatus, useEnrichLead, Lead, LeadContact } from '../../lib/useLeads';
-import { haptic } from '../../lib/haptics';
-import { Avatar } from '../../components/ui/Avatar';
+import { useTheme } from '../../../lib/themeContext';
+import {
+  useLead,
+  useLeadDrafts,
+  useUpdateLeadStatus,
+  useEnrichLead,
+  useMarkUnqualified,
+  useTranslate,
+  Lead,
+  LeadContact,
+} from '../../../lib/useLeads';
+import { haptic } from '../../../lib/haptics';
+import { Avatar } from '../../../components/ui/Avatar';
+import { ProfileInsights } from '../../../components/lead/ProfileInsights';
 import {
   ChevronLeftIcon,
   MailIcon,
@@ -26,7 +36,8 @@ import {
   CopyIcon,
   SparkleIcon,
   CheckIcon,
-} from '../../components/icons';
+  XIcon,
+} from '../../../components/icons';
 
 type Channel = 'whatsapp' | 'email' | 'linkedin';
 
@@ -51,6 +62,10 @@ export default function LeadDetailScreen() {
   const draftsQuery = useLeadDrafts(id, lead?.drafts_cache as any);
   const statusMut = useUpdateLeadStatus();
   const enrichMut = useEnrichLead();
+  const unqualMut = useMarkUnqualified();
+  const translateMut = useTranslate();
+  const [translatedPost, setTranslatedPost] = useState<string | null>(null);
+  const [showTranslated, setShowTranslated] = useState(false);
 
   const onRefresh = useCallback(async () => {
     if (!id) return;
@@ -86,6 +101,73 @@ export default function LeadDetailScreen() {
     router.back();
   }, [id, statusMut]);
 
+  const onMarkUnqualified = useCallback(() => {
+    if (!id) return;
+    Alert.alert(
+      'Mark unqualified?',
+      'This trains the filter and archives the lead.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          style: 'destructive',
+          onPress: () => {
+            haptic.medium();
+            unqualMut.mutate(
+              { id },
+              {
+                onSuccess: () => router.back(),
+                onError: () => Alert.alert('Could not mark unqualified', 'Try again in a moment.'),
+              }
+            );
+          },
+        },
+      ]
+    );
+  }, [id, unqualMut]);
+
+  const onTranslate = useCallback(() => {
+    if (!lead?.post_text) return;
+    if (showTranslated && translatedPost) {
+      setShowTranslated(false);
+      return;
+    }
+    if (translatedPost) {
+      setShowTranslated(true);
+      return;
+    }
+    haptic.light();
+    translateMut.mutate(lead.post_text, {
+      onSuccess: (translated) => {
+        setTranslatedPost(translated);
+        setShowTranslated(true);
+      },
+      onError: () => Alert.alert('Translate failed', 'Try again later.'),
+    });
+  }, [lead?.post_text, translatedPost, showTranslated, translateMut]);
+
+  const onShareWA = useCallback(() => {
+    if (!lead) return;
+    haptic.medium();
+    const lines: string[] = [];
+    if (lead.name) lines.push(`*${lead.name}*`);
+    if (lead.headline) lines.push(lead.headline);
+    if (lead.company) lines.push(`@ ${lead.company}`);
+    if (typeof lead.score === 'number') lines.push(`Score: ${lead.score.toFixed(0)}/10`);
+    if (lead.linkedin_url) lines.push(lead.linkedin_url);
+    if (lead.post_url) lines.push(lead.post_url);
+    const text = encodeURIComponent(lines.join('\n'));
+    Linking.openURL(`whatsapp://send?text=${text}`).catch(() =>
+      Linking.openURL(`https://wa.me/?text=${text}`).catch(() => {})
+    );
+  }, [lead]);
+
+  const onOpenDrafts = useCallback(() => {
+    if (!id) return;
+    haptic.medium();
+    router.push(`/lead/${id}/drafts` as any);
+  }, [id]);
+
   const onSendChannel = useCallback(
     async (channel: Channel) => {
       const text = channel === 'whatsapp' ? drafts?.whatsapp : channel === 'email' ? drafts?.email : drafts?.linkedin;
@@ -104,9 +186,9 @@ export default function LeadDetailScreen() {
         Linking.openURL(`mailto:${email.value}?subject=${subject}&body=${body}`);
       } else if (channel === 'linkedin' && linkedinUrl) {
         Linking.openURL(linkedinUrl);
-      } else {
-        // No destination — fall back to share sheet so the draft isn't lost.
-        Share.share({ message: text || '' }).catch(() => {});
+      } else if (text) {
+        // No destination — drop the draft on the clipboard so the user can paste it manually.
+        await Clipboard.setStringAsync(text);
       }
     },
     [drafts, phone, email, linkedinUrl]
@@ -310,12 +392,63 @@ export default function LeadDetailScreen() {
           )}
         </View>
 
+        {/* Action row — mark unqualified / translate / share-on-whatsapp */}
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={onMarkUnqualified}
+            disabled={unqualMut.isPending}
+            style={[
+              styles.actionPill,
+              { borderColor: palette.muted, opacity: unqualMut.isPending ? 0.5 : 1 },
+            ]}
+          >
+            <XIcon size={14} color={palette.muted} />
+            <Text style={{ color: palette.muted, fontSize: 12, fontFamily: 'Inter_600SemiBold' }}>
+              Unqualified
+            </Text>
+          </Pressable>
+          {lead.post_text ? (
+            <Pressable
+              onPress={onTranslate}
+              disabled={translateMut.isPending}
+              style={[
+                styles.actionPill,
+                { borderColor: palette.border, opacity: translateMut.isPending ? 0.5 : 1 },
+              ]}
+            >
+              <Text
+                style={{
+                  color: palette.text,
+                  fontSize: 10,
+                  fontFamily: 'Inter_700Bold',
+                  letterSpacing: 1,
+                }}
+              >
+                {translateMut.isPending ? '...' : showTranslated ? 'ORIGINAL' : 'TRANSLATE'}
+              </Text>
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={onShareWA}
+            style={[styles.actionPill, { backgroundColor: '#25D366', borderColor: '#25D366' }]}
+          >
+            <Text style={{ color: '#fff', fontSize: 12, fontFamily: 'Inter_600SemiBold' }}>
+              Share on WhatsApp
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Profile Insights — only renders if lead.profile_data has content */}
+        {lead.profile_data ? <ProfileInsights profile={lead.profile_data as any} /> : null}
+
         {/* Post text */}
         {lead.post_text ? (
           <>
             <SectionTitle palette={palette}>The post</SectionTitle>
             <View style={[styles.postBox, { backgroundColor: palette.card, borderColor: palette.border, borderRadius: radius }]}>
-              <Text style={{ color: palette.text, fontSize: 14, lineHeight: 21 }}>{lead.post_text}</Text>
+              <Text style={{ color: palette.text, fontSize: 14, lineHeight: 21 }}>
+                {showTranslated && translatedPost ? translatedPost : lead.post_text}
+              </Text>
               {lead.post_url ? (
                 <Pressable
                   onPress={() => Linking.openURL(lead.post_url!)}
@@ -330,6 +463,19 @@ export default function LeadDetailScreen() {
             </View>
           </>
         ) : null}
+
+        {/* AI Drafts entry — full-width orange CTA */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+          <Pressable
+            onPress={onOpenDrafts}
+            style={[styles.draftsCta, { backgroundColor: palette.primary }]}
+          >
+            <SparkleIcon size={18} color={palette.primaryFg} />
+            <Text style={{ color: palette.primaryFg, fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+              AI Message Drafts
+            </Text>
+          </Pressable>
+        </View>
 
         {/* Drafts */}
         <SectionTitle palette={palette}>AI drafts</SectionTitle>
@@ -673,6 +819,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     height: 46,
+    borderRadius: 999,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+  },
+  actionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  draftsCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 50,
     borderRadius: 999,
   },
 });
