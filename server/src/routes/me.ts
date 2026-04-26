@@ -151,6 +151,206 @@ router.get('/stats', async (req: any, res) => {
   }
 });
 
+// ── Analytics (Stats tab) ─────────────────────────────────────────────────────
+// Vertical-list analytics: leads added (with delta), intent breakdown, ICP
+// breakdown, funnel (scraped → kept → enriched → outreach → replied), outreach
+// channel mix, score distribution, top-yielding phrases. Range: 7d|30d|90d.
+
+router.get('/analytics', async (req: any, res) => {
+  const userId = req.user.id;
+  const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+  const rangeKey = (req.query.range as string) || '7d';
+  const days = rangeKey === '90d' ? 90 : rangeKey === '30d' ? 30 : 7;
+
+  // Always pass days as $1 and (when non-admin) the user id as $2. The owner
+  // clause references $2 — admin path drops it entirely. This keeps the param
+  // indices uniform across all queries.
+  const ownerLeads = isAdmin ? '' : ' AND owner_id = $2';
+  const ownerOL    = isAdmin ? '' : ' AND user_id = $2';
+  const ownerRuns  = isAdmin ? '' : ' AND user_id = $2';
+  const baseArgs: any[] = isAdmin ? [days] : [days, userId];
+
+  try {
+    const [
+      curLeads,
+      prevLeads,
+      intentRows,
+      icpRows,
+      scrapedRow,
+      keptRow,
+      enrichedRow,
+      outreachSentRow,
+      repliedRow,
+      meetingsRow,
+      channelRows,
+      scoreRows,
+      phraseRows,
+    ] = await Promise.all([
+      queryOne<any>(
+        `SELECT COUNT(*)::int AS n FROM leads
+          WHERE created_at > NOW() - ($1 || ' days')::INTERVAL ${ownerLeads}`,
+        baseArgs
+      ),
+      queryOne<any>(
+        `SELECT COUNT(*)::int AS n FROM leads
+          WHERE created_at > NOW() - (($1::int * 2) || ' days')::INTERVAL
+            AND created_at <= NOW() - ($1 || ' days')::INTERVAL ${ownerLeads}`,
+        baseArgs
+      ),
+      query<any>(
+        `SELECT COALESCE(intent_label,'UNCLEAR') AS label, COUNT(*)::int AS n
+           FROM leads
+          WHERE created_at > NOW() - ($1 || ' days')::INTERVAL ${ownerLeads}
+          GROUP BY 1`,
+        baseArgs
+      ),
+      query<any>(
+        `SELECT icp_type, COUNT(*)::int AS n
+           FROM leads
+          WHERE created_at > NOW() - ($1 || ' days')::INTERVAL
+            AND icp_type IS NOT NULL ${ownerLeads}
+          GROUP BY icp_type
+          ORDER BY n DESC
+          LIMIT 8`,
+        baseArgs
+      ),
+      // Funnel: scraped = posts_found across runs in the window.
+      queryOne<any>(
+        `SELECT COALESCE(SUM(posts_found),0)::int AS n FROM scraper_runs
+          WHERE started_at > NOW() - ($1 || ' days')::INTERVAL ${ownerRuns}`,
+        baseArgs
+      ).catch(() => ({ n: 0 })),
+      queryOne<any>(
+        `SELECT COUNT(*)::int AS n FROM leads
+          WHERE created_at > NOW() - ($1 || ' days')::INTERVAL
+            AND status NOT IN ('archived') ${ownerLeads}`,
+        baseArgs
+      ),
+      queryOne<any>(
+        `SELECT COUNT(*)::int AS n FROM leads
+          WHERE enriched_at > NOW() - ($1 || ' days')::INTERVAL
+            AND enrichment_status='enriched' ${ownerLeads}`,
+        baseArgs
+      ),
+      queryOne<any>(
+        `SELECT COUNT(*)::int AS n FROM outreach_log
+          WHERE sent_at > NOW() - ($1 || ' days')::INTERVAL ${ownerOL}`,
+        baseArgs
+      ).catch(() => ({ n: 0 })),
+      queryOne<any>(
+        `SELECT COUNT(*)::int AS n FROM outreach_log
+          WHERE sent_at > NOW() - ($1 || ' days')::INTERVAL
+            AND replied_at IS NOT NULL ${ownerOL}`,
+        baseArgs
+      ).catch(() => ({ n: 0 })),
+      // Meetings: leads moved to Won/Qualified/Proposal Sent in the window
+      // (mobile pipeline doesn't yet log meeting events as a first-class type).
+      queryOne<any>(
+        `SELECT COUNT(*)::int AS n FROM leads
+          WHERE updated_at > NOW() - ($1 || ' days')::INTERVAL
+            AND status IN ('Qualified','Proposal Sent','Won') ${ownerLeads}`,
+        baseArgs
+      ),
+      query<any>(
+        `SELECT channel, COUNT(*)::int AS n FROM outreach_log
+          WHERE sent_at > NOW() - ($1 || ' days')::INTERVAL ${ownerOL}
+          GROUP BY channel`,
+        baseArgs
+      ).catch(() => []),
+      query<any>(
+        `SELECT
+            CASE WHEN score >= 9 THEN '9-10'
+                 WHEN score >= 7 THEN '7-8'
+                 WHEN score >= 5 THEN '5-6'
+                 ELSE '<5' END AS bucket,
+            COUNT(*)::int AS n
+           FROM leads
+          WHERE created_at > NOW() - ($1 || ' days')::INTERVAL ${ownerLeads}
+          GROUP BY bucket`,
+        baseArgs
+      ),
+      // Top phrases by lead yield (always platform-wide — phrases are shared)
+      query<any>(
+        `SELECT sp.phrase,
+                sp.total_runs::int AS runs,
+                COUNT(l.id)::int AS leads_kept,
+                CASE WHEN sp.total_posts > 0
+                     THEN ROUND(100.0 * COUNT(l.id)::numeric / sp.total_posts::numeric, 1)
+                     ELSE 0 END AS yield_pct
+           FROM search_phrases sp
+           LEFT JOIN leads l
+             ON l.phrase_id = sp.id
+            AND l.created_at > NOW() - ($1 || ' days')::INTERVAL
+          WHERE sp.enabled = TRUE
+          GROUP BY sp.id, sp.phrase, sp.total_runs, sp.total_posts
+          ORDER BY yield_pct DESC, leads_kept DESC
+          LIMIT 5`,
+        [days]
+      ).catch(() => []),
+    ]);
+
+    const cur = curLeads?.n ?? 0;
+    const prev = prevLeads?.n ?? 0;
+    const delta = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : 0;
+
+    const intentBreakdown: Record<string, number> = {
+      BUYER_PROJECT: 0,
+      INFORMATIONAL: 0,
+      JOB_POSTING_FULLTIME: 0,
+      SELF_PROMO: 0,
+      JOB_SEEKER: 0,
+      UNCLEAR: 0,
+    };
+    for (const row of intentRows ?? []) {
+      const label = row.label ?? 'UNCLEAR';
+      if (label in intentBreakdown) intentBreakdown[label] += Number(row.n) || 0;
+      else intentBreakdown.UNCLEAR += Number(row.n) || 0;
+    }
+
+    const channelMix: Record<string, number> = { whatsapp: 0, email: 0, linkedin_dm: 0 };
+    for (const row of channelRows ?? []) {
+      const c = (row.channel ?? '').toLowerCase();
+      if (c === 'whatsapp' || c === 'wa') channelMix.whatsapp += Number(row.n) || 0;
+      else if (c === 'email') channelMix.email += Number(row.n) || 0;
+      else if (c === 'linkedin' || c === 'linkedin_dm') channelMix.linkedin_dm += Number(row.n) || 0;
+    }
+
+    const scoreOrder = ['9-10', '7-8', '5-6', '<5'];
+    const scoreMap = new Map<string, number>();
+    for (const r of scoreRows ?? []) scoreMap.set(r.bucket, Number(r.n) || 0);
+    const scoreDistribution = scoreOrder.map((bucket) => ({
+      bucket,
+      count: scoreMap.get(bucket) ?? 0,
+    }));
+
+    res.json({
+      range: rangeKey,
+      leads_added: cur,
+      leads_added_delta_pct: delta,
+      intent_breakdown: intentBreakdown,
+      icp_breakdown: (icpRows ?? []).map((r: any) => ({ icp_type: r.icp_type, count: Number(r.n) })),
+      funnel: {
+        scraped: scrapedRow?.n ?? 0,
+        kept_after_filter: keptRow?.n ?? 0,
+        enriched: enrichedRow?.n ?? 0,
+        outreach_sent: outreachSentRow?.n ?? 0,
+        replied: repliedRow?.n ?? 0,
+        meeting_booked: meetingsRow?.n ?? 0,
+      },
+      outreach_by_channel: channelMix,
+      score_distribution: scoreDistribution,
+      phrase_performance: (phraseRows ?? []).map((r: any) => ({
+        phrase: r.phrase,
+        runs: Number(r.runs) || 0,
+        leads_kept: Number(r.leads_kept) || 0,
+        yield_pct: Number(r.yield_pct) || 0,
+      })),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Analytics failed', detail: err.message });
+  }
+});
+
 // ── Notification preferences ──────────────────────────────────────────────────
 
 router.get('/notification-prefs', async (req: any, res) => {

@@ -9,6 +9,7 @@ import {
   SendIcon,
   ChartIcon,
   SettingsIcon,
+  KanbanIcon,
 } from '../../components/icons';
 
 type TabIconProps = { color: string; size: number; focused: boolean };
@@ -20,6 +21,7 @@ const TABS: { id: string; label: string; Icon: React.FC<{ color: string; size: n
   { id: 'index', label: 'Home', Icon: HomeIcon },
   { id: 'explore', label: 'Saved', Icon: BookmarkIcon },
   { id: 'leads', label: 'Leads', Icon: LeadIcon },
+  { id: 'pipeline', label: 'Pipeline', Icon: KanbanIcon },
   { id: 'outreach', label: 'Outreach', Icon: SendIcon },
   { id: 'insights', label: 'Insights', Icon: ChartIcon },
   { id: 'settings', label: 'Settings', Icon: SettingsIcon },

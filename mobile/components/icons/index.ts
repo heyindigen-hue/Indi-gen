@@ -43,3 +43,4 @@ export { ChevronLeftIcon } from './ChevronLeftIcon';
 export { PhoneIcon } from './PhoneIcon';
 export { LinkIcon } from './LinkIcon';
 export { PenLineIcon } from './PenLineIcon';
+export { KanbanIcon } from './KanbanIcon';
