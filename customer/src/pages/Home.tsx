@@ -75,7 +75,14 @@ export default function Home() {
 
   const { data: recentLeads, isLoading: leadsLoading } = useQuery<Lead[]>({
     queryKey: ['leads', 'recent'],
-    queryFn: () => api.get<Lead[]>('/leads?limit=5&sort=created_at:desc'),
+    queryFn: async () => {
+      // Server returns { leads: Lead[] } — unwrap, with fallbacks for any shape
+      const raw = await api.get<any>('/leads?limit=5&sort=score');
+      if (Array.isArray(raw)) return raw as Lead[];
+      if (Array.isArray(raw?.leads)) return raw.leads as Lead[];
+      if (Array.isArray(raw?.data)) return raw.data as Lead[];
+      return [];
+    },
   });
 
   const greeting = getGreeting();
@@ -225,7 +232,7 @@ export default function Home() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentLeads.map((lead) => (
+                {(Array.isArray(recentLeads) ? recentLeads : []).map((lead) => (
                   <TableRow
                     key={lead.id}
                     className="cursor-pointer"

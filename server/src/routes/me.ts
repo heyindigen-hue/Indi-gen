@@ -112,6 +112,45 @@ router.patch('/onboarding', validateBody(onboardingPatchSchema), async (req: any
   res.json({ ...updated, needs_onboarding: !updated.onboarding_completed_at });
 });
 
+// ── Customer dashboard stats (token balance, leads this week, outreach, replies, plan) ──
+
+router.get('/stats', async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const [tokRow, leadsWeekRow, outreachRow, repliesRow, subRow] = await Promise.all([
+      queryOne<any>(`SELECT balance FROM user_token_balance WHERE user_id=$1`, [userId]).catch(() => null),
+      queryOne<any>(`SELECT COUNT(*)::int AS n FROM leads WHERE owner_id=$1 AND created_at > NOW() - INTERVAL '7 days'`, [userId]),
+      queryOne<any>(`SELECT COUNT(*)::int AS n FROM outreach_log WHERE user_id=$1 AND sent_at > NOW() - INTERVAL '7 days'`, [userId]).catch(() => ({ n: 0 })),
+      queryOne<any>(`SELECT COUNT(*)::int AS n FROM outreach_log WHERE user_id=$1 AND sent_at > NOW() - INTERVAL '7 days' AND replied_at IS NOT NULL`, [userId]).catch(() => ({ n: 0 })),
+      queryOne<any>(
+        `SELECT s.status, p.name AS plan_name, s.next_renewal_at
+           FROM subscriptions s LEFT JOIN subscription_plans p ON p.id=s.plan_id
+          WHERE s.user_id=$1 ORDER BY s.created_at DESC LIMIT 1`,
+        [userId]
+      ).catch(() => null),
+    ]);
+
+    const outreachSent = outreachRow?.n || 0;
+    const replies = repliesRow?.n || 0;
+    const replyRate = outreachSent > 0 ? Math.round((replies / outreachSent) * 100) : 0;
+
+    res.json({
+      token_balance: tokRow?.balance ?? 0,
+      leads_this_week: leadsWeekRow?.n ?? 0,
+      outreach_sent: outreachSent,
+      reply_rate: replyRate,
+      subscription_status: subRow?.status ?? 'free',
+      subscription_plan: subRow?.plan_name ?? 'Free',
+      next_renewal: subRow?.next_renewal_at ?? null,
+    });
+  } catch (err: any) {
+    res.json({
+      token_balance: 0, leads_this_week: 0, outreach_sent: 0, reply_rate: 0,
+      subscription_status: 'free', subscription_plan: 'Free', next_renewal: null,
+    });
+  }
+});
+
 // ── Notification preferences ──────────────────────────────────────────────────
 
 router.get('/notification-prefs', async (req: any, res) => {
