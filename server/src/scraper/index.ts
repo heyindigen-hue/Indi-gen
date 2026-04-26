@@ -155,12 +155,24 @@ export async function scrapeAllLeads(opts: ScrapeOptions = {}): Promise<ScrapeRu
     // Persist into leads table
     const inserted: ScoredLead[] = [];
     for (const lead of scored) {
+      const breakdown = lead.filter_breakdown;
+      // Map breakdown.classification → intent_label + confidence (0..1) + reason
+      const intentLabel = breakdown?.classification ?? null;
+      const intentConfidence = breakdown
+        ? Math.min(1, Math.max(0, breakdown.total_score / 10))
+        : null;
+      const intentReason =
+        breakdown?.reasons?.classification ||
+        breakdown?.reasons?.overall ||
+        breakdown?.reasons?.intent ||
+        null;
+
       const inserted_row = await queryOne<{ id: string } | null>(
         `INSERT INTO leads
            (name, headline, linkedin_url, company, post_text, post_url, post_date,
             score, icp_type, status, owner_id, phrase_id, profile_data, filter_breakdown,
-            enrichment_status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'New',$10,$11,$12,$13,'pending')
+            enrichment_status, intent_label, intent_confidence, intent_reason)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'New',$10,$11,$12,$13,'pending',$14,$15,$16)
          ON CONFLICT (linkedin_url) DO NOTHING
          RETURNING id`,
         [
@@ -182,7 +194,10 @@ export async function scrapeAllLeads(opts: ScrapeOptions = {}): Promise<ScrapeRu
             phrase_id: lead.phrase_id,
             apify_key_id: apifyKey.id,
           }),
-          lead.filter_breakdown ? JSON.stringify(lead.filter_breakdown) : null,
+          breakdown ? JSON.stringify(breakdown) : null,
+          intentLabel,
+          intentConfidence,
+          intentReason,
         ]
       );
       if (inserted_row) inserted.push(lead);

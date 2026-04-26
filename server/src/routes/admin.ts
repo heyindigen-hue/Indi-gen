@@ -8,6 +8,7 @@ import { audit } from '../services/audit';
 import { grantTokens } from '../services/tokens';
 import { getSetting, setSetting } from '../db/settings';
 import { logger } from '../logger';
+import { filterLeadsWithClaude, type ScrapedLead } from '../scraper/claudeFilter';
 
 const router = Router();
 
@@ -541,6 +542,105 @@ router.get('/sql/preview', async (req, res) => {
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// ============================================================
+// Lead operations (rescore, mark unqualified) — admin-only.
+// ============================================================
+router.post('/leads/:id/rescore', async (req: any, res) => {
+  const lead = await queryOne<any>(`SELECT * FROM leads WHERE id=$1`, [req.params.id]);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+  const scrapedLead: ScrapedLead = {
+    name: lead.name || '',
+    linkedin_url: lead.linkedin_url || '',
+    headline: lead.headline || '',
+    company: lead.company,
+    post_text: lead.post_text || '',
+    post_url: lead.post_url || '',
+    post_date: lead.post_date ? new Date(lead.post_date).toISOString() : new Date().toISOString(),
+    score: lead.score || 0,
+    icp_type: lead.icp_type,
+    source_url_id: null,
+    phrase_id: lead.phrase_id,
+    platform: 'linkedin',
+  };
+
+  const scored = await filterLeadsWithClaude([scrapedLead], { includeSpam: true });
+  const breakdown = scored[0]?.filter_breakdown ?? null;
+  if (!breakdown) {
+    return res.status(502).json({ error: 'Claude rescore failed — try again later' });
+  }
+
+  const intentLabel = breakdown.classification;
+  const intentConfidence = Math.min(1, Math.max(0, breakdown.total_score / 10));
+  const intentReason =
+    breakdown.reasons?.classification || breakdown.reasons?.overall || breakdown.reasons?.intent || null;
+  const newStatus = breakdown.quality === 'spam' ? 'archived' : lead.status;
+
+  await query(
+    `UPDATE leads
+       SET intent_label=$1,
+           intent_confidence=$2,
+           intent_reason=$3,
+           filter_breakdown=$4,
+           score=GREATEST(score, $5),
+           status=$6,
+           updated_at=NOW()
+     WHERE id=$7`,
+    [
+      intentLabel,
+      intentConfidence,
+      intentReason,
+      JSON.stringify(breakdown),
+      breakdown.total_score,
+      newStatus,
+      req.params.id,
+    ]
+  );
+  await audit({
+    actorId: req.user.id,
+    action: 'lead.rescore',
+    targetType: 'lead',
+    targetId: req.params.id,
+    after: { intent_label: intentLabel, intent_confidence: intentConfidence, quality: breakdown.quality },
+  });
+  res.json({
+    ok: true,
+    intent_label: intentLabel,
+    intent_confidence: intentConfidence,
+    intent_reason: intentReason,
+    quality: breakdown.quality,
+    score: breakdown.total_score,
+  });
+});
+
+const unqualifiedSchema = z.object({ reason: z.string().optional() });
+
+router.post('/leads/:id/mark-unqualified', validateBody(unqualifiedSchema), async (req: any, res) => {
+  const lead = await queryOne<any>(`SELECT id, headline, post_text FROM leads WHERE id=$1`, [req.params.id]);
+  if (!lead) return res.status(404).json({ error: 'Lead not found' });
+  const reason = (req.body?.reason as string | undefined) || 'manual_admin_unqualified';
+
+  await query(
+    `UPDATE leads
+       SET status='archived', unqualified_reason=$1, updated_at=NOW()
+     WHERE id=$2`,
+    [reason, req.params.id]
+  );
+  await query(
+    `INSERT INTO filter_feedback (lead_id, user_id, verdict, headline, post_text, reason)
+     VALUES ($1,$2,'reject',$3,$4,$5)`,
+    [req.params.id, req.user.id, lead.headline, lead.post_text, reason]
+  );
+  await audit({
+    actorId: req.user.id,
+    action: 'lead.mark_unqualified',
+    targetType: 'lead',
+    targetId: req.params.id,
+    after: { reason },
+  });
+  res.json({ ok: true });
 });
 
 export default router;
